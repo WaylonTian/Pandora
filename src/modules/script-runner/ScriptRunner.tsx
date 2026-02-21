@@ -30,37 +30,46 @@ export function ScriptRunner() {
 
   return (
     <div className="flex h-full bg-background text-foreground">
-      <div className="w-48 border-r border-border p-2 flex flex-col shrink-0">
-        <button onClick={handleNew} className="mb-2 px-2 py-1 bg-primary text-primary-foreground rounded text-sm">
-          + New Script
-        </button>
-        <div className="flex-1 overflow-y-auto space-y-1">
+      {/* Script list sidebar */}
+      <div className="w-52 border-r border-border bg-card flex flex-col shrink-0">
+        <div className="p-3 border-b border-border">
+          <button
+            onClick={handleNew}
+            className="w-full px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity duration-150 focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            + New Script
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
           {store.scripts.map(s => (
             <div
               key={s.id}
               onClick={() => store.setActiveScript(s.id)}
-              className={`px-2 py-1.5 rounded text-sm cursor-pointer flex justify-between items-center ${
-                store.activeScriptId === s.id ? "bg-accent" : "hover:bg-accent/50"
+              className={`px-3 py-2 rounded-md text-sm cursor-pointer flex justify-between items-center transition-colors duration-150 ${
+                store.activeScriptId === s.id
+                  ? "bg-primary/10 text-primary border-l-2 border-primary"
+                  : "hover:bg-muted/50 text-foreground"
               }`}
             >
-              <span className="truncate">{s.name}</span>
-              <span className="text-xs text-muted-foreground">{s.runtime}</span>
+              <span className="truncate font-medium">{s.name}</span>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase">{s.runtime}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col">
+      {/* Editor area */}
+      <div className="flex-1 flex flex-col min-w-0">
         {activeScript ? (
           <>
-            <div className="flex items-center gap-2 p-2 border-b border-border">
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card">
               <input
-                className="bg-transparent border border-border rounded px-2 py-1 text-sm"
+                className="bg-background border border-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-colors"
                 value={activeScript.name}
                 onChange={e => store.updateScript(activeScript.id, { name: e.target.value })}
               />
               <select
-                className="bg-background border border-border rounded px-2 py-1 text-sm"
+                className="bg-background border border-border rounded-md px-3 py-1.5 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                 value={activeScript.runtime}
                 onChange={e => store.updateScript(activeScript.id, { runtime: e.target.value })}
               >
@@ -75,45 +84,49 @@ export function ScriptRunner() {
               <button
                 onClick={handleRun}
                 disabled={store.isRunning}
-                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium cursor-pointer hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-green-500/50"
               >
                 {store.isRunning ? "Running..." : "▶ Run"}
               </button>
+              <div className="flex-1" />
               <button
                 onClick={() => store.removeScript(activeScript.id)}
-                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 ml-auto"
+                className="px-3 py-1.5 text-destructive border border-destructive/30 rounded-md text-sm cursor-pointer hover:bg-destructive/10 transition-colors duration-150 focus:outline-none"
               >
                 Delete
               </button>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 min-h-0">
               <Editor
                 height="100%"
                 language={getLanguage(activeScript.runtime)}
                 value={activeScript.content}
                 onChange={v => store.updateScript(activeScript.id, { content: v || "" })}
                 theme={isDark ? "vs-dark" : "light"}
-                options={{ minimap: { enabled: false }, fontSize: 14 }}
+                options={{ minimap: { enabled: false }, fontSize: 13, fontFamily: "'JetBrains Mono', monospace", padding: { top: 12 } }}
               />
             </div>
 
             {store.lastResult && (
-              <div className="h-48 border-t border-border overflow-auto p-2 font-mono text-xs">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={store.lastResult.exit_code === 0 ? "text-green-500" : "text-red-500"}>
+              <div className="h-48 border-t border-border overflow-auto p-3 font-mono text-xs bg-card">
+                <div className="flex items-center gap-3 mb-2 pb-2 border-b border-border">
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${store.lastResult.exit_code === 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
                     Exit: {store.lastResult.exit_code}
                   </span>
                   <span className="text-muted-foreground">{store.lastResult.duration_ms}ms</span>
                 </div>
-                {store.lastResult.stdout && <pre className="whitespace-pre-wrap">{store.lastResult.stdout}</pre>}
+                {store.lastResult.stdout && <pre className="whitespace-pre-wrap text-foreground">{store.lastResult.stdout}</pre>}
                 {store.lastResult.stderr && <pre className="whitespace-pre-wrap text-red-400">{store.lastResult.stderr}</pre>}
               </div>
             )}
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            Select or create a script
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
+            <svg viewBox="0 0 24 24" className="w-12 h-12 opacity-20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
+            </svg>
+            <p className="text-sm">Select or create a script</p>
           </div>
         )}
       </div>

@@ -17,31 +17,35 @@ export function ToolkitLayout() {
 
   return (
     <div className="flex h-full bg-background text-foreground">
-      <div className="w-48 border-r border-border overflow-y-auto p-2 shrink-0">
+      <div className="w-52 bg-card border-r border-border overflow-y-auto p-4 shrink-0">
         {Array.from(grouped.entries()).map(([category, tools]) => (
-          <div key={category} className="mb-3">
-            <div className="text-xs font-semibold text-muted-foreground px-2 py-1 uppercase">
+          <div key={category} className="mb-4">
+            <div className="text-[10px] font-medium text-muted-foreground px-3 py-2 uppercase tracking-wider">
               {categoryLabels[category] || category}
             </div>
             {tools.map(tool => (
               <button
                 key={tool.id}
                 onClick={() => setActiveToolId(tool.id)}
-                className={`w-full text-left px-2 py-1.5 rounded text-sm flex items-center gap-2 ${
+                className={`w-full text-left rounded-md py-2 px-3 font-medium text-sm flex items-center gap-3 transition-colors duration-150 cursor-pointer focus:outline-none ${
                   activeToolId === tool.id
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-accent/50"
+                    ? "bg-primary/10 text-primary border-l-2 border-primary"
+                    : "hover:bg-muted/50"
                 }`}
               >
-                <span>{tool.icon}</span>
+                <div className="w-7 h-7 flex items-center justify-center rounded bg-muted text-xs font-mono">
+                  {tool.icon}
+                </div>
                 <span>{tool.name}</span>
               </button>
             ))}
           </div>
         ))}
       </div>
-      <div className="flex-1 overflow-auto p-4">
-        {ActiveComponent ? <ActiveComponent /> : <div className="text-muted-foreground">Select a tool</div>}
+      <div className="flex-1 overflow-auto p-6">
+        <div className="max-w-3xl">
+          {ActiveComponent ? <ActiveComponent /> : <div className="text-muted-foreground">Select a tool</div>}
+        </div>
       </div>
     </div>
   );
