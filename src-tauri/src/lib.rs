@@ -130,6 +130,27 @@ async fn list_runtimes() -> Result<Vec<script::RuntimeInfo>, String> {
     Ok(script::detect_runtimes().await)
 }
 
+// System commands
+#[tauri::command]
+fn get_local_ips() -> Vec<String> {
+    system::get_local_ips()
+}
+
+#[tauri::command]
+async fn get_public_ip() -> Result<Option<String>, String> {
+    Ok(system::get_public_ip().await)
+}
+
+#[tauri::command]
+fn read_hosts_file() -> Result<String, String> {
+    system::read_hosts()
+}
+
+#[tauri::command]
+fn write_hosts_file(content: String) -> Result<(), String> {
+    system::write_hosts(&content)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let db = AppDatabase::new().expect("Failed to initialize database");
@@ -150,6 +171,7 @@ pub fn run() {
             get_history, clear_history,
             send_http_request,
             run_script, list_runtimes,
+            get_local_ips, get_public_ip, read_hosts_file, write_hosts_file,
             db::commands::create_connection,
             db::commands::test_connection,
             db::commands::connect,
