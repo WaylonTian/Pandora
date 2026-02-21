@@ -1,5 +1,4 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 // Layout and Navigation Components
@@ -28,7 +27,7 @@ import { TableStructure } from "./components/TableStructure";
 import { TableMetaPanel } from "./components/TableMetaPanel";
 
 // Hooks
-import { useTheme, type Theme } from "./hooks/useTheme";
+
 import { useAppState, getSidebarWidth } from "./hooks/useAppState";
 
 // Store
@@ -38,34 +37,6 @@ import { useAppStore, useActiveConnection, useActualConnectionId, tauriCommands,
 // Icon Components - 使用一致的 Lucide 风格 SVG 图标
 // ============================================================================
 
-function SunIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="5" />
-      <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-      <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-    </svg>
-  );
-}
-
-function MoonIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-  );
-}
-
-function MonitorIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-      <line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" />
-    </svg>
-  );
-}
 
 function PlusIcon({ className }: { className?: string }) {
   return (
@@ -110,78 +81,6 @@ function DatabaseLogo({ className }: { className?: string }) {
 }
 
 // ============================================================================
-// Theme Toggle Component - 重新设计为更精致的下拉菜单
-// ============================================================================
-
-interface ThemeToggleProps {
-  theme: Theme;
-  onThemeChange: (theme: Theme) => void;
-}
-
-function ThemeToggle({ theme, onThemeChange }: ThemeToggleProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const menuRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const getIcon = () => {
-    switch (theme) {
-      case "light": return <SunIcon className="h-4 w-4" />;
-      case "dark": return <MoonIcon className="h-4 w-4" />;
-      default: return <MonitorIcon className="h-4 w-4" />;
-    }
-  };
-
-  const options: { value: Theme; label: string; icon: React.ReactNode }[] = [
-    { value: "light", label: "浅色", icon: <SunIcon className="h-4 w-4" /> },
-    { value: "dark", label: "深色", icon: <MoonIcon className="h-4 w-4" /> },
-    { value: "system", label: "跟随系统", icon: <MonitorIcon className="h-4 w-4" /> },
-  ];
-
-  return (
-    <div className="relative" ref={menuRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-        title="切换主题"
-      >
-        {getIcon()}
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[140px] animate-fade-in rounded-lg border border-border bg-popover p-1 shadow-lg">
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              className={cn(
-                "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm cursor-pointer transition-colors",
-                theme === opt.value
-                  ? "bg-accent text-accent-foreground font-medium"
-                  : "text-popover-foreground hover:bg-accent/50"
-              )}
-              onClick={() => { onThemeChange(opt.value); setIsOpen(false); }}
-            >
-              {opt.icon}
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ============================================================================
 // Sidebar Component - 重新设计为更现代的侧边栏
@@ -211,7 +110,7 @@ function Sidebar({
       {/* 侧边栏头部 - 品牌区域 */}
       <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
         <DatabaseLogo className="h-5 w-5 text-primary" />
-        <span className="text-sm font-semibold tracking-tight">DBLite</span>
+        <span className="text-sm font-semibold tracking-tight">DB Manager</span>
         <div className="flex-1" />
         <button
           onClick={onNewConnection}
@@ -285,12 +184,13 @@ function Sidebar({
 // Main Content Component - 重新设计主内容区
 // ============================================================================
 
-interface MainContentProps {
-  theme: Theme;
-  onThemeChange: (theme: Theme) => void;
-}
+function MainContent() {
 
-function MainContent({ theme, onThemeChange }: MainContentProps) {
+
+
+
+
+
   const activeConnection = useActiveConnection();
   const actualConnectionId = useActualConnectionId();
   const activeTab = useAppStore((state) => {
@@ -403,13 +303,10 @@ function MainContent({ theme, onThemeChange }: MainContentProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* 顶部栏：标签页 + 主题切换 */}
+      {/* 顶部栏：标签页 */}
       <div className="flex items-center border-b border-border min-w-0">
         <div className="flex-1 min-w-0 overflow-hidden">
           <TabBar />
-        </div>
-        <div className="flex-shrink-0 flex items-center gap-1 px-2">
-          <ThemeToggle theme={theme} onThemeChange={onThemeChange} />
         </div>
       </div>
 
@@ -463,7 +360,7 @@ function MainContent({ theme, onThemeChange }: MainContentProps) {
 // ============================================================================
 
 function AppContent() {
-  const { theme, setTheme } = useTheme();
+
   useAppState();
 
   const [isInitializing, setIsInitializing] = React.useState(true);
@@ -578,12 +475,12 @@ function AppContent() {
   );
 
   const mainContent = (
-    <MainContent theme={theme} onThemeChange={setTheme} />
+    <MainContent />
   );
 
   return (
     <>
-      <LoadingOverlay isVisible={isInitializing} message="正在加载 DBLite..." />
+      <LoadingOverlay isVisible={isInitializing} message="正在加载..." />
       <AppLayout
         sidebar={sidebarContent}
         main={mainContent}

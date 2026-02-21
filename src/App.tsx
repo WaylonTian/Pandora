@@ -89,7 +89,7 @@ export default function App() {
       />
       <div className="flex-1">
         <DockviewReact
-          className="h-full w-full"
+          className={`h-full w-full ${isDark ? 'dockview-theme-dark' : 'dockview-theme-light'}`}
           components={components}
           onReady={onReady}
         />

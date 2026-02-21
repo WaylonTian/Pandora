@@ -8,7 +8,7 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>((set) => {
   const stored = localStorage.getItem("pandora-theme");
   const isDark = stored ? stored === "dark" : true; // default dark
-  if (isDark) document.documentElement.classList.add("dark");
+  document.documentElement.classList.toggle("dark", isDark);
   return {
     isDark,
     toggle: () => set((state) => {

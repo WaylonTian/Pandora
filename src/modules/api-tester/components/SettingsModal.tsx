@@ -14,14 +14,6 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           <div className="settings-section">
             <h3>Appearance</h3>
             <div className="setting-row">
-              <label>Theme</label>
-              <select value={settings.theme} onChange={e => settings.setTheme(e.target.value as any)}>
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
-                <option value="system">System</option>
-              </select>
-            </div>
-            <div className="setting-row">
               <label>Font Size</label>
               <input type="number" value={settings.fontSize} onChange={e => settings.setFontSize(Number(e.target.value))} min={10} max={20} />
             </div>

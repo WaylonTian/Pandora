@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { useScriptRunnerStore } from "./store";
+import { useThemeStore } from "@/stores/theme";
 import Editor from "@monaco-editor/react";
 
 export function ScriptRunner() {
   const store = useScriptRunnerStore();
+  const { isDark } = useThemeStore();
   const activeScript = store.scripts.find(s => s.id === store.activeScriptId);
 
   useEffect(() => { store.loadRuntimes(); }, []);
@@ -91,7 +93,7 @@ export function ScriptRunner() {
                 language={getLanguage(activeScript.runtime)}
                 value={activeScript.content}
                 onChange={v => store.updateScript(activeScript.id, { content: v || "" })}
-                theme="vs-dark"
+                theme={isDark ? "vs-dark" : "light"}
                 options={{ minimap: { enabled: false }, fontSize: 14 }}
               />
             </div>

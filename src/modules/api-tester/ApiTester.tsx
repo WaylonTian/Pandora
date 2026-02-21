@@ -97,13 +97,7 @@ export function ApiTester() {
     return () => document.removeEventListener('click', () => setContextMenu(null));
   }, []);
 
-  // Apply theme
-  useEffect(() => {
-    const theme = settings.theme === 'system' 
-      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : settings.theme;
-    document.body.className = theme;
-  }, [settings.theme]);
+  // Theme is controlled globally by Pandora sidebar
 
   // Sync tab with request state
   useEffect(() => {
