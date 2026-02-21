@@ -1,4 +1,4 @@
-import './TimingChart.css';
+import '../styles/TimingChart.css';
 
 export interface TimingData {
   dns: number;

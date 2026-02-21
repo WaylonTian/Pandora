@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { diffJson, diffText, DiffLine } from '../utils/diff';
-import './DiffViewer.css';
+import '../styles/DiffViewer.css';
 
 interface Snapshot {
   id: string;

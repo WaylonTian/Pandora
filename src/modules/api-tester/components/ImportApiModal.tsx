@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { parseOpenAPI, parsePostmanCollection, ParsedCollection } from '../utils/openapi';
-import './ImportApiModal.css';
+import '../styles/ImportApiModal.css';
 
 interface Props {
   onClose: () => void;

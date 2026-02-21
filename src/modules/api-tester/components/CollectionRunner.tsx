@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { TestResult } from '../utils/scripting';
 import type { Collection, Request } from '../store';
-import './CollectionRunner.css';
+import '../styles/CollectionRunner.css';
 
 interface RunResult {
   request: Request;

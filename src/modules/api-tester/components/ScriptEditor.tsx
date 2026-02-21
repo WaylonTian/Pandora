@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TestResult } from '../utils/scripting';
-import './ScriptEditor.css';
+import '../styles/ScriptEditor.css';
 
 interface Props {
   preScript: string;
