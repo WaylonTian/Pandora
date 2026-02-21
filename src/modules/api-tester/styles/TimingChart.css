@@ -1,0 +1,85 @@
+.timing-chart {
+  padding: 16px;
+}
+
+.timing-total {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.timing-total span {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.timing-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timing-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timing-label {
+  width: 100px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.timing-bar-container {
+  flex: 1;
+  height: 20px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.timing-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.timing-bar.dns { background: #8b5cf6; }
+.timing-bar.tcp { background: #f59e0b; }
+.timing-bar.tls { background: #ec4899; }
+.timing-bar.ttfb { background: #10b981; }
+.timing-bar.download { background: #3b82f6; }
+
+.timing-value {
+  width: 60px;
+  text-align: right;
+  font-size: 12px;
+  font-family: 'Consolas', monospace;
+  color: var(--text-secondary);
+}
+
+.timing-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
