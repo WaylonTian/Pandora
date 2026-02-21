@@ -5,12 +5,14 @@ mod system;
 mod storage;
 
 use storage::{AppDatabase, Collection, ApiRequest, Environment, Variable, HistoryItem};
+use db::commands::DbState;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use tauri::State;
 
 pub struct AppState {
     pub db: Mutex<AppDatabase>,
+    pub db_state: DbState,
 }
 
 // Collection commands
@@ -120,14 +122,36 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .manage(AppState { db: Mutex::new(db) })
+        .manage(AppState { 
+            db: Mutex::new(db),
+            db_state: DbState::new(),
+        })
         .invoke_handler(tauri::generate_handler![
             get_collections, create_collection, delete_collection, rename_collection,
             get_requests, save_request, delete_request,
             get_environments, create_environment, set_active_environment, delete_environment,
             get_variables, save_variable, delete_variable,
             get_history, clear_history,
-            send_http_request
+            send_http_request,
+            db::commands::create_connection,
+            db::commands::test_connection,
+            db::commands::connect,
+            db::commands::disconnect,
+            db::commands::execute_query,
+            db::commands::execute_batch,
+            db::commands::list_databases,
+            db::commands::list_tables,
+            db::commands::get_table_info,
+            db::commands::get_table_ddl,
+            db::commands::save_connection_config,
+            db::commands::load_connection_configs,
+            db::commands::delete_connection_config,
+            db::commands::save_favorite,
+            db::commands::load_favorites,
+            db::commands::delete_favorite,
+            db::commands::explain_query,
+            db::commands::batch_import,
+            db::commands::get_table_stats
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
