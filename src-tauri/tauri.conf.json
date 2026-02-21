@@ -36,6 +36,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "category": "DeveloperTool"
+    "category": "DeveloperTool",
+    "shortDescription": "Developer Toolbox - API Testing, DB Management, Utilities & Script Runner",
+    "longDescription": "Pandora is a unified developer toolbox that combines API testing, database management, utility tools, and script execution in a single IntelliJ-style draggable panel interface."
   }
 }
