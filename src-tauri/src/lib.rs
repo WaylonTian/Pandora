@@ -114,6 +114,22 @@ async fn send_http_request(
     Ok(response)
 }
 
+// Script commands
+#[tauri::command]
+async fn run_script(
+    runtime: String,
+    script_path: String,
+    args: Vec<String>,
+    working_dir: Option<String>,
+) -> Result<script::ScriptOutput, String> {
+    script::execute_script(&runtime, &script_path, args, working_dir).await
+}
+
+#[tauri::command]
+async fn list_runtimes() -> Result<Vec<script::RuntimeInfo>, String> {
+    Ok(script::detect_runtimes().await)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let db = AppDatabase::new().expect("Failed to initialize database");
@@ -133,6 +149,7 @@ pub fn run() {
             get_variables, save_variable, delete_variable,
             get_history, clear_history,
             send_http_request,
+            run_script, list_runtimes,
             db::commands::create_connection,
             db::commands::test_connection,
             db::commands::connect,
