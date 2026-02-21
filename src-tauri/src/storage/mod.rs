@@ -1,0 +1,1 @@
+// App data storage (SQLite) - will be implemented in Task 5
