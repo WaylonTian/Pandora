@@ -1,34 +1,45 @@
 import { useState, useRef } from 'react';
 import { useT } from '@/i18n';
 import { parseOpenAPI, parsePostmanCollection, ParsedCollection } from '../utils/openapi';
+import yaml from 'js-yaml';
 import '../styles/ImportApiModal.css';
+
+const isTauri = !!(window as any).__TAURI_INTERNALS__;
 
 interface Props {
   onClose: () => void;
   onImport: (collection: ParsedCollection) => void;
 }
 
+type ImportMode = 'paste' | 'file' | 'url';
+
 export function ImportApiModal({ onClose, onImport }: Props) {
   const t = useT();
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<ParsedCollection | null>(null);
+  const [importMode, setImportMode] = useState<ImportMode>('paste');
+  const [swaggerUrl, setSwaggerUrl] = useState('');
+  const [fetching, setFetching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleParse = () => {
+  const handleParse = (text?: string) => {
+    const src = text ?? content;
     setError('');
+    setPreview(null);
     try {
-      const json = JSON.parse(content);
+      let json: any;
+      try { json = JSON.parse(src); } catch { json = yaml.load(src) as any; }
       let parsed: ParsedCollection;
-      
+
       if (json.openapi || json.swagger) {
-        parsed = parseOpenAPI(content);
+        parsed = parseOpenAPI(src);
       } else if (json.info?._postman_id || json.item) {
-        parsed = parsePostmanCollection(content);
+        parsed = parsePostmanCollection(src);
       } else {
         throw new Error(t('importApiModal.unrecognizedFormat'));
       }
-      
+
       setPreview(parsed);
     } catch (e: any) {
       setError(e.message);
@@ -39,8 +50,38 @@ export function ImportApiModal({ onClose, onImport }: Props) {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => setContent(reader.result as string);
+      reader.onload = () => {
+        const text = reader.result as string;
+        setContent(text);
+        handleParse(text);
+      };
       reader.readAsText(file);
+    }
+  };
+
+  const handleFetchUrl = async () => {
+    if (!swaggerUrl) return;
+    setFetching(true);
+    setError('');
+    setPreview(null);
+    try {
+      let body: string;
+      if (isTauri) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const resp = await invoke<{ body: string }>('send_http_request', {
+          method: 'GET', url: swaggerUrl, headers: {}, body: null,
+        });
+        body = resp.body;
+      } else {
+        const resp = await fetch(swaggerUrl);
+        body = await resp.text();
+      }
+      setContent(body);
+      handleParse(body);
+    } catch (e: any) {
+      setError(e.message || 'Failed to fetch');
+    } finally {
+      setFetching(false);
     }
   };
 
@@ -59,32 +100,57 @@ export function ImportApiModal({ onClose, onImport }: Props) {
             {t('importApiModal.supportedFormats')}
           </div>
 
-          <div className="import-actions">
-            <input
-              type="file"
-              ref={fileRef}
-              accept=".json,.yaml,.yml"
-              onChange={handleFile}
-              style={{ display: 'none' }}
-            />
-            <button onClick={() => fileRef.current?.click()}>{t('importApiModal.chooseFile')}</button>
-            <span className="or">{t('importApiModal.orPasteJson')}</span>
+          <div className="import-mode-tabs">
+            <button className={`import-mode-tab ${importMode === 'paste' ? 'active' : ''}`} onClick={() => setImportMode('paste')}>
+              {t('importApiModal.pasteJson')}
+            </button>
+            <button className={`import-mode-tab ${importMode === 'file' ? 'active' : ''}`} onClick={() => setImportMode('file')}>
+              {t('importApiModal.uploadFile')}
+            </button>
+            <button className={`import-mode-tab ${importMode === 'url' ? 'active' : ''}`} onClick={() => setImportMode('url')}>
+              {t('importApiModal.fromUrl')}
+            </button>
           </div>
 
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder='{"openapi": "3.0.0", ...}'
-            spellCheck={false}
-          />
+          {importMode === 'paste' && (
+            <>
+              <textarea
+                value={content}
+                onChange={e => setContent(e.target.value)}
+                placeholder='{"openapi": "3.0.0", ...}'
+                spellCheck={false}
+              />
+              {!preview && (
+                <button className="parse-btn" onClick={() => handleParse()} disabled={!content}>
+                  {t('importApiModal.parse')}
+                </button>
+              )}
+            </>
+          )}
+
+          {importMode === 'file' && (
+            <div className="import-actions">
+              <input type="file" ref={fileRef} accept=".json,.yaml,.yml" onChange={handleFile} style={{ display: 'none' }} />
+              <button onClick={() => fileRef.current?.click()}>{t('importApiModal.chooseFile')}</button>
+            </div>
+          )}
+
+          {importMode === 'url' && (
+            <div className="url-import">
+              <input
+                className="url-input"
+                placeholder="https://petstore.swagger.io/v2/swagger.json"
+                value={swaggerUrl}
+                onChange={e => setSwaggerUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleFetchUrl()}
+              />
+              <button className="parse-btn" onClick={handleFetchUrl} disabled={fetching || !swaggerUrl}>
+                {fetching ? t('importApiModal.fetching') : t('importApiModal.fetchAndParse')}
+              </button>
+            </div>
+          )}
 
           {error && <div className="import-error">{error}</div>}
-
-          {!preview && (
-            <button className="parse-btn" onClick={handleParse} disabled={!content}>
-              {t('importApiModal.parse')}
-            </button>
-          )}
 
           {preview && (
             <div className="import-preview">
@@ -116,8 +182,8 @@ export function ImportApiModal({ onClose, onImport }: Props) {
 
         <div className="modal-footer">
           <button className="cancel-btn" onClick={onClose}>{t('importApiModal.cancel')}</button>
-          <button 
-            className="import-btn" 
+          <button
+            className="import-btn"
             onClick={() => preview && onImport(preview)}
             disabled={!preview}
           >

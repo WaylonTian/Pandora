@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useT } from '@/i18n';
 import { useStore, Request } from './store';
 import { useTabsStore, Tab } from './stores/tabs';
-import { useSettingsStore } from './stores/settings';
+import { ResizableLayout } from '@/components/ResizableLayout';
+import { ResizableSplit } from '@/components/ResizableSplit';
 import { KeyValueEditor } from './components/KeyValueEditor';
 import { BodyEditor } from './components/BodyEditor';
 import { ToolsPanel } from './components/ToolsPanel';
@@ -17,10 +18,24 @@ import { DiffViewer } from './components/DiffViewer';
 import { TimingChart } from './components/TimingChart';
 import { ImportApiModal } from './components/ImportApiModal';
 import { CollectionRunner } from './components/CollectionRunner';
+import { CollectionTree } from './components/CollectionTree';
+import { CookieManager } from './components/CookieManager';
 import { Icons } from './components/Icons';
 import { generateCurl } from './utils/codegen';
 import { executeScript, ScriptContext, TestResult } from './utils/scripting';
 import { ParsedCollection } from './utils/openapi';
+import { resolveTemplate, resolveHeaders } from './utils/template';
+
+const isTauri = !!(window as any).__TAURI_INTERNALS__;
+async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  if (isTauri) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return invoke<T>(cmd, args);
+  }
+  return [] as unknown as T;
+}
+
+interface CookieRecord { id: number; domain: string; name: string; value: string; path: string; expires: string | null; http_only: boolean; secure: boolean; }
 import './styles/api-tester.css';
 import './styles/components.css';
 
@@ -34,18 +49,15 @@ export function ApiTester() {
   const t = useT();
   const store = useStore();
   const tabs = useTabsStore();
-  const settings = useSettingsStore();
   
   const [sidebarTab, setSidebarTab] = useState<'collections' | 'history'>('collections');
   const [requestTab, setRequestTab] = useState<'params' | 'headers' | 'body' | 'auth' | 'scripts'>('params');
   const [responseTab, setResponseTab] = useState<'body' | 'headers' | 'cookies' | 'timing' | 'diff'>('body');
   const [responseView, setResponseView] = useState<'pretty' | 'raw' | 'tree'>('pretty');
-  const [newCollectionName, setNewCollectionName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'collection' | 'request'; id: number } | null>(null);
   const [authType, setAuthType] = useState<'none' | 'basic' | 'bearer'>('none');
   const [authData, setAuthData] = useState({ username: '', password: '', token: '' });
-  const [collapsedCollections, setCollapsedCollections] = useState<Set<number>>(new Set());
 
   const [showTools, setShowTools] = useState(false);
   const [showCodeGen, setShowCodeGen] = useState(false);
@@ -56,6 +68,7 @@ export function ApiTester() {
   const [showEnvManager, setShowEnvManager] = useState(false);
   const [showImportApi, setShowImportApi] = useState(false);
   const [showRunner, setShowRunner] = useState(false);
+  const [showCookieManager, setShowCookieManager] = useState(false);
 
   // Request state
   const [params, setParams] = useState<KVItem[]>([{ key: '', value: '', enabled: true }]);
@@ -68,6 +81,7 @@ export function ApiTester() {
   const [preScript, setPreScript] = useState('');
   const [testScript, setTestScript] = useState('');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [scriptLogs, setScriptLogs] = useState<string[]>([]);
   
   // Diff state
   const [snapshots, setSnapshots] = useState<{ id: string; name: string; timestamp: number; body: string; status: number }[]>([]);
@@ -240,12 +254,30 @@ export function ApiTester() {
       body = formData.filter(f => f.enabled && f.key).map(f => `${encodeURIComponent(f.key)}=${encodeURIComponent(f.value)}`).join('&');
     }
 
+    // Resolve {{variable}} templates
+    const envVars = store.variables.reduce((acc, v) => {
+      if (v.enabled) acc[v.key] = v.value;
+      return acc;
+    }, {} as Record<string, string>);
+    finalUrl = resolveTemplate(finalUrl, envVars);
+    body = resolveTemplate(body, envVars);
+    const resolvedHeaders = resolveHeaders(headersObj, envVars);
+
+    // Auto-attach cookies
+    try {
+      const domain = new URL(finalUrl).hostname;
+      const cookies = await safeInvoke<CookieRecord[]>('get_cookies', { domain });
+      if (cookies.length > 0) {
+        resolvedHeaders['Cookie'] = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+      }
+    } catch { /* invalid URL, skip */ }
+
     // Use store to send request
     store.setActiveRequest({
       name: activeTab.name,
       method: activeTab.method,
       url: finalUrl,
-      headers: JSON.stringify(headersObj),
+      headers: JSON.stringify(resolvedHeaders),
       body,
       body_type: bodyType,
     });
@@ -254,6 +286,34 @@ export function ApiTester() {
     
     if (store.response) {
       updateTab({ response: store.response });
+
+      // Auto-save Set-Cookie headers
+      try {
+        const domain = new URL(finalUrl).hostname;
+        const sc = store.response.headers['set-cookie'] || store.response.headers['Set-Cookie'];
+        if (sc) {
+          for (const raw of sc.split(/,(?=\s*\w+=)/)) {
+            const parts = raw.trim().split(';');
+            const [nv, ...attrs] = parts;
+            const eqIdx = nv.indexOf('=');
+            if (eqIdx < 0) continue;
+            const name = nv.substring(0, eqIdx).trim();
+            const value = nv.substring(eqIdx + 1).trim();
+            let path = '/';
+            let expires: string | null = null;
+            let httpOnly = false;
+            let secure = false;
+            for (const attr of attrs) {
+              const a = attr.trim().toLowerCase();
+              if (a.startsWith('path=')) path = attr.trim().substring(5);
+              else if (a.startsWith('expires=')) expires = attr.trim().substring(8);
+              else if (a === 'httponly') httpOnly = true;
+              else if (a === 'secure') secure = true;
+            }
+            await safeInvoke('set_cookie', { cookie: { id: null, domain, name, value, path, expires, http_only: httpOnly, secure } });
+          }
+        }
+      } catch { /* skip */ }
       
       // Test script
       if (testScript) {
@@ -265,6 +325,7 @@ export function ApiTester() {
         };
         const testResult = executeScript(testScript, ctx, false);
         setTestResults(testResult.tests);
+        setScriptLogs(testResult.logs);
       }
     }
   };
@@ -356,6 +417,16 @@ export function ApiTester() {
 
   const getMethodClass = (method: string) => `method-${method.toLowerCase()}`;
 
+  const getCollectionDepth = (id: number): number => {
+    let depth = 0;
+    let current = store.collections.find(c => c.id === id);
+    while (current?.parent_id) {
+      depth++;
+      current = store.collections.find(c => c.id === current!.parent_id);
+    }
+    return depth;
+  };
+
   const formatJson = (str: string) => {
     try { return JSON.stringify(JSON.parse(str), null, 2); } catch { return str; }
   };
@@ -368,120 +439,15 @@ export function ApiTester() {
 
   const responseBody = store.response ? formatJson(store.response.body) : '';
 
-  return (
-    <div className="app">
-      {/* Context Menu */}
-      {contextMenu && (
-        <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
-          {contextMenu.type === 'collection' ? (
-            <>
-              <div className="context-item" onClick={() => { tabs.addTab({ name: t('apiTester.newRequest') }); setContextMenu(null); }}>{t('apiTester.newRequest')}</div>
-              <div className="context-item" onClick={() => { const n = prompt(t('apiTester.renamePrompt')); if (n) store.renameCollection(contextMenu.id, n); setContextMenu(null); }}>{t('apiTester.rename')}</div>
-              <div className="context-item danger" onClick={() => { store.deleteCollection(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
-            </>
-          ) : (
-            <>
-              <div className="context-item" onClick={() => { const r = store.requests.find(x => x.id === contextMenu.id); if (r) openRequestInTab(r); setContextMenu(null); }}>{t('apiTester.openInNewTab')}</div>
-              <div className="context-item" onClick={() => { const r = store.requests.find(x => x.id === contextMenu.id); if (r) store.saveRequest({ ...r, id: undefined, name: r.name + ' ' + t('apiTester.copy') }); setContextMenu(null); }}>{t('apiTester.duplicate')}</div>
-              <div className="context-item danger" onClick={() => { store.deleteRequest(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Modals */}
-      {showCodeGen && activeTab && (
-        <CodeGenModal method={activeTab.method} url={activeTab.url}
-          headers={Object.fromEntries(headers.filter(h => h.enabled && h.key).map(h => [h.key, h.value]))}
-          body={bodyContent} onClose={() => setShowCodeGen(false)} />
-      )}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-      {showImportCurl && <ImportCurlModal onImport={handleImportCurl} onClose={() => setShowImportCurl(false)} />}
-      {showShortcuts && (
-        <div className="modal-overlay" onClick={() => setShowShortcuts(false)}>
-          <div className="modal shortcuts-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><span>{t('apiTester.keyboardShortcuts')}</span><button className="icon-btn" onClick={() => setShowShortcuts(false)}>×</button></div>
-            <div className="modal-body">
-              {[
-                ['Ctrl + Enter', t('apiTester.shortcut.sendRequest')],
-                ['Ctrl + S', t('apiTester.shortcut.saveRequest')],
-                ['Ctrl + N / T', t('apiTester.shortcut.newTab')],
-                ['Ctrl + W', t('apiTester.shortcut.closeTab')],
-                ['Ctrl + L', t('apiTester.shortcut.focusUrl')],
-                ['Ctrl + ,', t('apiTester.shortcut.settings')],
-                ['Ctrl + /', t('apiTester.shortcut.shortcuts')],
-                ['Esc', t('apiTester.shortcut.closeModal')],
-              ].map(([key, desc]) => (
-                <div key={key} className="shortcut-row">
-                  <span>{desc}</span>
-                  <span className="shortcut-key">{key}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      {showTools && <ToolsPanel onClose={() => setShowTools(false)} />}
-      {showEnvManager && <EnvironmentManager onClose={() => setShowEnvManager(false)} />}
-      {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} />}
-      {showRunner && <CollectionRunner collections={store.collections} onClose={() => setShowRunner(false)} environment={store.variables.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {})} />}
-
-      {/* Sidebar */}
-      <div className="sidebar" style={{ width: settings.sidebarWidth }}>
+  const sidebarContent = (
+    <div className="sidebar-inner">
         <div className="sidebar-tabs">
           <button className={`sidebar-tab ${sidebarTab === 'collections' ? 'active' : ''}`} onClick={() => setSidebarTab('collections')}>{t('apiTester.collections')}</button>
           <button className={`sidebar-tab ${sidebarTab === 'history' ? 'active' : ''}`} onClick={() => setSidebarTab('history')}>{t('apiTester.history')}</button>
         </div>
         <div className="sidebar-content">
           {sidebarTab === 'collections' ? (
-            <>
-              <div className="sidebar-header">
-                <span className="sidebar-title">{t('apiTester.collections')}</span>
-                <button className="icon-btn" onClick={handleNewTab}>{t('apiTester.new')}</button>
-              </div>
-              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                <input className="kv-input" placeholder={t('apiTester.newCollection')} value={newCollectionName}
-                  onChange={e => setNewCollectionName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && newCollectionName.trim()) { store.createCollection(newCollectionName.trim()); setNewCollectionName(''); }}} />
-                <button className="icon-btn" onClick={() => { if (newCollectionName.trim()) { store.createCollection(newCollectionName.trim()); setNewCollectionName(''); }}}>+</button>
-              </div>
-              {store.collections.map(col => {
-                const isCollapsed = col.id ? collapsedCollections.has(col.id) : false;
-                const toggleCollapse = () => {
-                  if (!col.id) return;
-                  setCollapsedCollections(prev => {
-                    const next = new Set(prev);
-                    if (next.has(col.id!)) next.delete(col.id!);
-                    else next.add(col.id!);
-                    return next;
-                  });
-                };
-                return (
-                  <div key={col.id}>
-                    <div className="tree-item collection-item" onContextMenu={e => col.id && handleContextMenu(e, 'collection', col.id)}
-                      onDoubleClick={() => { const n = prompt(t('apiTester.renamePrompt'), col.name); if (n && col.id) store.renameCollection(col.id, n); }}>
-                      <span className={`collapse-icon ${isCollapsed ? 'collapsed' : ''}`} onClick={toggleCollapse}>▶</span>
-                      {Icons.folder}<span className="name">{col.name}</span>
-                      <span className="collection-count">{store.requests.filter(r => r.collection_id === col.id).length}</span>
-                    </div>
-                    {!isCollapsed && store.requests.filter(r => r.collection_id === col.id).map(req => (
-                      <div key={req.id} className="tree-item" style={{ paddingLeft: 32 }}
-                        onClick={() => openRequestInTab(req)} onContextMenu={e => req.id && handleContextMenu(e, 'request', req.id)}>
-                        <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>
-                        <span className="name">{req.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-              {store.requests.filter(r => !r.collection_id).map(req => (
-                <div key={req.id} className="tree-item" onClick={() => openRequestInTab(req)}
-                  onContextMenu={e => req.id && handleContextMenu(e, 'request', req.id)}>
-                  <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>
-                  <span className="name">{req.name}</span>
-                </div>
-              ))}
-            </>
+            <CollectionTree onOpenRequest={openRequestInTab} onContextMenu={handleContextMenu} />
           ) : (
             <>
               <div className="sidebar-header">
@@ -498,10 +464,11 @@ export function ApiTester() {
             </>
           )}
         </div>
-      </div>
+    </div>
+  );
 
-      {/* Main */}
-      <div className="main-content">
+  const mainContent = (
+    <div className="main-content">
         {/* Toolbar */}
         <div className="toolbar">
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -548,15 +515,25 @@ export function ApiTester() {
               <select className="method-select" value={activeTab.method} onChange={e => updateTab({ method: e.target.value })}>
                 {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <input className="url-input" placeholder={t('apiTester.enterUrl')} value={activeTab.url}
-                onChange={e => updateTab({ url: e.target.value })} onKeyDown={e => e.key === 'Enter' && handleSend()} />
+              <div className="url-input-wrapper">
+                <div className="url-highlight" aria-hidden="true">
+                  {(activeTab.url || '').split(/(\{\{\w+\}\})/g).map((part, i) =>
+                    part.match(/^\{\{\w+\}\}$/)
+                      ? <span key={i} className="url-var">{part}</span>
+                      : <span key={i} className="url-text">{part}</span>
+                  )}
+                </div>
+                <input className="url-input" placeholder={t('apiTester.enterUrl')} value={activeTab.url}
+                  onChange={e => updateTab({ url: e.target.value })} onKeyDown={e => e.key === 'Enter' && handleSend()} />
+              </div>
               <button className="send-btn" onClick={handleSend} disabled={store.loading}>{store.loading ? t('apiTester.sending') : t('apiTester.send')}</button>
               <button className="icon-btn" onClick={handleSaveRequest} title={t('apiTester.save')}>{Icons.save}</button>
+              <button className="icon-btn" onClick={() => setShowCookieManager(true)} title="Cookies">🍪</button>
             </div>
 
-            <div className="split-pane">
-              {/* Request Panel */}
-              <div className="request-panel">
+            <ResizableSplit
+              top={
+                <div className="request-panel">
                 <div className="tabs">
                   <button className={`tab ${requestTab === 'params' ? 'active' : ''}`} onClick={() => setRequestTab('params')}>{t('apiTester.params')}</button>
                   <button className={`tab ${requestTab === 'headers' ? 'active' : ''}`} onClick={() => setRequestTab('headers')}>{t('apiTester.headers')}</button>
@@ -603,14 +580,13 @@ export function ApiTester() {
                       onPreScriptChange={setPreScript}
                       onTestScriptChange={setTestScript}
                       lastTestResults={testResults}
+                      logs={scriptLogs}
                     />
                   )}
                 </div>
               </div>
-
-              <div className="h-resizer" />
-
-              {/* Response Panel */}
+              }
+              bottom={
               <div className="response-panel">
                 {store.response ? (
                   <>
@@ -670,13 +646,77 @@ export function ApiTester() {
                   <div className="empty-state"><span>{t('apiTester.sendRequest')}</span></div>
                 )}
               </div>
-            </div>
+              }
+            />
           </>
         ) : (
           <div className="empty-state"><span>{t('apiTester.openOrCreate')}</span></div>
         )}
       </div>
-    </div>
+  );
+
+  return (
+    <>
+      {/* Context Menu */}
+      {contextMenu && (
+        <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
+          {contextMenu.type === 'collection' ? (
+            <>
+              <div className="context-item" onClick={() => { tabs.addTab({ name: t('apiTester.newRequest') }); setContextMenu(null); }}>{t('apiTester.newRequest')}</div>
+              {(() => { const depth = getCollectionDepth(contextMenu.id); return depth < 3 ? <div className="context-item" onClick={() => { const n = prompt(t('apiTester.newSubfolder')); if (n) store.createCollection(n, contextMenu.id); setContextMenu(null); }}>{t('apiTester.newSubfolder')}</div> : null; })()}
+              <div className="context-item" onClick={() => { const n = prompt(t('apiTester.renamePrompt')); if (n) store.renameCollection(contextMenu.id, n); setContextMenu(null); }}>{t('apiTester.rename')}</div>
+              <div className="context-item danger" onClick={() => { store.deleteCollection(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
+            </>
+          ) : (
+            <>
+              <div className="context-item" onClick={() => { const r = store.requests.find(x => x.id === contextMenu.id); if (r) openRequestInTab(r); setContextMenu(null); }}>{t('apiTester.openInNewTab')}</div>
+              <div className="context-item" onClick={() => { const r = store.requests.find(x => x.id === contextMenu.id); if (r) store.saveRequest({ ...r, id: undefined, name: r.name + ' ' + t('apiTester.copy') }); setContextMenu(null); }}>{t('apiTester.duplicate')}</div>
+              <div className="context-item danger" onClick={() => { store.deleteRequest(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Modals */}
+      {showCodeGen && activeTab && (
+        <CodeGenModal method={activeTab.method} url={activeTab.url}
+          headers={Object.fromEntries(headers.filter(h => h.enabled && h.key).map(h => [h.key, h.value]))}
+          body={bodyContent} onClose={() => setShowCodeGen(false)} />
+      )}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showImportCurl && <ImportCurlModal onImport={handleImportCurl} onClose={() => setShowImportCurl(false)} />}
+      {showShortcuts && (
+        <div className="modal-overlay" onClick={() => setShowShortcuts(false)}>
+          <div className="modal shortcuts-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><span>{t('apiTester.keyboardShortcuts')}</span><button className="icon-btn" onClick={() => setShowShortcuts(false)}>×</button></div>
+            <div className="modal-body">
+              {[
+                ['Ctrl + Enter', t('apiTester.shortcut.sendRequest')],
+                ['Ctrl + S', t('apiTester.shortcut.saveRequest')],
+                ['Ctrl + N / T', t('apiTester.shortcut.newTab')],
+                ['Ctrl + W', t('apiTester.shortcut.closeTab')],
+                ['Ctrl + L', t('apiTester.shortcut.focusUrl')],
+                ['Ctrl + ,', t('apiTester.shortcut.settings')],
+                ['Ctrl + /', t('apiTester.shortcut.shortcuts')],
+                ['Esc', t('apiTester.shortcut.closeModal')],
+              ].map(([key, desc]) => (
+                <div key={key} className="shortcut-row">
+                  <span>{desc}</span>
+                  <span className="shortcut-key">{key}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {showTools && <ToolsPanel onClose={() => setShowTools(false)} />}
+      {showEnvManager && <EnvironmentManager onClose={() => setShowEnvManager(false)} />}
+      {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} />}
+      {showRunner && <CollectionRunner collections={store.collections} onClose={() => setShowRunner(false)} environment={store.variables.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {})} />}
+      {showCookieManager && <CookieManager onClose={() => setShowCookieManager(false)} />}
+
+      <ResizableLayout sidebar={sidebarContent} main={mainContent} className="app" />
+    </>
   );
 }
 

@@ -57,8 +57,6 @@
 }
 
 .app {
-  display: flex;
-  flex: 1;
   height: 100%;
   overflow: hidden;
 }
@@ -66,13 +64,10 @@
 /* ═══════════════════════════════════════════
    Sidebar
    ═══════════════════════════════════════════ */
-.sidebar {
-  width: 280px;
-  min-width: 220px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
+.sidebar-inner {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .sidebar-tabs {
@@ -262,6 +257,32 @@
   font-family: 'Inter', sans-serif;
   transition: var(--transition-fast);
 }
+
+.url-input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.url-input-wrapper .url-input {
+  width: 100%;
+  position: relative;
+  background: var(--bg-tertiary);
+  caret-color: var(--text-primary);
+}
+
+.url-highlight {
+  position: absolute;
+  inset: 0;
+  padding: 9px 14px;
+  pointer-events: none;
+  white-space: pre;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+.url-highlight .url-text { visibility: hidden; }
+.url-highlight .url-var { color: #f97316; font-weight: 600; }
 
 .url-input:focus {
   outline: none;
@@ -842,18 +863,7 @@
 
 .h-resizer:hover { background: var(--gm-accent); }
 
-/* Split Pane */
-.split-pane {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
-
-.split-pane > .request-panel,
-.split-pane > .response-panel {
-  min-height: 100px;
-}
+/* Split Pane — handled by ResizableSplit component */
 
 /* ═══════════════════════════════════════════
    Collection Items

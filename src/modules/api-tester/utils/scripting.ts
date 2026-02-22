@@ -30,6 +30,7 @@ export interface ScriptResult {
   logs: string[];
   updatedEnv: Record<string, string>;
   updatedVars: Record<string, string>;
+  collectionVars: Record<string, string>;
   modifiedRequest?: ScriptContext['request'];
 }
 
@@ -42,6 +43,7 @@ export function executeScript(
   const logs: string[] = [];
   const updatedEnv = { ...context.environment };
   const updatedVars = { ...context.variables };
+  const collectionVars: Record<string, string> = {};
   let modifiedRequest = isPreRequest ? { ...context.request } : undefined;
 
   // pm 对象 - 兼容 Postman 语法
@@ -76,7 +78,31 @@ export function executeScript(
       },
       headers: context.response.headers,
       responseTime: context.response.time,
+      to: {
+        have: {
+          status: (code: number) => {
+            if (context.response!.status !== code)
+              throw new Error(`Expected status ${code}, got ${context.response!.status}`);
+          },
+          header: (key: string, value?: string) => {
+            const h = context.response!.headers[key] || context.response!.headers[key.toLowerCase()];
+            if (!h) throw new Error(`Header "${key}" not found`);
+            if (value !== undefined && h !== value)
+              throw new Error(`Expected header "${key}" to be "${value}", got "${h}"`);
+          },
+          jsonBody: (path: string, expected?: any) => {
+            const body = JSON.parse(context.response!.body);
+            const val = path.split('.').reduce((o: any, k: string) => o?.[k], body);
+            if (expected !== undefined && JSON.stringify(val) !== JSON.stringify(expected))
+              throw new Error(`Expected ${path} = ${JSON.stringify(expected)}, got ${JSON.stringify(val)}`);
+          },
+        },
+      },
     } : null,
+    collectionVariables: {
+      get: (key: string) => collectionVars[key] || '',
+      set: (key: string, value: string) => { collectionVars[key] = value; },
+    },
     test: (name: string, fn: () => void) => {
       try {
         fn();
@@ -135,8 +161,8 @@ export function executeScript(
   try {
     const fn = new Function('pm', 'console', script);
     fn(pm, console);
-    return { success: true, tests, logs, updatedEnv, updatedVars, modifiedRequest };
+    return { success: true, tests, logs, updatedEnv, updatedVars, collectionVars, modifiedRequest };
   } catch (e: any) {
-    return { success: false, error: e.message, tests, logs, updatedEnv, updatedVars };
+    return { success: false, error: e.message, tests, logs, updatedEnv, updatedVars, collectionVars };
   }
 }

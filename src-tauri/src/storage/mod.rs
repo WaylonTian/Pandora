@@ -49,6 +49,18 @@ pub struct HistoryItem {
     pub created_at: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Cookie {
+    pub id: Option<i64>,
+    pub domain: String,
+    pub name: String,
+    pub value: String,
+    pub path: String,
+    pub expires: Option<String>,
+    pub http_only: bool,
+    pub secure: bool,
+}
+
 pub struct AppDatabase {
     conn: Connection,
 }
@@ -123,6 +135,17 @@ impl AppDatabase {
                 group_name TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS cookies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                domain TEXT NOT NULL,
+                name TEXT NOT NULL,
+                value TEXT NOT NULL,
+                path TEXT DEFAULT '/',
+                expires TEXT,
+                http_only INTEGER DEFAULT 0,
+                secure INTEGER DEFAULT 0,
+                UNIQUE(domain, name, path)
             );"
         )
     }
@@ -301,6 +324,63 @@ impl AppDatabase {
 
     pub fn clear_history(&self) -> Result<()> {
         self.conn.execute("DELETE FROM history", [])?;
+        Ok(())
+    }
+
+    // Cookies
+    pub fn get_cookies(&self, domain: Option<&str>) -> Result<Vec<Cookie>> {
+        if let Some(d) = domain {
+            let mut stmt = self.conn.prepare(
+                "SELECT id, domain, name, value, path, expires, http_only, secure FROM cookies WHERE domain = ?1 ORDER BY domain, name"
+            )?;
+            let rows = stmt.query_map([d], |row| {
+                Ok(Cookie {
+                    id: Some(row.get(0)?),
+                    domain: row.get(1)?,
+                    name: row.get(2)?,
+                    value: row.get(3)?,
+                    path: row.get::<_, Option<String>>(4)?.unwrap_or_else(|| "/".to_string()),
+                    expires: row.get(5)?,
+                    http_only: row.get::<_, i32>(6)? == 1,
+                    secure: row.get::<_, i32>(7)? == 1,
+                })
+            })?;
+            rows.collect()
+        } else {
+            let mut stmt = self.conn.prepare(
+                "SELECT id, domain, name, value, path, expires, http_only, secure FROM cookies ORDER BY domain, name"
+            )?;
+            let rows = stmt.query_map([], |row| {
+                Ok(Cookie {
+                    id: Some(row.get(0)?),
+                    domain: row.get(1)?,
+                    name: row.get(2)?,
+                    value: row.get(3)?,
+                    path: row.get::<_, Option<String>>(4)?.unwrap_or_else(|| "/".to_string()),
+                    expires: row.get(5)?,
+                    http_only: row.get::<_, i32>(6)? == 1,
+                    secure: row.get::<_, i32>(7)? == 1,
+                })
+            })?;
+            rows.collect()
+        }
+    }
+
+    pub fn set_cookie(&self, cookie: &Cookie) -> Result<()> {
+        self.conn.execute(
+            "INSERT OR REPLACE INTO cookies (domain, name, value, path, expires, http_only, secure) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            (&cookie.domain, &cookie.name, &cookie.value, &cookie.path, &cookie.expires, cookie.http_only as i32, cookie.secure as i32),
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_cookie(&self, id: i64) -> Result<()> {
+        self.conn.execute("DELETE FROM cookies WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    pub fn clear_domain_cookies(&self, domain: &str) -> Result<()> {
+        self.conn.execute("DELETE FROM cookies WHERE domain = ?1", [domain])?;
         Ok(())
     }
 }

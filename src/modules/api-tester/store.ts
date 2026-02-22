@@ -54,6 +54,32 @@ export interface Collection {
   sort_order: number;
 }
 
+export interface CollectionTreeNode {
+  collection: Collection;
+  children: CollectionTreeNode[];
+  requests: Request[];
+  depth: number;
+}
+
+export function buildCollectionTree(collections: Collection[], requests: Request[], maxDepth = 3): CollectionTreeNode[] {
+  const byParent = new Map<number | undefined, Collection[]>();
+  for (const c of collections) {
+    const key = c.parent_id ?? undefined;
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key)!.push(c);
+  }
+  const build = (parentId: number | undefined, depth: number): CollectionTreeNode[] => {
+    const children = byParent.get(parentId) || [];
+    return children.map(c => ({
+      collection: c,
+      children: depth < maxDepth ? build(c.id, depth + 1) : [],
+      requests: requests.filter(r => r.collection_id === c.id),
+      depth,
+    }));
+  };
+  return build(undefined, 0);
+}
+
 export interface Request {
   id?: number;
   collection_id?: number;

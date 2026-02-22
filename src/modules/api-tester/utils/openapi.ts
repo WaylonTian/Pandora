@@ -1,4 +1,5 @@
 // OpenAPI/Swagger 导入解析器
+import yaml from 'js-yaml';
 
 export interface ParsedEndpoint {
   name: string;
@@ -17,11 +18,55 @@ export interface ParsedCollection {
 }
 
 export function parseOpenAPI(content: string): ParsedCollection {
-  const spec = JSON.parse(content);
+  let spec: any;
+  try { spec = JSON.parse(content); } catch { spec = yaml.load(content) as any; }
+
   const isV3 = spec.openapi?.startsWith('3.');
   const title = spec.info?.title || 'Imported API';
-  const basePath = isV3 ? (spec.servers?.[0]?.url || '') : (spec.basePath || '');
-  
+
+  // Build baseUrl
+  let baseUrl = '';
+  if (isV3) {
+    baseUrl = spec.servers?.[0]?.url || '';
+  } else {
+    const scheme = spec.schemes?.[0] || 'https';
+    const host = spec.host || '';
+    const basePath = spec.basePath || '';
+    baseUrl = host ? `${scheme}://${host}${basePath}` : basePath;
+  }
+
+  // $ref resolver
+  function resolveRef(obj: any): any {
+    if (!obj || typeof obj !== 'object') return obj;
+    if (obj.$ref) {
+      const path = obj.$ref.replace('#/', '').split('/');
+      let resolved = spec;
+      for (const p of path) resolved = resolved?.[p];
+      return resolveRef(resolved);
+    }
+    if (Array.isArray(obj)) return obj.map(resolveRef);
+    const result: any = {};
+    for (const [k, v] of Object.entries(obj)) result[k] = resolveRef(v);
+    return result;
+  }
+
+  // Generate example from schema
+  function generateExample(schema: any): any {
+    if (!schema) return undefined;
+    schema = resolveRef(schema);
+    if (schema.example !== undefined) return schema.example;
+    if (schema.type === 'object') {
+      const obj: any = {};
+      for (const [k, v] of Object.entries(schema.properties || {})) obj[k] = generateExample(v as any);
+      return obj;
+    }
+    if (schema.type === 'array') return [generateExample(schema.items)];
+    if (schema.type === 'string') return schema.enum?.[0] || 'string';
+    if (schema.type === 'integer' || schema.type === 'number') return 0;
+    if (schema.type === 'boolean') return false;
+    return null;
+  }
+
   const folders: Map<string, ParsedEndpoint[]> = new Map();
   const paths = spec.paths || {};
 
@@ -30,13 +75,12 @@ export function parseOpenAPI(content: string): ParsedCollection {
       if (['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(method)) {
         const operation = op as any;
         const tag = operation.tags?.[0] || 'Default';
-        
         if (!folders.has(tag)) folders.set(tag, []);
-        
+
         const endpoint: ParsedEndpoint = {
           name: operation.summary || operation.operationId || `${method.toUpperCase()} ${path}`,
           method: method.toUpperCase(),
-          path: basePath + path,
+          path: baseUrl + path,
           description: operation.description,
           params: [],
           headers: [{ key: 'Content-Type', value: 'application/json', enabled: true }],
@@ -44,23 +88,35 @@ export function parseOpenAPI(content: string): ParsedCollection {
           bodyType: 'none',
         };
 
-        // 解析参数
         const params = operation.parameters || [];
         for (const p of params) {
-          if (p.in === 'query') {
-            endpoint.params.push({ key: p.name, value: p.example || '', enabled: !p.required ? false : true });
-          } else if (p.in === 'header') {
-            endpoint.headers.push({ key: p.name, value: p.example || '', enabled: true });
+          const resolved = resolveRef(p);
+          if (resolved.in === 'query') {
+            endpoint.params.push({ key: resolved.name, value: resolved.example || '', enabled: !!resolved.required });
+          } else if (resolved.in === 'header') {
+            endpoint.headers.push({ key: resolved.name, value: resolved.example || '', enabled: true });
           }
         }
 
-        // 解析 requestBody (OpenAPI 3.0)
+        // OpenAPI 3.0 requestBody
         if (isV3 && operation.requestBody) {
-          const content = operation.requestBody.content;
-          if (content?.['application/json']) {
+          const reqContent = resolveRef(operation.requestBody).content;
+          if (reqContent?.['application/json']) {
             endpoint.bodyType = 'json';
-            const schema = content['application/json'].schema;
-            endpoint.body = schema?.example ? JSON.stringify(schema.example, null, 2) : '{}';
+            const schema = reqContent['application/json'].schema;
+            const example = generateExample(schema);
+            endpoint.body = example ? JSON.stringify(example, null, 2) : '{}';
+          }
+        }
+
+        // Swagger 2.0 body parameter
+        if (!isV3) {
+          const bodyParam = params.find((p: any) => p.in === 'body');
+          if (bodyParam) {
+            endpoint.bodyType = 'json';
+            const schema = resolveRef(bodyParam.schema);
+            const example = generateExample(schema);
+            endpoint.body = example ? JSON.stringify(example, null, 2) : '{}';
           }
         }
 
