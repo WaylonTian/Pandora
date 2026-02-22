@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useT } from '@/i18n';
 import { useStore, Request } from './store';
 import { useTabsStore, Tab } from './stores/tabs';
-import { useSettingsStore } from './stores/settings';
+import { ResizableLayout } from '@/components/ResizableLayout';
+import { ResizableSplit } from '@/components/ResizableSplit';
 import { KeyValueEditor } from './components/KeyValueEditor';
 import { BodyEditor } from './components/BodyEditor';
 import { ToolsPanel } from './components/ToolsPanel';
@@ -34,7 +35,6 @@ export function ApiTester() {
   const t = useT();
   const store = useStore();
   const tabs = useTabsStore();
-  const settings = useSettingsStore();
   
   const [sidebarTab, setSidebarTab] = useState<'collections' | 'history'>('collections');
   const [requestTab, setRequestTab] = useState<'params' | 'headers' | 'body' | 'auth' | 'scripts'>('params');
@@ -368,66 +368,8 @@ export function ApiTester() {
 
   const responseBody = store.response ? formatJson(store.response.body) : '';
 
-  return (
-    <div className="app">
-      {/* Context Menu */}
-      {contextMenu && (
-        <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
-          {contextMenu.type === 'collection' ? (
-            <>
-              <div className="context-item" onClick={() => { tabs.addTab({ name: t('apiTester.newRequest') }); setContextMenu(null); }}>{t('apiTester.newRequest')}</div>
-              <div className="context-item" onClick={() => { const n = prompt(t('apiTester.renamePrompt')); if (n) store.renameCollection(contextMenu.id, n); setContextMenu(null); }}>{t('apiTester.rename')}</div>
-              <div className="context-item danger" onClick={() => { store.deleteCollection(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
-            </>
-          ) : (
-            <>
-              <div className="context-item" onClick={() => { const r = store.requests.find(x => x.id === contextMenu.id); if (r) openRequestInTab(r); setContextMenu(null); }}>{t('apiTester.openInNewTab')}</div>
-              <div className="context-item" onClick={() => { const r = store.requests.find(x => x.id === contextMenu.id); if (r) store.saveRequest({ ...r, id: undefined, name: r.name + ' ' + t('apiTester.copy') }); setContextMenu(null); }}>{t('apiTester.duplicate')}</div>
-              <div className="context-item danger" onClick={() => { store.deleteRequest(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Modals */}
-      {showCodeGen && activeTab && (
-        <CodeGenModal method={activeTab.method} url={activeTab.url}
-          headers={Object.fromEntries(headers.filter(h => h.enabled && h.key).map(h => [h.key, h.value]))}
-          body={bodyContent} onClose={() => setShowCodeGen(false)} />
-      )}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-      {showImportCurl && <ImportCurlModal onImport={handleImportCurl} onClose={() => setShowImportCurl(false)} />}
-      {showShortcuts && (
-        <div className="modal-overlay" onClick={() => setShowShortcuts(false)}>
-          <div className="modal shortcuts-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><span>{t('apiTester.keyboardShortcuts')}</span><button className="icon-btn" onClick={() => setShowShortcuts(false)}>×</button></div>
-            <div className="modal-body">
-              {[
-                ['Ctrl + Enter', t('apiTester.shortcut.sendRequest')],
-                ['Ctrl + S', t('apiTester.shortcut.saveRequest')],
-                ['Ctrl + N / T', t('apiTester.shortcut.newTab')],
-                ['Ctrl + W', t('apiTester.shortcut.closeTab')],
-                ['Ctrl + L', t('apiTester.shortcut.focusUrl')],
-                ['Ctrl + ,', t('apiTester.shortcut.settings')],
-                ['Ctrl + /', t('apiTester.shortcut.shortcuts')],
-                ['Esc', t('apiTester.shortcut.closeModal')],
-              ].map(([key, desc]) => (
-                <div key={key} className="shortcut-row">
-                  <span>{desc}</span>
-                  <span className="shortcut-key">{key}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      {showTools && <ToolsPanel onClose={() => setShowTools(false)} />}
-      {showEnvManager && <EnvironmentManager onClose={() => setShowEnvManager(false)} />}
-      {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} />}
-      {showRunner && <CollectionRunner collections={store.collections} onClose={() => setShowRunner(false)} environment={store.variables.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {})} />}
-
-      {/* Sidebar */}
-      <div className="sidebar" style={{ width: settings.sidebarWidth }}>
+  const sidebarContent = (
+    <div className="sidebar-inner">
         <div className="sidebar-tabs">
           <button className={`sidebar-tab ${sidebarTab === 'collections' ? 'active' : ''}`} onClick={() => setSidebarTab('collections')}>{t('apiTester.collections')}</button>
           <button className={`sidebar-tab ${sidebarTab === 'history' ? 'active' : ''}`} onClick={() => setSidebarTab('history')}>{t('apiTester.history')}</button>
@@ -498,10 +440,11 @@ export function ApiTester() {
             </>
           )}
         </div>
-      </div>
+    </div>
+  );
 
-      {/* Main */}
-      <div className="main-content">
+  const mainContent = (
+    <div className="main-content">
         {/* Toolbar */}
         <div className="toolbar">
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -554,9 +497,9 @@ export function ApiTester() {
               <button className="icon-btn" onClick={handleSaveRequest} title={t('apiTester.save')}>{Icons.save}</button>
             </div>
 
-            <div className="split-pane">
-              {/* Request Panel */}
-              <div className="request-panel">
+            <ResizableSplit
+              top={
+                <div className="request-panel">
                 <div className="tabs">
                   <button className={`tab ${requestTab === 'params' ? 'active' : ''}`} onClick={() => setRequestTab('params')}>{t('apiTester.params')}</button>
                   <button className={`tab ${requestTab === 'headers' ? 'active' : ''}`} onClick={() => setRequestTab('headers')}>{t('apiTester.headers')}</button>
@@ -607,10 +550,8 @@ export function ApiTester() {
                   )}
                 </div>
               </div>
-
-              <div className="h-resizer" />
-
-              {/* Response Panel */}
+              }
+              bottom={
               <div className="response-panel">
                 {store.response ? (
                   <>
@@ -670,13 +611,75 @@ export function ApiTester() {
                   <div className="empty-state"><span>{t('apiTester.sendRequest')}</span></div>
                 )}
               </div>
-            </div>
+              }
+            />
           </>
         ) : (
           <div className="empty-state"><span>{t('apiTester.openOrCreate')}</span></div>
         )}
       </div>
-    </div>
+  );
+
+  return (
+    <>
+      {/* Context Menu */}
+      {contextMenu && (
+        <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
+          {contextMenu.type === 'collection' ? (
+            <>
+              <div className="context-item" onClick={() => { tabs.addTab({ name: t('apiTester.newRequest') }); setContextMenu(null); }}>{t('apiTester.newRequest')}</div>
+              <div className="context-item" onClick={() => { const n = prompt(t('apiTester.renamePrompt')); if (n) store.renameCollection(contextMenu.id, n); setContextMenu(null); }}>{t('apiTester.rename')}</div>
+              <div className="context-item danger" onClick={() => { store.deleteCollection(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
+            </>
+          ) : (
+            <>
+              <div className="context-item" onClick={() => { const r = store.requests.find(x => x.id === contextMenu.id); if (r) openRequestInTab(r); setContextMenu(null); }}>{t('apiTester.openInNewTab')}</div>
+              <div className="context-item" onClick={() => { const r = store.requests.find(x => x.id === contextMenu.id); if (r) store.saveRequest({ ...r, id: undefined, name: r.name + ' ' + t('apiTester.copy') }); setContextMenu(null); }}>{t('apiTester.duplicate')}</div>
+              <div className="context-item danger" onClick={() => { store.deleteRequest(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Modals */}
+      {showCodeGen && activeTab && (
+        <CodeGenModal method={activeTab.method} url={activeTab.url}
+          headers={Object.fromEntries(headers.filter(h => h.enabled && h.key).map(h => [h.key, h.value]))}
+          body={bodyContent} onClose={() => setShowCodeGen(false)} />
+      )}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showImportCurl && <ImportCurlModal onImport={handleImportCurl} onClose={() => setShowImportCurl(false)} />}
+      {showShortcuts && (
+        <div className="modal-overlay" onClick={() => setShowShortcuts(false)}>
+          <div className="modal shortcuts-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><span>{t('apiTester.keyboardShortcuts')}</span><button className="icon-btn" onClick={() => setShowShortcuts(false)}>×</button></div>
+            <div className="modal-body">
+              {[
+                ['Ctrl + Enter', t('apiTester.shortcut.sendRequest')],
+                ['Ctrl + S', t('apiTester.shortcut.saveRequest')],
+                ['Ctrl + N / T', t('apiTester.shortcut.newTab')],
+                ['Ctrl + W', t('apiTester.shortcut.closeTab')],
+                ['Ctrl + L', t('apiTester.shortcut.focusUrl')],
+                ['Ctrl + ,', t('apiTester.shortcut.settings')],
+                ['Ctrl + /', t('apiTester.shortcut.shortcuts')],
+                ['Esc', t('apiTester.shortcut.closeModal')],
+              ].map(([key, desc]) => (
+                <div key={key} className="shortcut-row">
+                  <span>{desc}</span>
+                  <span className="shortcut-key">{key}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {showTools && <ToolsPanel onClose={() => setShowTools(false)} />}
+      {showEnvManager && <EnvironmentManager onClose={() => setShowEnvManager(false)} />}
+      {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} />}
+      {showRunner && <CollectionRunner collections={store.collections} onClose={() => setShowRunner(false)} environment={store.variables.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {})} />}
+
+      <ResizableLayout sidebar={sidebarContent} main={mainContent} className="app" />
+    </>
   );
 }
 

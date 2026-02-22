@@ -57,8 +57,6 @@
 }
 
 .app {
-  display: flex;
-  flex: 1;
   height: 100%;
   overflow: hidden;
 }
@@ -66,13 +64,10 @@
 /* ═══════════════════════════════════════════
    Sidebar
    ═══════════════════════════════════════════ */
-.sidebar {
-  width: 280px;
-  min-width: 220px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
+.sidebar-inner {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .sidebar-tabs {
@@ -842,18 +837,7 @@
 
 .h-resizer:hover { background: var(--gm-accent); }
 
-/* Split Pane */
-.split-pane {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
-
-.split-pane > .request-panel,
-.split-pane > .response-panel {
-  min-height: 100px;
-}
+/* Split Pane — handled by ResizableSplit component */
 
 /* ═══════════════════════════════════════════
    Collection Items
