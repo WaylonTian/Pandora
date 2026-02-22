@@ -13,6 +13,7 @@ use tauri::State;
 pub struct AppState {
     pub db: Mutex<AppDatabase>,
     pub db_state: DbState,
+    pub processes: script::ProcessMap,
 }
 
 // Collection commands
@@ -121,13 +122,82 @@ async fn run_script(
     script_path: String,
     args: Vec<String>,
     working_dir: Option<String>,
+    env: HashMap<String, String>,
 ) -> Result<script::ScriptOutput, String> {
-    script::execute_script(&runtime, &script_path, args, working_dir).await
+    script::execute_script(&runtime, &script_path, args, working_dir, env).await
 }
 
 #[tauri::command]
 async fn list_runtimes() -> Result<Vec<script::RuntimeInfo>, String> {
     Ok(script::detect_runtimes().await)
+}
+
+#[tauri::command]
+fn get_scripts_dir() -> String {
+    script::get_default_scripts_dir()
+}
+
+#[tauri::command]
+fn list_script_files(dir: String) -> Result<Vec<script::FileEntry>, String> {
+    script::list_script_files(&dir)
+}
+
+#[tauri::command]
+fn read_script_file(path: String) -> Result<String, String> {
+    script::read_script_file(&path)
+}
+
+#[tauri::command]
+fn write_script_file(path: String, content: String) -> Result<(), String> {
+    script::write_script_file(&path, &content)
+}
+
+#[tauri::command]
+fn create_script_file(dir: String, name: String) -> Result<String, String> {
+    script::create_script_file(&dir, &name)
+}
+
+#[tauri::command]
+fn delete_script_file(path: String) -> Result<(), String> {
+    script::delete_script_file(&path)
+}
+
+#[tauri::command]
+fn rename_script_file(old_path: String, new_path: String) -> Result<(), String> {
+    script::rename_script_file(&old_path, &new_path)
+}
+
+#[tauri::command]
+fn create_script_folder(path: String) -> Result<(), String> {
+    script::create_script_folder(&path)
+}
+
+#[tauri::command]
+fn read_script_meta(dir: String) -> Result<script::ScriptMeta, String> {
+    script::read_script_meta(&dir)
+}
+
+#[tauri::command]
+fn write_script_meta(dir: String, meta: script::ScriptMeta) -> Result<(), String> {
+    script::write_script_meta(&dir, &meta)
+}
+
+#[tauri::command]
+async fn start_script(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    runtime: String,
+    script_path: String,
+    args: Vec<String>,
+    working_dir: Option<String>,
+    env: HashMap<String, String>,
+) -> Result<u32, String> {
+    script::start_script(app, state.processes.clone(), &runtime, &script_path, args, working_dir, env).await
+}
+
+#[tauri::command]
+async fn kill_script(state: State<'_, AppState>, pid: u32) -> Result<(), String> {
+    script::kill_script(state.processes.clone(), pid).await
 }
 
 // System commands
@@ -162,6 +232,7 @@ pub fn run() {
         .manage(AppState { 
             db: Mutex::new(db),
             db_state: DbState::new(),
+            processes: script::new_process_map(),
         })
         .invoke_handler(tauri::generate_handler![
             get_collections, create_collection, delete_collection, rename_collection,
@@ -171,6 +242,9 @@ pub fn run() {
             get_history, clear_history,
             send_http_request,
             run_script, list_runtimes,
+            get_scripts_dir, list_script_files, read_script_file, write_script_file,
+            create_script_file, delete_script_file, rename_script_file, create_script_folder,
+            read_script_meta, write_script_meta, start_script, kill_script,
             get_local_ips, get_public_ip, read_hosts_file, write_hosts_file,
             db::commands::create_connection,
             db::commands::test_connection,
