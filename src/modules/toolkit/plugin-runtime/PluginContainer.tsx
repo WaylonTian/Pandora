@@ -11,49 +11,18 @@ interface Props {
 
 export function PluginContainer({ plugin, featureCode }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [blobUrl, setBlobUrl] = useState<string>("");
-  const [error, setError] = useState<string>("");
+  const [ready, setReady] = useState(false);
 
+  // Write shim file to plugin dir, then allow iframe to load
   useEffect(() => {
-    let url = "";
-    (async () => {
-      const shim = generateShimScript(plugin.id);
-      const mainFile = plugin.manifest.main || "index.html";
-      const baseUrl = `plugin://${encodeURIComponent(plugin.id)}/`;
-
-      // Read main HTML
-      const htmlBytes: number[] = await invoke("plugin_read_file", { pluginId: plugin.id, path: mainFile });
-      let html = new TextDecoder().decode(new Uint8Array(htmlBytes));
-
-      // Read preload if exists
-      let preloadCode = "";
-      if (plugin.manifest.preload) {
-        try {
-          const preBytes: number[] = await invoke("plugin_read_file", { pluginId: plugin.id, path: plugin.manifest.preload });
-          preloadCode = new TextDecoder().decode(new Uint8Array(preBytes));
-        } catch { /* optional */ }
-      }
-
-      // Inject base href + shim + preload into <head>
-      const injection = `<base href="${baseUrl}"><script>${shim}<\/script>${preloadCode ? `<script>${preloadCode}<\/script>` : ""}`;
-      if (html.includes("<head>")) {
-        html = html.replace("<head>", `<head>${injection}`);
-      } else if (html.includes("<HEAD>")) {
-        html = html.replace("<HEAD>", `<HEAD>${injection}`);
-      } else {
-        html = injection + html;
-      }
-
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      url = URL.createObjectURL(blob);
-      setBlobUrl(url);
-    })().catch((e) => setError(String(e)));
-
-    return () => { if (url) URL.revokeObjectURL(url); };
+    const shim = generateShimScript(plugin.id);
+    invoke("plugin_write_shim", { pluginId: plugin.id, content: shim })
+      .then(() => setReady(true))
+      .catch((e) => console.error("Failed to write shim:", e));
   }, [plugin.id]);
 
   useEffect(() => {
-    if (!blobUrl) return;
+    if (!ready) return;
     const cleanup = createPluginBridge({
       pluginId: plugin.id,
       onReady: () => {
@@ -68,15 +37,16 @@ export function PluginContainer({ plugin, featureCode }: Props) {
       onResize: () => {},
     });
     return cleanup;
-  }, [plugin.id, blobUrl, featureCode]);
+  }, [plugin.id, ready, featureCode]);
 
-  if (error) return <div className="p-4 text-red-500">Failed to load plugin: {error}</div>;
-  if (!blobUrl) return <div className="p-4 text-muted-foreground">Loading plugin...</div>;
+  if (!ready) return <div className="p-4 text-muted-foreground">Loading plugin...</div>;
+
+  const src = `plugin://${encodeURIComponent(plugin.id)}/${plugin.manifest.main || "index.html"}?__shim__=1`;
 
   return (
     <iframe
       ref={iframeRef}
-      src={blobUrl}
+      src={src}
       sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
       className="w-full border-0 flex-1"
       style={{ minHeight: "200px" }}

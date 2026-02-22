@@ -94,3 +94,9 @@ pub fn plugin_read_file(plugin_id: String, path: String) -> Result<Vec<u8>, Stri
     }
     std::fs::read(&file_path).map_err(|e| format!("Failed to read {path}: {e}"))
 }
+
+#[tauri::command]
+pub fn plugin_write_shim(plugin_id: String, content: String) -> Result<(), String> {
+    let file_path = manager::plugins_dir().join(&plugin_id).join("__shim__.js");
+    std::fs::write(&file_path, content.as_bytes()).map_err(|e| e.to_string())
+}
