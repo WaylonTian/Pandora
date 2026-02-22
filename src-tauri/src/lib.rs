@@ -3,6 +3,7 @@ mod db;
 mod script;
 mod system;
 mod storage;
+mod plugin;
 
 use storage::{AppDatabase, Collection, ApiRequest, Environment, Variable, HistoryItem};
 use db::commands::DbState;
@@ -190,7 +191,30 @@ pub fn run() {
             db::commands::delete_favorite,
             db::commands::explain_query,
             db::commands::batch_import,
-            db::commands::get_table_stats
+            db::commands::get_table_stats,
+            plugin::commands::plugin_list,
+            plugin::commands::plugin_get,
+            plugin::commands::plugin_uninstall,
+            plugin::commands::plugin_toggle,
+            plugin::commands::plugin_install_from_market,
+            plugin::commands::plugin_install_from_file,
+            plugin::commands::plugin_db_put,
+            plugin::commands::plugin_db_get,
+            plugin::commands::plugin_db_remove,
+            plugin::commands::plugin_db_all,
+            plugin::commands::plugin_db_put_attachment,
+            plugin::commands::plugin_db_get_attachment,
+            plugin::commands::marketplace_search,
+            plugin::commands::marketplace_topic,
+            plugin::commands::marketplace_detail,
+            plugin::node_bridge::node_fs_read_file,
+            plugin::node_bridge::node_fs_write_file,
+            plugin::node_bridge::node_fs_mkdir,
+            plugin::node_bridge::node_fs_readdir,
+            plugin::node_bridge::node_fs_unlink,
+            plugin::node_bridge::node_os_homedir,
+            plugin::node_bridge::node_os_tmpdir,
+            plugin::node_bridge::node_exec,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
