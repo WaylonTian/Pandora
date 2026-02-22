@@ -1,10 +1,26 @@
 import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useT } from "@/i18n";
 import { getToolsByCategory, getTools } from "./plugin-interface";
 import { usePluginStore } from "./stores/plugin-store";
 import { PluginContainer } from "./plugin-runtime";
 import { Marketplace } from "./components/Marketplace";
 import { InstalledPlugins } from "./components/InstalledPlugins";
+
+function PluginIcon({ pluginId, logo }: { pluginId: string; logo: string }) {
+  const [src, setSrc] = useState<string>("");
+  useEffect(() => {
+    invoke<number[]>("plugin_read_file", { pluginId, path: logo })
+      .then((bytes) => {
+        const blob = new Blob([new Uint8Array(bytes)], { type: "image/png" });
+        setSrc(URL.createObjectURL(blob));
+      })
+      .catch(() => {});
+    return () => { if (src) URL.revokeObjectURL(src); };
+  }, [pluginId, logo]);
+  if (!src) return <span>🔌</span>;
+  return <img src={src} alt="" className="w-7 h-7 rounded object-cover" />;
+}
 
 type ActiveItem =
   | { type: "tool"; id: string }
@@ -42,7 +58,11 @@ export function ToolkitLayout() {
         isActive ? "bg-primary/10 text-primary border-l-2 border-primary" : "hover:bg-muted/50"
       }`}
     >
-      <div className="w-7 h-7 flex items-center justify-center rounded bg-muted text-xs font-mono">{icon}</div>
+      <div className="w-7 h-7 flex items-center justify-center rounded bg-muted text-xs font-mono shrink-0 overflow-hidden">
+        {icon.startsWith("img:") ? (
+          <PluginIcon pluginId={icon.split(":")[1]} logo={icon.split(":").slice(2).join(":")} />
+        ) : icon}
+      </div>
       <span className="truncate">{label}</span>
     </button>
   );
@@ -83,7 +103,7 @@ export function ToolkitLayout() {
                 </div>
                 {installed.filter((p) => p.enabled).map((plugin) => (
                   <SidebarBtn key={plugin.id} isActive={active.type === "plugin" && active.id === plugin.id}
-                    onClick={() => setActive({ type: "plugin", id: plugin.id })} icon="🔌" label={plugin.name} />
+                    onClick={() => setActive({ type: "plugin", id: plugin.id })} icon={plugin.logo ? `img:${plugin.id}:${plugin.logo}` : "🔌"} label={plugin.name} />
                 ))}
               </div>
             )}
@@ -98,8 +118,8 @@ export function ToolkitLayout() {
         )}
       </div>
 
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl">
+      <div className="flex-1 overflow-hidden p-6 flex flex-col">
+        <div className="max-w-4xl flex-1 min-h-0 flex flex-col">
           {active.type === "tool" && ActiveComponent && <ActiveComponent />}
           {active.type === "plugin" && activePlugin && <PluginContainer plugin={activePlugin} />}
           {active.type === "marketplace" && <Marketplace />}
