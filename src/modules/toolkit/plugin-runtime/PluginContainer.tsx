@@ -16,11 +16,11 @@ export function PluginContainer({ plugin, featureCode }: Props) {
   useEffect(() => {
     (async () => {
       // Write shim JS to plugin dir
-      const shim = generateShimScript(plugin.id);
+      const port: number = await invoke("plugin_server_port");
+      const shim = generateShimScript(plugin.id, port);
       await invoke("plugin_write_shim", { pluginId: plugin.id, content: shim });
 
       // Get local server port
-      const port: number = await invoke("plugin_server_port");
       const base = `http://127.0.0.1:${port}/${encodeURIComponent(plugin.id)}`;
       const mainFile = plugin.manifest.main || "index.html";
 

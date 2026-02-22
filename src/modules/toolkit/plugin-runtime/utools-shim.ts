@@ -3,8 +3,8 @@
 
 import { generateNodeShimScript } from "./node-shim";
 
-export function generateShimScript(pluginId: string): string {
-  const nodeShim = generateNodeShimScript(pluginId);
+export function generateShimScript(pluginId: string, serverPort?: number): string {
+  const nodeShim = generateNodeShimScript(pluginId, serverPort);
   const utoolsShim = `
 (function() {
   let _callId = 0;
@@ -124,6 +124,10 @@ export function generateShimScript(pluginId: string): string {
     isLinux: () => navigator.platform.includes('Linux'),
 
     redirect: (code, payload) => callHost('redirect', [code, payload]),
+    screenCapture: (cb) => callHost('screenCapture').then(r => cb && cb(r)),
+    showOpenDialog: (options) => callHost('showOpenDialog', [options]),
+    getCopyedFiles: () => callHost('getCopyedFiles'),
+    fetchUserServerTemporaryToken: () => callHost('fetchUserServerTemporaryToken'),
     getIdleUBrowsers: () => [],
     ubrowser: { goto: () => ({ run: () => {} }) },
     getFeatures: () => [],

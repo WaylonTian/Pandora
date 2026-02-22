@@ -105,3 +105,90 @@ pub fn plugin_write_shim(plugin_id: String, content: String) -> Result<(), Strin
 pub fn plugin_server_port() -> u16 {
     super::server::get_port()
 }
+
+#[tauri::command]
+pub fn plugin_get_path(name: String) -> Result<String, String> {
+    let p = match name.as_str() {
+        "home" => dirs::home_dir(),
+        "desktop" => dirs::desktop_dir(),
+        "downloads" => dirs::download_dir(),
+        "documents" => dirs::document_dir(),
+        "temp" => Some(std::env::temp_dir()),
+        "appData" => dirs::data_dir(),
+        _ => None,
+    };
+    p.map(|p| p.to_string_lossy().to_string()).ok_or_else(|| format!("Unknown path: {name}"))
+}
+
+#[tauri::command]
+pub fn plugin_shell_show_item(path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    { std::process::Command::new("explorer").arg(format!("/select,{}", path)).spawn().map_err(|e| e.to_string())?; }
+    #[cfg(target_os = "macos")]
+    { std::process::Command::new("open").arg("-R").arg(&path).spawn().map_err(|e| e.to_string())?; }
+    #[cfg(target_os = "linux")]
+    { std::process::Command::new("xdg-open").arg(std::path::Path::new(&path).parent().unwrap_or(std::path::Path::new("/"))).spawn().map_err(|e| e.to_string())?; }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn plugin_show_open_dialog(options: serde_json::Value) -> Result<Option<Vec<String>>, String> {
+    use std::process::Command;
+    // Use PowerShell to show file dialog on Windows
+    let filters = options.get("filters").and_then(|f| f.as_array());
+    let ext_filter = if let Some(filters) = filters {
+        filters.iter()
+            .filter_map(|f| f.get("extensions").and_then(|e| e.as_array()))
+            .flatten()
+            .filter_map(|e| e.as_str())
+            .map(|e| format!("*.{}", e))
+            .collect::<Vec<_>>()
+            .join(";")
+    } else {
+        "*.*".to_string()
+    };
+
+    let ps = format!(
+        "Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Filter = 'Files|{}'; if ($d.ShowDialog() -eq 'OK') {{ $d.FileName }}",
+        ext_filter
+    );
+    let output = Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", &ps])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if path.is_empty() { Ok(None) } else { Ok(Some(vec![path])) }
+}
+
+#[tauri::command]
+pub fn plugin_screen_capture() -> Result<String, String> {
+    // Use Snipping Tool on Windows, return temp file path
+    let tmp = std::env::temp_dir().join(format!("pandora-capture-{}.png", uuid::Uuid::new_v4()));
+    let tmp_str = tmp.to_string_lossy().to_string();
+
+    #[cfg(target_os = "windows")]
+    {
+        // Use snippingtool /clip, then read from clipboard
+        let _ = std::process::Command::new("snippingtool")
+            .arg("/clip")
+            .status();
+        // Read clipboard image via PowerShell
+        let ps = format!(
+            "Add-Type -AssemblyName System.Windows.Forms; $img = [System.Windows.Forms.Clipboard]::GetImage(); if ($img) {{ $img.Save('{}') }}",
+            tmp_str.replace('\\', "\\\\").replace('\'', "''")
+        );
+        let _ = std::process::Command::new("powershell.exe")
+            .args(["-NoProfile", "-Command", &ps])
+            .status();
+    }
+
+    if tmp.exists() {
+        let data = std::fs::read(&tmp).map_err(|e| e.to_string())?;
+        use base64::Engine;
+        let b64 = base64::engine::general_purpose::STANDARD.encode(&data);
+        std::fs::remove_file(&tmp).ok();
+        Ok(format!("data:image/png;base64,{}", b64))
+    } else {
+        Err("Screenshot cancelled or failed".into())
+    }
+}

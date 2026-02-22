@@ -40,6 +40,30 @@ fn handle(mut stream: std::net::TcpStream, plugins_dir: &PathBuf) {
         return;
     }
 
+    // Handle raw file access: /__raw__?path=/absolute/path
+    if decoded.starts_with("__raw__") {
+        let query = path.split('?').nth(1).unwrap_or("");
+        let file_path = query.strip_prefix("path=")
+            .map(|p| urlencoding::decode(p).unwrap_or_default().into_owned())
+            .unwrap_or_default();
+        if file_path.is_empty() || file_path.contains("..") {
+            let _ = stream.write_all(b"HTTP/1.1 400 Bad Request\r\n\r\n");
+            return;
+        }
+        match std::fs::read(&file_path) {
+            Ok(data) => {
+                let header = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\n\r\n",
+                    data.len()
+                );
+                let _ = stream.write_all(header.as_bytes());
+                let _ = stream.write_all(&data);
+            }
+            Err(_) => { let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"); }
+        }
+        return;
+    }
+
     let file_path = plugins_dir.join(decoded);
     let mime = match file_path.extension().and_then(|e| e.to_str()) {
         Some("html") => "text/html; charset=utf-8",

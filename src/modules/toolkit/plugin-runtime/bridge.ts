@@ -64,6 +64,11 @@ async function routeCall(pluginId: string, method: string, args: any[]): Promise
     case "shellOpenExternal": return invoke("plugin_open_url", { url: args[0] }).catch(() => window.open(args[0]));
     case "shellOpenPath": return invoke("plugin_open_path", { path: args[0] });
     case "getPath": return invoke("plugin_get_path", { name: args[0] });
+    case "showOpenDialog": return invoke("plugin_show_open_dialog", { options: args[0] || {} });
+    case "screenCapture": return invoke("plugin_screen_capture");
+    case "shellShowItemInFolder": return invoke("plugin_shell_show_item", { path: args[0] });
+    case "getCopyedFiles": return [];
+    case "fetchUserServerTemporaryToken": return Promise.reject(new Error("Not supported"));
     // Node.js bridge
     case "node.fs.readFile": return invoke("node_fs_read_file", { path: args[0], encoding: args[1] });
     case "node.fs.writeFile": return invoke("node_fs_write_file", { path: args[0], data: args[1] });
