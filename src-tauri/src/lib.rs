@@ -156,68 +156,13 @@ fn write_hosts_file(content: String) -> Result<(), String> {
 pub fn run() {
     let db = AppDatabase::new().expect("Failed to initialize database");
 
+    // Start local HTTP server for plugin files
+    plugin::server::start_server(plugin::manager::plugins_dir());
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .register_uri_scheme_protocol("plugin", |_ctx, req| {
-            let uri = req.uri().to_string();
-            let stripped = uri.strip_prefix("plugin://").unwrap_or("");
-            let (path_part, query) = stripped.split_once('?').unwrap_or((stripped, ""));
-            let (plugin_id, path) = path_part.split_once('/').unwrap_or((path_part, "index.html"));
-            let plugin_id = urlencoding::decode(plugin_id).unwrap_or_default();
-            let path = if path.is_empty() { "index.html" } else { path };
-            let path_decoded = urlencoding::decode(path).unwrap_or_default();
-            let plugin_dir = plugin::manager::plugins_dir().join(plugin_id.as_ref());
-            let file_path = plugin_dir.join(path_decoded.as_ref());
-
-            let mime = |p: &std::path::Path| match p.extension().and_then(|e| e.to_str()) {
-                Some("html") => "text/html; charset=utf-8",
-                Some("js" | "mjs") => "application/javascript; charset=utf-8",
-                Some("css") => "text/css; charset=utf-8",
-                Some("json") => "application/json",
-                Some("png") => "image/png",
-                Some("jpg" | "jpeg") => "image/jpeg",
-                Some("svg") => "image/svg+xml",
-                Some("woff2") => "font/woff2",
-                Some("woff") => "font/woff",
-                Some("ttf") => "font/ttf",
-                _ => "application/octet-stream",
-            };
-
-            match std::fs::read(&file_path) {
-                Ok(data) => {
-                    let body = if query.contains("__shim__") && path_decoded.ends_with(".html") {
-                        let html = String::from_utf8_lossy(&data).into_owned();
-                        let preload_tag = std::fs::read_to_string(plugin_dir.join("plugin.json")).ok()
-                            .and_then(|m| serde_json::from_str::<serde_json::Value>(&m).ok())
-                            .and_then(|v| v.get("preload").and_then(|p| p.as_str()).map(|p| format!("<script src=\"{}\"></script>", p)))
-                            .unwrap_or_default();
-                        let inject = format!(
-                            "<script src=\"plugin://{}/__shim__.js\"></script>{}",
-                            urlencoding::encode(&plugin_id), preload_tag
-                        );
-                        let injected = if html.contains("<head>") {
-                            html.replacen("<head>", &format!("<head>{}", inject), 1)
-                        } else {
-                            format!("{}{}", inject, html)
-                        };
-                        injected.into_bytes()
-                    } else {
-                        data
-                    };
-                    tauri::http::Response::builder()
-                        .header("Content-Type", mime(&file_path))
-                        .header("Access-Control-Allow-Origin", "*")
-                        .body(body)
-                        .unwrap()
-                },
-                Err(_) => tauri::http::Response::builder()
-                    .status(404)
-                    .body(b"Not Found".to_vec())
-                    .unwrap(),
-            }
-        })
         .manage(AppState { 
             db: Mutex::new(db),
             db_state: DbState::new(),
@@ -267,6 +212,7 @@ pub fn run() {
             plugin::commands::marketplace_detail,
             plugin::commands::plugin_read_file,
             plugin::commands::plugin_write_shim,
+            plugin::commands::plugin_server_port,
             plugin::node_bridge::node_fs_read_file,
             plugin::node_bridge::node_fs_write_file,
             plugin::node_bridge::node_fs_mkdir,

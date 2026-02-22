@@ -100,3 +100,8 @@ pub fn plugin_write_shim(plugin_id: String, content: String) -> Result<(), Strin
     let file_path = manager::plugins_dir().join(&plugin_id).join("__shim__.js");
     std::fs::write(&file_path, content.as_bytes()).map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn plugin_server_port() -> u16 {
+    super::server::get_port()
+}

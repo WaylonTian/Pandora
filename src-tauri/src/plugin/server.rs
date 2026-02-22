@@ -1,0 +1,71 @@
+use std::io::{Read, Write};
+use std::net::TcpListener;
+use std::path::PathBuf;
+use std::sync::OnceLock;
+
+static PORT: OnceLock<u16> = OnceLock::new();
+
+pub fn get_port() -> u16 {
+    *PORT.get().unwrap_or(&18321)
+}
+
+pub fn start_server(plugins_dir: PathBuf) {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind plugin server");
+    let port = listener.local_addr().unwrap().port();
+    PORT.set(port).ok();
+    eprintln!("[plugin-server] listening on 127.0.0.1:{}", port);
+
+    std::thread::spawn(move || {
+        for stream in listener.incoming().flatten() {
+            let dir = plugins_dir.clone();
+            std::thread::spawn(move || handle(stream, &dir));
+        }
+    });
+}
+
+fn handle(mut stream: std::net::TcpStream, plugins_dir: &PathBuf) {
+    let mut buf = [0u8; 4096];
+    let n = match stream.read(&mut buf) {
+        Ok(n) if n > 0 => n,
+        _ => return,
+    };
+    let req = String::from_utf8_lossy(&buf[..n]);
+    let path = req.split_whitespace().nth(1).unwrap_or("/");
+    // path: /plugin-id/file.js
+    let decoded = urlencoding::decode(path).unwrap_or_default();
+    let decoded = decoded.trim_start_matches('/');
+
+    if decoded.contains("..") {
+        let _ = stream.write_all(b"HTTP/1.1 403 Forbidden\r\n\r\n");
+        return;
+    }
+
+    let file_path = plugins_dir.join(decoded);
+    let mime = match file_path.extension().and_then(|e| e.to_str()) {
+        Some("html") => "text/html; charset=utf-8",
+        Some("js" | "mjs") => "application/javascript; charset=utf-8",
+        Some("css") => "text/css; charset=utf-8",
+        Some("json") => "application/json",
+        Some("png") => "image/png",
+        Some("jpg" | "jpeg") => "image/jpeg",
+        Some("svg") => "image/svg+xml",
+        Some("woff2") => "font/woff2",
+        Some("woff") => "font/woff",
+        Some("ttf") => "font/ttf",
+        _ => "application/octet-stream",
+    };
+
+    match std::fs::read(&file_path) {
+        Ok(data) => {
+            let header = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\n\r\n",
+                mime, data.len()
+            );
+            let _ = stream.write_all(header.as_bytes());
+            let _ = stream.write_all(&data);
+        }
+        Err(_) => {
+            let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");
+        }
+    }
+}
