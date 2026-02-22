@@ -1,16 +1,22 @@
 // This file is converted to a string and injected into plugin iframes.
 // All utools.* API calls are bridged to the host via postMessage.
 
+import { generateNodeShimScript } from "./node-shim";
+
 export function generateShimScript(pluginId: string): string {
-  return `
+  const nodeShim = generateNodeShimScript(pluginId);
+  const utoolsShim = `
 (function() {
   let _callId = 0;
   const _pending = new Map();
+  window._utoolsCallId = 0;
+  window._utoolsPending = _pending;
   const _listeners = { pluginEnter: [], pluginOut: [], dbPull: [] };
 
   function callHost(method, args) {
     return new Promise((resolve, reject) => {
       const id = ++_callId;
+      window._utoolsCallId = _callId;
       _pending.set(id, { resolve, reject });
       window.parent.postMessage({ type: 'utools-call', id, method, args, pluginId: '${pluginId}' }, '*');
     });
@@ -104,4 +110,5 @@ export function generateShimScript(pluginId: string): string {
   window.parent.postMessage({ type: 'utools-ready', pluginId: '${pluginId}' }, '*');
 })();
 `;
+  return utoolsShim + '\n' + nodeShim;
 }

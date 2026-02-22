@@ -64,6 +64,15 @@ async function routeCall(pluginId: string, method: string, args: any[]): Promise
     case "shellOpenExternal": return invoke("plugin_open_url", { url: args[0] }).catch(() => window.open(args[0]));
     case "shellOpenPath": return invoke("plugin_open_path", { path: args[0] });
     case "getPath": return invoke("plugin_get_path", { name: args[0] });
+    // Node.js bridge
+    case "node.fs.readFile": return invoke("node_fs_read_file", { path: args[0], encoding: args[1] });
+    case "node.fs.writeFile": return invoke("node_fs_write_file", { path: args[0], data: args[1] });
+    case "node.fs.mkdir": return invoke("node_fs_mkdir", { path: args[0] });
+    case "node.fs.readdir": return invoke("node_fs_readdir", { path: args[0] });
+    case "node.fs.unlink": return invoke("node_fs_unlink", { path: args[0] });
+    case "node.os.homedir": return invoke("node_os_homedir");
+    case "node.os.tmpdir": return invoke("node_os_tmpdir");
+    case "node.child_process.exec": return invoke("node_exec", { cmd: args[0] });
     default:
       console.warn(`[plugin-bridge] Unhandled: ${method}`);
       return null;
