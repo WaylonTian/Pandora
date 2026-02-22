@@ -35,10 +35,23 @@ export function generateShimScript(pluginId: string): string {
     }
   });
 
+  // In-memory cache for sync db API — populated before pluginEnter fires
+  const _dbCache = new Map();
+  let _dbReady = false;
+
+  // Pre-load all docs into cache, then signal ready
+  callHost('db.allDocs', [null]).then(docs => {
+    if (Array.isArray(docs)) docs.forEach(doc => { if (doc && doc._id) _dbCache.set(doc._id, doc); });
+    _dbReady = true;
+    window.parent.postMessage({ type: 'utools-ready', pluginId: '${pluginId}' }, '*');
+  });
+
+  function _rev() { return String(Date.now()); }
+
   const dbPromises = {
-    put: (doc) => callHost('db.put', [doc]),
+    put: (doc) => { if (doc && doc._id) { doc._rev = _rev(); _dbCache.set(doc._id, doc); } return callHost('db.put', [doc]); },
     get: (id) => callHost('db.get', [id]),
-    remove: (docOrId) => callHost('db.remove', [typeof docOrId === 'string' ? docOrId : docOrId._id]),
+    remove: (docOrId) => { const id = typeof docOrId === 'string' ? docOrId : docOrId._id; _dbCache.delete(id); return callHost('db.remove', [id]); },
     bulkDocs: (docs) => callHost('db.bulkDocs', [docs]),
     allDocs: (arg) => callHost('db.allDocs', [arg]),
     postAttachment: (id, data, type) => callHost('db.postAttachment', [id, Array.from(data), type]),
@@ -47,19 +60,30 @@ export function generateShimScript(pluginId: string): string {
     replicateStateFromCloud: () => Promise.resolve(0),
   };
 
-  const dbSync = {};
-  for (const key of Object.keys(dbPromises)) {
-    dbSync[key] = (...args) => {
-      console.warn('utools.db.' + key + ' sync — use utools.db.promises.' + key);
-      let result; dbPromises[key](...args).then(r => { result = r; }); return result;
-    };
-  }
-  dbSync.promises = dbPromises;
+  // Sync API reads from cache, writes update cache + async persist
+  const db = {
+    put: (doc) => { if (doc && doc._id) { doc._rev = _rev(); _dbCache.set(doc._id, doc); } callHost('db.put', [doc]); return { id: doc._id, rev: doc._rev, ok: true }; },
+    get: (id) => _dbCache.get(id) || null,
+    remove: (docOrId) => { const id = typeof docOrId === 'string' ? docOrId : docOrId._id; _dbCache.delete(id); callHost('db.remove', [id]); return { id, ok: true }; },
+    bulkDocs: (docs) => docs.map(d => db.put(d)),
+    allDocs: (prefix) => {
+      const results = [];
+      for (const [k, v] of _dbCache) {
+        if (!prefix || k.startsWith(prefix)) results.push(v);
+      }
+      return results;
+    },
+    postAttachment: (id, data, type) => { callHost('db.postAttachment', [id, Array.from(data), type]); return { id, ok: true }; },
+    getAttachment: (id) => null,
+    getAttachmentType: (id) => null,
+    replicateStateFromCloud: () => 0,
+    promises: dbPromises,
+  };
 
   const dbStorage = {
-    setItem: (key, value) => callHost('dbStorage.setItem', [key, value]),
-    getItem: (key) => { let r; callHost('dbStorage.getItem', [key]).then(v => r = v); return r; },
-    removeItem: (key) => callHost('dbStorage.removeItem', [key]),
+    setItem: (key, value) => { _dbCache.set('_storage/' + key, { _id: '_storage/' + key, value }); callHost('dbStorage.setItem', [key, value]); },
+    getItem: (key) => { const d = _dbCache.get('_storage/' + key); return d ? d.value : null; },
+    removeItem: (key) => { _dbCache.delete('_storage/' + key); callHost('dbStorage.removeItem', [key]); },
   };
 
   window.utools = {
@@ -69,7 +93,7 @@ export function generateShimScript(pluginId: string): string {
     onDbPull: (cb) => _listeners.dbPull.push(cb),
     onMainPush: () => {},
 
-    db: Object.assign(dbSync, { promises: dbPromises }),
+    db: db,
     dbStorage,
     dbCryptoStorage: dbStorage,
 
@@ -106,8 +130,6 @@ export function generateShimScript(pluginId: string): string {
     setFeature: () => {},
     removeFeature: () => {},
   };
-
-  window.parent.postMessage({ type: 'utools-ready', pluginId: '${pluginId}' }, '*');
 })();
 `;
   return utoolsShim + '\n' + nodeShim;
