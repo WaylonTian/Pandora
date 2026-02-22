@@ -126,6 +126,7 @@ button, a, input, select, textarea {
 
 /* Dockview tab customization */
 .dockview-theme-dark {
+  --dv-group-view-background-color: hsl(222 47% 11%);
   --dv-tabs-and-actions-container-background-color: hsl(215 28% 17%);
   --dv-tab-divider-color: hsl(215 25% 27%);
   --dv-activegroup-visiblepanel-tab-background-color: hsl(222 47% 11%);
@@ -140,7 +141,9 @@ button, a, input, select, textarea {
   --dv-paneview-header-border-color: hsl(215 25% 27%);
 }
 
+/* Override dockview light theme to match Pandora design */
 .dockview-theme-light {
+  --dv-group-view-background-color: hsl(0 0% 100%);
   --dv-tabs-and-actions-container-background-color: hsl(210 40% 98%);
   --dv-tab-divider-color: hsl(214 32% 91%);
   --dv-activegroup-visiblepanel-tab-background-color: #FFFFFF;

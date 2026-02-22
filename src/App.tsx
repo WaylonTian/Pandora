@@ -1,5 +1,5 @@
 import { useRef, useCallback, useState, useEffect } from "react";
-import { DockviewReact, type DockviewReadyEvent, type DockviewApi, type IDockviewPanelProps } from "dockview-react";
+import { DockviewReact, themeDark, themeLight, type DockviewReadyEvent, type DockviewApi, type IDockviewPanelProps } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
 import { getPanel, getAllPanels } from "@/layouts/panels";
 import { useLayoutStore } from "@/stores/layout";
@@ -92,6 +92,7 @@ export default function App() {
       <div className="flex-1">
         <DockviewReact
           className={`h-full w-full ${isDark ? 'dockview-theme-dark' : 'dockview-theme-light'}`}
+          theme={isDark ? themeDark : themeLight}
           components={components}
           onReady={onReady}
         />
