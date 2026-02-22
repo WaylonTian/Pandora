@@ -77,6 +77,14 @@ async function routeCall(pluginId: string, method: string, args: any[]): Promise
     case "node.os.homedir": return invoke("node_os_homedir");
     case "node.os.tmpdir": return invoke("node_os_tmpdir");
     case "node.child_process.exec": return invoke("node_exec", { cmd: args[0] });
+    // Sharp via node bridge
+    case "node.sharp.metadata": return invoke("sharp_metadata", { input: args[0] });
+    case "node.sharp.toFormat": return invoke("sharp_to_format", { input: args[0], format: args[1], output: args[2] });
+    case "node.sharp.toBase64": return invoke("sharp_to_base64", { input: args[0], format: args[1] });
+    // FFmpeg via node bridge
+    case "node.ffmpeg.isAvailable": return invoke("ffmpeg_is_available");
+    case "node.ffmpeg.run": return invoke("ffmpeg_run", { args: args[0] });
+    case "node.ffmpeg.probe": return invoke("ffmpeg_probe", { input: args[0] });
     case "showSaveDialog": return invoke("plugin_show_save_dialog", { options: args[0] || {} });
     case "shellTrashItem": return invoke("plugin_shell_trash_item", { path: args[0] });
     case "shellBeep": return invoke("plugin_shell_beep");
@@ -109,6 +117,22 @@ async function routeCall(pluginId: string, method: string, args: any[]): Promise
     case "screenToDipRect": { const r = args[0] || {}; const tl = await invoke("plugin_screen_to_dip_point", { x: r.x||0, y: r.y||0 }) as any; const br = await invoke("plugin_screen_to_dip_point", { x: (r.x||0)+(r.width||0), y: (r.y||0)+(r.height||0) }) as any; return { x: tl.x, y: tl.y, width: br.x-tl.x, height: br.y-tl.y }; }
     case "dipToScreenRect": { const r2 = args[0] || {}; const tl2 = await invoke("plugin_dip_to_screen_point", { x: r2.x||0, y: r2.y||0 }) as any; const br2 = await invoke("plugin_dip_to_screen_point", { x: (r2.x||0)+(r2.width||0), y: (r2.y||0)+(r2.height||0) }) as any; return { x: tl2.x, y: tl2.y, width: br2.x-tl2.x, height: br2.y-tl2.y }; }
     case "desktopCaptureSources": return [];
+    // Sharp
+    case "sharp.metadata": return invoke("sharp_metadata", { input: args[0] });
+    case "sharp.resize": return invoke("sharp_resize", { input: args[0], width: args[1], height: args[2], output: args[3] });
+    case "sharp.rotate": return invoke("sharp_rotate", { input: args[0], degrees: args[1], output: args[2] });
+    case "sharp.flip": return invoke("sharp_flip", { input: args[0], direction: args[1], output: args[2] });
+    case "sharp.crop": return invoke("sharp_crop", { input: args[0], x: args[1], y: args[2], w: args[3], h: args[4], output: args[5] });
+    case "sharp.blur": return invoke("sharp_blur", { input: args[0], sigma: args[1], output: args[2] });
+    case "sharp.grayscale": return invoke("sharp_grayscale", { input: args[0], output: args[1] });
+    case "sharp.toFormat": return invoke("sharp_to_format", { input: args[0], format: args[1], output: args[2] });
+    case "sharp.toBase64": return invoke("sharp_to_base64", { input: args[0], format: args[1] });
+    // FFmpeg
+    case "ffmpeg.isAvailable": return invoke("ffmpeg_is_available");
+    case "ffmpeg.run": return invoke("ffmpeg_run", { args: args[0] });
+    case "ffmpeg.probe": return invoke("ffmpeg_probe", { input: args[0] });
+    // UBrowser
+    case "ubrowser.run": return invoke("ubrowser_run", { ops: args[0], options: args[1] || {} });
     default:
       console.warn(`[plugin-bridge] Unhandled: ${method}`);
       return null;

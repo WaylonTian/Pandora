@@ -134,7 +134,16 @@ export function generateShimScript(pluginId: string, serverPort?: number): strin
     getCopyedFiles: () => { let r = []; callHost('getCopyedFiles').then(v => r = v); return r; },
     fetchUserServerTemporaryToken: () => callHost('fetchUserServerTemporaryToken'),
     getIdleUBrowsers: () => [],
-    ubrowser: { goto: () => ({ run: () => {} }) },
+    ubrowser: (() => {
+      function chain() { const ops = []; const c = {};
+        ['goto','css','evaluate','click','input','value','wait','press','scroll','check','focus','hover','hide','show','viewport','useragent','cookies','setCookies','removeCookies','clearCookies','paste','download','screenshot','pdf','markdown','device','when','end','devTools','dblclick','mousedown','mouseup','file','drop'].forEach(a => {
+          c[a] = (...args) => { ops.push({action:a, args}); return c; };
+        });
+        c.run = (opts) => callHost('ubrowser.run', [ops, opts || {}]);
+        return c;
+      }
+      return { goto: (...a) => { const c = chain(); return c.goto(...a); } };
+    })(),
     getFeatures: () => callHost('getFeatures'),
     setFeature: (feature) => callHost('setFeature', [feature]),
     removeFeature: (code) => callHost('removeFeature', [code]),

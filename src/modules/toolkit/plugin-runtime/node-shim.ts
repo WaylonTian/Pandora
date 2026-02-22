@@ -82,6 +82,32 @@ export function generateNodeShimScript(pluginId: string, serverPort?: number): s
       },
       shell: { openExternal: (u) => window.utools?.shellOpenExternal(u), openPath: (p) => window.utools?.shellOpenPath(p) },
     },
+    sharp: (() => {
+      function s(input) {
+        const c = { _input: input };
+        c.metadata = () => nodeCall('sharp', 'metadata', [c._input]);
+        c.resize = (w, h) => { c._ops = [...(c._ops||[]), ['resize',w,h]]; return c; };
+        c.rotate = (d) => { c._ops = [...(c._ops||[]), ['rotate',d]]; return c; };
+        c.flip = () => { c._ops = [...(c._ops||[]), ['flip','vertical']]; return c; };
+        c.flop = () => { c._ops = [...(c._ops||[]), ['flip','horizontal']]; return c; };
+        c.blur = (sigma) => { c._ops = [...(c._ops||[]), ['blur',sigma||1]]; return c; };
+        c.grayscale = () => { c._ops = [...(c._ops||[]), ['grayscale']]; return c; };
+        c.greyscale = c.grayscale;
+        c.toFormat = (fmt) => { c._fmt = fmt; return c; };
+        c.png = () => c.toFormat('png');
+        c.jpeg = () => c.toFormat('jpeg');
+        c.webp = () => c.toFormat('webp');
+        c.toFile = (out) => nodeCall('sharp', 'toFormat', [c._input, c._fmt||'png', out]);
+        c.toBuffer = () => nodeCall('sharp', 'toBase64', [c._input, c._fmt||'png']);
+        return c;
+      }
+      return s;
+    })(),
+    ffmpeg: {
+      isAvailable: () => nodeCall('ffmpeg', 'isAvailable', []),
+      run: (args) => nodeCall('ffmpeg', 'run', [args]),
+      probe: (input) => nodeCall('ffmpeg', 'probe', [input]),
+    },
   };
 
   window.require = function(name) {

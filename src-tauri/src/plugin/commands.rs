@@ -373,3 +373,89 @@ pub fn plugin_screen_to_dip_point(x: i32, y: i32) -> Result<serde_json::Value, S
 pub fn plugin_dip_to_screen_point(x: i32, y: i32) -> Result<serde_json::Value, String> {
     super::screen::dip_to_screen_point(x, y)
 }
+
+// P3: Sharp commands
+#[tauri::command]
+pub fn sharp_metadata(input: String) -> Result<serde_json::Value, String> {
+    super::sharp::metadata(input)
+}
+#[tauri::command]
+pub fn sharp_resize(input: String, width: u32, height: u32, output: String) -> Result<(), String> {
+    super::sharp::resize(input, width, height, output)
+}
+#[tauri::command]
+pub fn sharp_rotate(input: String, degrees: i32, output: String) -> Result<(), String> {
+    super::sharp::rotate(input, degrees, output)
+}
+#[tauri::command]
+pub fn sharp_flip(input: String, direction: String, output: String) -> Result<(), String> {
+    super::sharp::flip(input, direction, output)
+}
+#[tauri::command]
+pub fn sharp_crop(input: String, x: u32, y: u32, w: u32, h: u32, output: String) -> Result<(), String> {
+    super::sharp::crop(input, x, y, w, h, output)
+}
+#[tauri::command]
+pub fn sharp_blur(input: String, sigma: f32, output: String) -> Result<(), String> {
+    super::sharp::blur(input, sigma, output)
+}
+#[tauri::command]
+pub fn sharp_grayscale(input: String, output: String) -> Result<(), String> {
+    super::sharp::grayscale(input, output)
+}
+#[tauri::command]
+pub fn sharp_to_format(input: String, format: String, output: String) -> Result<(), String> {
+    super::sharp::to_format(input, format, output)
+}
+#[tauri::command]
+pub fn sharp_to_base64(input: String, format: String) -> Result<String, String> {
+    super::sharp::to_base64(input, format)
+}
+
+// P4: FFmpeg commands
+#[tauri::command]
+pub fn ffmpeg_is_available() -> bool {
+    super::ffmpeg::is_available()
+}
+#[tauri::command]
+pub fn ffmpeg_run(args: Vec<String>) -> Result<String, String> {
+    super::ffmpeg::run(args)
+}
+#[tauri::command]
+pub fn ffmpeg_probe(input: String) -> Result<String, String> {
+    super::ffmpeg::probe(input)
+}
+
+// P3: UBrowser command
+#[tauri::command]
+pub async fn ubrowser_run(app: tauri::AppHandle, ops: Vec<super::ubrowser::UBrowserOp>, options: super::ubrowser::UBrowserRunOptions) -> Result<serde_json::Value, String> {
+    let script = super::ubrowser::build_execute_script(&ops);
+    let label = format!("ubrowser-{}", uuid::Uuid::new_v4());
+    let width = options.width.unwrap_or(1280) as f64;
+    let height = options.height.unwrap_or(800) as f64;
+    let show = options.show.unwrap_or(false);
+
+    // Find the goto URL from ops
+    let url = ops.iter()
+        .find(|o| o.action == "goto")
+        .and_then(|o| o.args.first())
+        .and_then(|v| v.as_str())
+        .unwrap_or("about:blank")
+        .to_string();
+
+    let parsed_url: tauri::Url = url.parse().map_err(|e| format!("{e}"))?;
+    let window = tauri::WebviewWindowBuilder::new(&app, &label, tauri::WebviewUrl::External(parsed_url))
+        .inner_size(width, height)
+        .visible(show)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    // Wait for page load then execute script
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    let result = window.eval(&script).map_err(|e| e.to_string())?;
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    // Close the window
+    window.close().map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({"ok": true}))
+}
