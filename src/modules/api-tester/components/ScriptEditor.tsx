@@ -9,9 +9,10 @@ interface Props {
   onPreScriptChange: (s: string) => void;
   onTestScriptChange: (s: string) => void;
   lastTestResults?: TestResult[];
+  logs?: string[];
 }
 
-export function ScriptEditor({ preScript, testScript, onPreScriptChange, onTestScriptChange, lastTestResults }: Props) {
+export function ScriptEditor({ preScript, testScript, onPreScriptChange, onTestScriptChange, lastTestResults, logs }: Props) {
   const t = useT();
   const [tab, setTab] = useState<'pre' | 'test'>('pre');
 
@@ -58,6 +59,14 @@ export function ScriptEditor({ preScript, testScript, onPreScriptChange, onTestS
                     <span className="test-name">{t.name}</span>
                     {t.error && <span className="test-error">{t.error}</span>}
                   </div>
+                ))}
+              </div>
+            )}
+            {logs && logs.length > 0 && (
+              <div className="console-output">
+                <div className="section-title">Console</div>
+                {logs.map((log, i) => (
+                  <div key={i} className="console-line">{log}</div>
                 ))}
               </div>
             )}

@@ -68,6 +68,7 @@ export function ApiTester() {
   const [preScript, setPreScript] = useState('');
   const [testScript, setTestScript] = useState('');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [scriptLogs, setScriptLogs] = useState<string[]>([]);
   
   // Diff state
   const [snapshots, setSnapshots] = useState<{ id: string; name: string; timestamp: number; body: string; status: number }[]>([]);
@@ -274,6 +275,7 @@ export function ApiTester() {
         };
         const testResult = executeScript(testScript, ctx, false);
         setTestResults(testResult.tests);
+        setScriptLogs(testResult.logs);
       }
     }
   };
@@ -527,6 +529,7 @@ export function ApiTester() {
                       onPreScriptChange={setPreScript}
                       onTestScriptChange={setTestScript}
                       lastTestResults={testResults}
+                      logs={scriptLogs}
                     />
                   )}
                 </div>

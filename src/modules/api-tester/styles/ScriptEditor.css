@@ -86,3 +86,27 @@
 
 .test-name { flex: 1; }
 .test-error { color: var(--status-fail); font-size: 11px; }
+
+/* Console Output */
+.console-output {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.console-output .section-title {
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.console-line {
+  padding: 4px 10px;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.console-line:last-child { border-bottom: none; }
