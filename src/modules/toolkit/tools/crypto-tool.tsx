@@ -43,7 +43,7 @@ export function CryptoTool() {
           <option value="SHA-256">SHA-256</option>
           <option value="SHA-384">SHA-384</option>
           <option value="SHA-512">SHA-512</option>
-          <option value="MD5">MD5 (不支持)</option>
+          <option value="MD5">{t('toolkit.cryptoTool.md5NotSupportedOption')}</option>
         </select>
         <button onClick={handleHash} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
           {t("toolkit.cryptoTool.generateHash")}

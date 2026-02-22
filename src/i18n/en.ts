@@ -112,7 +112,9 @@ export const en: Record<string, string> = {
   "queryResult.queryExecutedSuccessfully": "Query executed successfully",
   "queryResult.queryReturnedEmpty": "Query returned empty result",
   "queryResult.resultSets": "Result Sets:",
-  "queryResult.totalResultSets": "result sets",
+  "queryResult.totalResultSets": "{count} result sets",
+  "queryResult.executionTime": "Execution Time",
+  "queryResult.affectedRows": "Affected Rows",
   "queryHistory.searchHistory": "Search history...",
   "queryHistory.noQueryHistory": "No query history",
   "queryHistory.executeQueryToShow": "Executed queries will appear here",
@@ -224,6 +226,7 @@ export const en: Record<string, string> = {
   "dataGenerator.cancelButton": "Cancel",
   "dataGenerator.generateRowsButton": "Generate {count} Rows",
   "dataGenerator.generateSummary": "Will generate {rowCount} rows of data with {fieldCount} fields",
+  "dataGenerator.testDataPrefix": "TestData",
 
   // === DB Manager - Data Masking ===
   "dataMasking.dataMaskingTitle": "Data Masking Configuration",
@@ -420,4 +423,268 @@ export const en: Record<string, string> = {
   "toolkit.hostsEditorTool.readFailed": "Failed to read hosts file",
   "toolkit.hostsEditorTool.saveSuccess": "Hosts file saved successfully",
   "toolkit.hostsEditorTool.saveFailed": "Save failed",
+
+  // === API Tester - Context Menu ===
+  "apiTester.newRequest": "New Request",
+  "apiTester.rename": "Rename",
+  "apiTester.delete": "Delete",
+  "apiTester.openInNewTab": "Open in New Tab",
+  "apiTester.duplicate": "Duplicate",
+  "apiTester.renamePrompt": "Rename:",
+  "apiTester.copy": "(copy)",
+
+  // === API Tester - Sidebar ===
+  "apiTester.collections": "Collections",
+  "apiTester.history": "History",
+  "apiTester.newCollection": "New collection...",
+  "apiTester.new": "+ New",
+  "apiTester.clear": "Clear",
+
+  // === API Tester - Toolbar ===
+  "apiTester.importCurl": "Import cURL",
+  "apiTester.importOpenApi": "Import OpenAPI/Postman",
+  "apiTester.copyAsCurl": "Copy as cURL",
+  "apiTester.generateCode": "Generate Code",
+  "apiTester.tools": "Tools",
+  "apiTester.webSocket": "WebSocket",
+  "apiTester.collectionRunner": "Collection Runner",
+  "apiTester.noEnvironment": "No Environment",
+  "apiTester.manageEnvironments": "Manage Environments",
+  "apiTester.settings": "Settings",
+
+  // === API Tester - Request ===
+  "apiTester.enterUrl": "Enter URL",
+  "apiTester.sending": "Sending...",
+  "apiTester.send": "Send",
+  "apiTester.save": "Save",
+  "apiTester.params": "Params",
+  "apiTester.headers": "Headers",
+  "apiTester.body": "Body",
+  "apiTester.auth": "Auth",
+  "apiTester.scripts": "Scripts",
+  "apiTester.requestName": "Request name",
+  "apiTester.queryParams": "Query Params",
+
+  // === API Tester - Auth ===
+  "apiTester.authorizationType": "Authorization Type",
+  "apiTester.noAuth": "No Auth",
+  "apiTester.basicAuth": "Basic Auth",
+  "apiTester.bearerToken": "Bearer Token",
+  "apiTester.username": "Username",
+  "apiTester.password": "Password",
+  "apiTester.token": "Token",
+
+  // === API Tester - Response ===
+  "apiTester.cookies": "Cookies",
+  "apiTester.timing": "Timing",
+  "apiTester.diff": "Diff",
+  "apiTester.pretty": "Pretty",
+  "apiTester.raw": "Raw",
+  "apiTester.tree": "Tree",
+  "apiTester.search": "Search...",
+  "apiTester.copy2": "Copy",
+  "apiTester.noCookies": "No cookies",
+  "apiTester.sendRequest": "Send a request to see the response",
+  "apiTester.openOrCreate": "Open a request or create a new tab",
+  "apiTester.importedRequest": "Imported Request",
+
+  // === API Tester - Keyboard Shortcuts ===
+  "apiTester.keyboardShortcuts": "Keyboard Shortcuts",
+  "apiTester.shortcut.sendRequest": "Send Request",
+  "apiTester.shortcut.saveRequest": "Save Request",
+  "apiTester.shortcut.newTab": "New Tab",
+  "apiTester.shortcut.closeTab": "Close Tab",
+  "apiTester.shortcut.focusUrl": "Focus URL",
+  "apiTester.shortcut.settings": "Settings",
+  "apiTester.shortcut.shortcuts": "Shortcuts",
+  "apiTester.shortcut.closeModal": "Close Modal",
+
+  // === API Tester - Body Editor ===
+  "bodyEditor.noBody": "This request does not have a body",
+  "bodyEditor.format": "Format",
+  "bodyEditor.rawBodyContent": "Raw body content",
+  "bodyEditor.selectBinaryFile": "Select a file to send as binary data",
+  "bodyEditor.key": "Key",
+  "bodyEditor.value": "Value",
+
+  // === API Tester - KeyValue Editor ===
+  "kvEditor.bulkEdit": "Bulk Edit",
+  "kvEditor.key": "Key",
+  "kvEditor.value": "Value",
+  "kvEditor.description": "Description",
+  "kvEditor.bulkEditPrompt": "Bulk Edit (format: key: value)",
+
+  // === API Tester - Code Gen Modal ===
+  "codeGenModal.title": "Generate Code",
+  "codeGenModal.copyToClipboard": "Copy to Clipboard",
+  "codeGenModal.close": "Close",
+
+  // === API Tester - Import cURL Modal ===
+  "importCurlModal.title": "Import cURL",
+  "importCurlModal.hint": "Paste a cURL command to import",
+  "importCurlModal.cancel": "Cancel",
+
+  // === API Tester - Settings Modal ===
+  "settingsModal.title": "Settings",
+  "settingsModal.appearance": "Appearance",
+  "settingsModal.fontSize": "Font Size",
+  "settingsModal.request": "Request",
+  "settingsModal.timeout": "Timeout (ms)",
+  "settingsModal.followRedirects": "Follow Redirects",
+  "settingsModal.validateSSL": "Validate SSL",
+  "settingsModal.proxy": "Proxy",
+  "settingsModal.enableProxy": "Enable Proxy",
+  "settingsModal.type": "Type",
+  "settingsModal.host": "Host",
+  "settingsModal.port": "Port",
+  "settingsModal.done": "Done",
+
+  // === API Tester - Environment Manager ===
+  "envManager.title": "Manage Environments",
+  "envManager.environments": "Environments",
+  "envManager.newEnvironment": "New environment...",
+  "envManager.deleteConfirm": "Delete this environment?",
+  "envManager.active": "Active",
+  "envManager.noEnvironments": "No environments yet",
+  "envManager.variables": "Variables",
+  "envManager.useHint": "Use {{variable}} in requests",
+  "envManager.variable": "Variable",
+  "envManager.value": "Value",
+  "envManager.actions": "Actions",
+  "envManager.variableName": "Variable name",
+  "envManager.quickAdd": "Quick Add:",
+  "envManager.selectEnv": "Select an environment to edit variables",
+  "envManager.orCreateNew": "Or create a new environment",
+  "envManager.done": "Done",
+
+  // === API Tester - WebSocket Panel ===
+  "wsPanel.disconnect": "Disconnect",
+  "wsPanel.connect": "Connect",
+  "wsPanel.messages": "Messages",
+  "wsPanel.clear": "Clear",
+  "wsPanel.message": "Message...",
+  "wsPanel.send": "Send",
+  "wsPanel.connected": "Connected",
+  "wsPanel.disconnected": "Disconnected",
+  "wsPanel.connectionError": "Connection error",
+
+  // === API Tester - Tools Panel ===
+  "toolsPanel.title": "Tools",
+  "toolsPanel.jwtToken": "JWT Token",
+  "toolsPanel.pasteJwt": "Paste JWT token...",
+  "toolsPanel.decode": "Decode",
+  "toolsPanel.result": "Result",
+  "toolsPanel.invalidJwt": "Invalid JWT token",
+  "toolsPanel.input": "Input",
+  "toolsPanel.enterText": "Enter text...",
+  "toolsPanel.encode": "Encode",
+  "toolsPanel.output": "Output",
+  "toolsPanel.enterUrl": "Enter URL or text...",
+  "toolsPanel.timestampOrDate": "Timestamp or Date",
+  "toolsPanel.toDate": "To Date",
+  "toolsPanel.toTimestamp": "To Timestamp",
+  "toolsPanel.current": "Current",
+  "toolsPanel.seconds": "Seconds",
+  "toolsPanel.milliseconds": "Milliseconds",
+  "toolsPanel.now": "Now",
+  "toolsPanel.generatedUuid": "Generated UUID",
+  "toolsPanel.generate": "Generate",
+  "toolsPanel.copy": "Copy",
+  "toolsPanel.json": "JSON",
+  "toolsPanel.format": "Format",
+  "toolsPanel.minify": "Minify",
+  "toolsPanel.enterTextToHash": "Enter text to hash...",
+
+  // === API Tester - Collection Runner ===
+  "collectionRunner.title": "Collection Runner",
+
+  // === DB Manager - Connection Dialog ===
+  "connectionDialog.editConnection": "Edit Connection",
+  "connectionDialog.newConnection": "New Connection",
+  "connectionDialog.connectionName": "Connection Name",
+  "connectionDialog.databaseType": "Database Type",
+  "connectionDialog.databaseFilePath": "Database File Path",
+  "connectionDialog.databaseName": "Database Name",
+  "connectionDialog.host": "Host",
+  "connectionDialog.port": "Port",
+  "connectionDialog.username": "Username",
+  "connectionDialog.password": "Password",
+  "connectionDialog.database": "Database",
+  "connectionDialog.testConnection": "Test Connection",
+  "connectionDialog.testing": "Testing...",
+  "connectionDialog.testingConnection": "Testing connection...",
+  "connectionDialog.connectionSuccessful": "Connection successful!",
+  "connectionDialog.connectionFailed": "Connection failed",
+  "connectionDialog.saving": "Saving...",
+  "connectionDialog.save": "Save",
+  "connectionDialog.connectionNameRequired": "Connection name is required",
+  "connectionDialog.filePathRequired": "Database file path is required",
+  "connectionDialog.hostRequired": "Host is required",
+  "connectionDialog.portInvalid": "Port must be between 1 and 65535",
+  "connectionDialog.databaseRequired": "Database name is required",
+  "connectionDialog.testFailed": "Connection test failed",
+  "connectionDialog.saveFailed": "Failed to save connection",
+
+  // === DB Manager - SQL Editor ===
+  "sqlEditor.noActiveTab": "No active tab",
+
+  // === DB Manager - Table Structure ===
+  "tableStructure.schema": "Schema",
+
+  // === DB Manager - Data Browser ===
+  "dataBrowser.rows": "rows",
+
+  // === DB Manager - Slow Query Log ===
+  "slowQueryLog.count": "queries",
+
+  // === DB Manager - Table Designer ===
+  "tableDesigner.loadingStructure": "Loading table structure...",
+  "tableDesigner.error": "Error",
+  "tableDesigner.columns": "Columns",
+  "tableDesigner.name": "Name",
+  "tableDesigner.type": "Type",
+  "tableDesigner.nullable": "Nullable",
+  "tableDesigner.default": "Default",
+  "tableDesigner.actions": "Actions",
+  "tableDesigner.noColumns": "No columns defined",
+  "tableDesigner.primaryKey": "Primary Key",
+  "tableDesigner.autoIncrement": "Auto Increment",
+  "tableDesigner.moveUp": "Move Up",
+  "tableDesigner.moveDown": "Move Down",
+  "tableDesigner.restoreColumn": "Restore Column",
+  "tableDesigner.deleteColumn": "Delete Column",
+  "tableDesigner.copied": "Copied!",
+  "tableDesigner.copy": "Copy",
+  "tableDesigner.editTable": "Edit Table: {name}",
+  "tableDesigner.createNewTable": "Create New Table",
+  "tableDesigner.applyingChanges": "Applying Changes...",
+  "tableDesigner.creatingTable": "Creating Table...",
+  "tableDesigner.applyChanges": "Apply Changes",
+  "tableDesigner.createTable": "Create Table",
+  "tableDesigner.tableNameRequired": "Table name is required",
+  "tableDesigner.tableNameInvalid": "Table name must start with a letter or underscore and contain only letters, numbers, and underscores",
+  "tableDesigner.atLeastOneColumn": "At least one column is required",
+  "tableDesigner.columnNameRequired": "Column name is required",
+  "tableDesigner.invalidColumnName": "Invalid column name",
+  "tableDesigner.duplicateColumnName": "Duplicate column name",
+
+  // === Script Runner ===
+  "scriptRunner.newScript": "+ New Script",
+  "scriptRunner.running": "Running...",
+  "scriptRunner.run": "▶ Run",
+  "scriptRunner.delete": "Delete",
+  "scriptRunner.selectOrCreate": "Select or create a script",
+
+  // === Toolkit ===
+  "toolkit.selectTool": "Select a tool",
+  "toolkit.cryptoTool.md5NotSupportedOption": "MD5 (Not Supported)",
+
+  // === Data Masking Examples ===
+  "dataMasking.example.none.input": "Original Data",
+  "dataMasking.example.none.output": "Original Data",
+  "dataMasking.example.custom.input": "Custom",
+  "dataMasking.example.custom.output": "Custom",
+
+  // === App ===
+  "app.unknownPanel": "Unknown panel: {panelId}",
 };

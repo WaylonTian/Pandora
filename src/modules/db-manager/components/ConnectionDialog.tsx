@@ -297,9 +297,10 @@ interface DatabaseTypeSelectorProps {
 }
 
 function DatabaseTypeSelector({ value, onChange }: DatabaseTypeSelectorProps) {
+  const t = useT();
   return (
     <div className="space-y-2">
-      <Label>Database Type</Label>
+      <Label>{t('connectionDialog.databaseType')}</Label>
       <div className="flex gap-2">
         {DATABASE_TYPES.map((type) => (
           <button
@@ -334,6 +335,7 @@ function TestConnectionResult({
   status,
   errorMessage,
 }: TestConnectionResultProps) {
+  const t = useT();
   if (status === "idle") return null;
 
   return (
@@ -350,19 +352,19 @@ function TestConnectionResult({
       {status === "testing" && (
         <>
           <LoadingSpinner className="h-4 w-4" />
-          <span>Testing connection...</span>
+          <span>{t('connectionDialog.testingConnection')}</span>
         </>
       )}
       {status === "success" && (
         <>
           <CheckIcon className="h-4 w-4" />
-          <span>Connection successful!</span>
+          <span>{t('connectionDialog.connectionSuccessful')}</span>
         </>
       )}
       {status === "error" && (
         <>
           <AlertIcon className="h-4 w-4" />
-          <span>{errorMessage || "Connection failed"}</span>
+          <span>{errorMessage || t('connectionDialog.connectionFailed')}</span>
         </>
       )}
     </div>
@@ -534,7 +536,7 @@ export function ConnectionDialog({
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <h2 id="connection-dialog-title" className="text-lg font-semibold">
-            {editConnection ? "Edit Connection" : "New Connection"}
+            {editConnection ? t('connectionDialog.editConnection') : t('connectionDialog.newConnection')}
           </h2>
           <button
             type="button"
@@ -556,7 +558,7 @@ export function ConnectionDialog({
         >
           {/* Connection Name */}
           <FormField
-            label="Connection Name"
+            label={t('connectionDialog.connectionName')}
             htmlFor="connection-name"
             error={errors.name}
             required
@@ -582,7 +584,7 @@ export function ConnectionDialog({
             <>
               {/* SQLite: File Path */}
               <FormField
-                label="Database File Path"
+                label={t('connectionDialog.databaseFilePath')}
                 htmlFor="file-path"
                 error={errors.file_path}
                 required
@@ -598,7 +600,7 @@ export function ConnectionDialog({
 
               {/* SQLite: Database Name */}
               <FormField
-                label="Database Name"
+                label={t('connectionDialog.databaseName')}
                 htmlFor="database"
                 error={errors.database}
                 required
@@ -618,7 +620,7 @@ export function ConnectionDialog({
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2">
                   <FormField
-                    label="Host"
+                    label={t('connectionDialog.host')}
                     htmlFor="host"
                     error={errors.host}
                     required
@@ -633,7 +635,7 @@ export function ConnectionDialog({
                   </FormField>
                 </div>
                 <FormField
-                  label="Port"
+                  label={t('connectionDialog.port')}
                   htmlFor="port"
                   error={errors.port}
                   required
@@ -653,7 +655,7 @@ export function ConnectionDialog({
 
               {/* MySQL/PostgreSQL: Username and Password */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField label="Username" htmlFor="username">
+                <FormField label={t('connectionDialog.username')} htmlFor="username">
                   <Input
                     id="username"
                     value={form.username}
@@ -661,7 +663,7 @@ export function ConnectionDialog({
                     placeholder="root"
                   />
                 </FormField>
-                <FormField label="Password" htmlFor="password">
+                <FormField label={t('connectionDialog.password')} htmlFor="password">
                   <Input
                     id="password"
                     type="password"
@@ -674,7 +676,7 @@ export function ConnectionDialog({
 
               {/* MySQL/PostgreSQL: Database Name */}
               <FormField
-                label="Database"
+                label={t('connectionDialog.database')}
                 htmlFor="database"
                 error={errors.database}
                 required
@@ -708,20 +710,20 @@ export function ConnectionDialog({
               {testStatus === "testing" ? (
                 <>
                   <LoadingSpinner className="mr-2 h-4 w-4" />
-                  Testing...
+                  {t('connectionDialog.testing')}
                 </>
               ) : (
-                "Test Connection"
+                t('connectionDialog.testConnection')
               )}
             </Button>
             <Button type="submit" disabled={isSaving || testStatus === "testing"}>
               {isSaving ? (
                 <>
                   <LoadingSpinner className="mr-2 h-4 w-4" />
-                  Saving...
+                  {t('connectionDialog.saving')}
                 </>
               ) : (
-                "Save"
+                t('connectionDialog.save')
               )}
             </Button>
           </div>

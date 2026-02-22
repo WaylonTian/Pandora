@@ -122,16 +122,18 @@ function getMaskingLabels(t: (key: string) => string): Record<MaskingType, strin
   };
 }
 
-const maskingExamples: Record<MaskingType, { input: string; output: string }> = {
-  none: { input: "原始数据", output: "原始数据" },
-  phone: { input: "13812345678", output: "138****5678" },
-  email: { input: "test@example.com", output: "te***@example.com" },
-  idcard: { input: "110101199001011234", output: "110101********1234" },
-  name: { input: "张三丰", output: "张*丰" },
-  address: { input: "北京市朝阳区xxx路xxx号", output: "北京市朝阳区**********" },
-  bankcard: { input: "6222021234567890123", output: "6222 **** **** 0123" },
-  custom: { input: "自定义", output: "自定义" },
-};
+function getMaskingExamples(t: (key: string) => string): Record<MaskingType, { input: string; output: string }> {
+  return {
+    none: { input: t('dataMasking.example.none.input'), output: t('dataMasking.example.none.output') },
+    phone: { input: "13812345678", output: "138****5678" },
+    email: { input: "test@example.com", output: "te***@example.com" },
+    idcard: { input: "110101199001011234", output: "110101********1234" },
+    name: { input: "张三丰", output: "张*丰" },
+    address: { input: "北京市朝阳区xxx路xxx号", output: "北京市朝阳区**********" },
+    bankcard: { input: "6222021234567890123", output: "6222 **** **** 0123" },
+    custom: { input: t('dataMasking.example.custom.input'), output: t('dataMasking.example.custom.output') },
+  };
+}
 
 /**
  * 应用脱敏规则到值
@@ -187,7 +189,7 @@ interface MaskingRuleRowProps {
 function MaskingRuleRow({ column, config, onChange }: MaskingRuleRowProps) {
   const t = useT();
   const rule = config?.rule || { type: "none" as MaskingType };
-  const example = maskingExamples[rule.type];
+  const example = getMaskingExamples(t)[rule.type];
   const maskingLabels = getMaskingLabels(t);
 
   return (

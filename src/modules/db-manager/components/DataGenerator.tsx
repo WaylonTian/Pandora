@@ -83,7 +83,8 @@ const domains = ["gmail.com", "qq.com", "163.com", "outlook.com", "example.com"]
 function generateValue(
   rule: GeneratorRule,
   dataType: string,
-  index: number
+  index: number,
+  t: (key: string) => string
 ): Value {
   const lowerType = dataType.toLowerCase();
 
@@ -110,7 +111,7 @@ function generateValue(
       return `${name}${index}@${domain}`;
     }
     // 默认字符串
-    return `测试数据_${index + 1}`;
+    return `${t('dataGenerator.testDataPrefix')}_${index + 1}`;
   }
 
   // 序列
@@ -320,7 +321,7 @@ export function DataGenerator({
     
     for (let i = 0; i < Math.min(5, rowCount); i++) {
       const row: Value[] = enabledConfigs.map((c) =>
-        generateValue(c.rule, c.column.data_type, i)
+        generateValue(c.rule, c.column.data_type, i, t)
       );
       rows.push(row);
     }
@@ -340,7 +341,7 @@ export function DataGenerator({
 
       for (let i = 0; i < rowCount; i++) {
         const row: Value[] = enabledConfigs.map((c) =>
-          generateValue(c.rule, c.column.data_type, i)
+          generateValue(c.rule, c.column.data_type, i, t)
         );
         rows.push(row);
       }

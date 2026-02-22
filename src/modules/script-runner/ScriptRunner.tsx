@@ -2,8 +2,10 @@ import { useEffect } from "react";
 import { useScriptRunnerStore } from "./store";
 import { useThemeStore } from "@/stores/theme";
 import Editor from "@monaco-editor/react";
+import { useT } from '@/i18n';
 
 export function ScriptRunner() {
+  const t = useT();
   const store = useScriptRunnerStore();
   const { isDark } = useThemeStore();
   const activeScript = store.scripts.find(s => s.id === store.activeScriptId);
@@ -11,7 +13,7 @@ export function ScriptRunner() {
   useEffect(() => { store.loadRuntimes(); }, []);
 
   const handleNew = () => {
-    store.addScript({ name: "New Script", runtime: "node", content: "" });
+    store.addScript({ name: t('scriptRunner.newScript'), runtime: "node", content: "" });
   };
 
   const handleRun = async () => {
@@ -37,7 +39,7 @@ export function ScriptRunner() {
             onClick={handleNew}
             className="w-full px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity duration-150 focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            + New Script
+            {t('scriptRunner.newScript')}
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
@@ -86,14 +88,14 @@ export function ScriptRunner() {
                 disabled={store.isRunning}
                 className="px-4 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium cursor-pointer hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-green-500/50"
               >
-                {store.isRunning ? "Running..." : "▶ Run"}
+                {store.isRunning ? t('scriptRunner.running') : t('scriptRunner.run')}
               </button>
               <div className="flex-1" />
               <button
                 onClick={() => store.removeScript(activeScript.id)}
                 className="px-3 py-1.5 text-destructive border border-destructive/30 rounded-md text-sm cursor-pointer hover:bg-destructive/10 transition-colors duration-150 focus:outline-none"
               >
-                Delete
+                {t('scriptRunner.delete')}
               </button>
             </div>
 
@@ -126,7 +128,7 @@ export function ScriptRunner() {
             <svg viewBox="0 0 24 24" className="w-12 h-12 opacity-20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
             </svg>
-            <p className="text-sm">Select or create a script</p>
+            <p className="text-sm">{t('scriptRunner.selectOrCreate')}</p>
           </div>
         )}
       </div>

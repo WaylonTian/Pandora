@@ -194,7 +194,7 @@ function generateJSON(result: QueryResult): string {
 }
 
 /** 将结果导出为 CSV 格式 */
-async function exportToCSV(result: QueryResult, defaultFilename: string = "export.csv") {
+async function exportToCSV(result: QueryResult, defaultFilename: string = "export.csv", t: (key: string) => string) {
   try {
     const filePath = await save({
       defaultPath: defaultFilename,
@@ -208,12 +208,12 @@ async function exportToCSV(result: QueryResult, defaultFilename: string = "expor
     }
   } catch (error) {
     console.error('导出 CSV 失败:', error);
-    alert(`导出 CSV 失败: ${error}`);
+    alert(`${t('queryResult.exportCsv')} failed: ${error}`);
   }
 }
 
 /** 将结果导出为 JSON 格式 */
-async function exportToJSON(result: QueryResult, defaultFilename: string = "export.json") {
+async function exportToJSON(result: QueryResult, defaultFilename: string = "export.json", t: (key: string) => string) {
   try {
     const filePath = await save({
       defaultPath: defaultFilename,
@@ -227,7 +227,7 @@ async function exportToJSON(result: QueryResult, defaultFilename: string = "expo
     }
   } catch (error) {
     console.error('导出 JSON 失败:', error);
-    alert(`导出 JSON 失败: ${error}`);
+    alert(`${t('queryResult.exportJson')} failed: ${error}`);
   }
 }
 
@@ -281,23 +281,24 @@ interface ResultMetaBarProps {
 }
 
 function ResultMetaBar({ executionTime, affectedRows, rowCount, columnCount, onExportCSV, onExportJSON }: ResultMetaBarProps) {
+  const t = useT();
   return (
     <div className="flex items-center gap-4 border-b border-border bg-card/50 px-3 py-1.5 text-xs text-muted-foreground">
-      <div className="flex items-center gap-1.5" title="执行时间">
+      <div className="flex items-center gap-1.5" title={t('queryResult.executionTime')}>
         <ClockIcon className="h-3.5 w-3.5" />
         <span>{formatExecutionTime(executionTime)}</span>
       </div>
-      <div className="flex items-center gap-1.5" title="影响行数">
+      <div className="flex items-center gap-1.5" title={t('queryResult.affectedRows')}>
         <RowsIcon className="h-3.5 w-3.5" />
-        <span>{affectedRows > 0 ? `${affectedRows} 行受影响` : `${rowCount} 行`}</span>
+        <span>{affectedRows > 0 ? `${affectedRows} ${t('queryResult.rowsAffected')}` : `${rowCount} ${t('queryResult.rows')}`}</span>
       </div>
-      <div>{columnCount} 列</div>
+      <div>{columnCount} {t('queryResult.columns')}</div>
       
       <div className="ml-auto flex items-center gap-1">
         <button
           onClick={onExportCSV}
           className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-          title="导出为 CSV"
+          title={t('queryResult.exportCsv')}
         >
           <DownloadIcon className="h-3 w-3" />
           CSV
@@ -305,7 +306,7 @@ function ResultMetaBar({ executionTime, affectedRows, rowCount, columnCount, onE
         <button
           onClick={onExportJSON}
           className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-          title="导出为 JSON"
+          title={t('queryResult.exportJson')}
         >
           <DownloadIcon className="h-3 w-3" />
           JSON
@@ -323,6 +324,7 @@ interface TableHeaderCellProps {
 }
 
 function TableHeaderCell({ column, columnIndex, sortState, onSort }: TableHeaderCellProps) {
+  const t = useT();
   const isSorted = sortState.columnIndex === columnIndex;
   const sortDirection = isSorted ? sortState.direction : null;
 
@@ -333,7 +335,7 @@ function TableHeaderCell({ column, columnIndex, sortState, onSort }: TableHeader
         isSorted && "bg-accent/30"
       )}
       onClick={() => onSort(columnIndex)}
-      title={`${column.name} (${column.data_type}) - 点击排序`}
+      title={`${column.name} (${column.data_type}) - ${t('queryResult.clickToSort')}`}
     >
       <div className="flex items-center gap-2">
         <div className="flex flex-col">
@@ -428,6 +430,7 @@ interface SingleResultProps {
 }
 
 function SingleResult({ result, resultIndex }: SingleResultProps) {
+  const t = useT();
   const [sortState, setSortState] = React.useState<SortState>({ columnIndex: null, direction: null });
 
   React.useEffect(() => {
@@ -443,8 +446,8 @@ function SingleResult({ result, resultIndex }: SingleResultProps) {
     });
   }, []);
 
-  const handleExportCSV = () => exportToCSV(result, `result_${resultIndex + 1}.csv`);
-  const handleExportJSON = () => exportToJSON(result, `result_${resultIndex + 1}.json`);
+  const handleExportCSV = () => exportToCSV(result, `result_${resultIndex + 1}.csv`, t);
+  const handleExportJSON = () => exportToJSON(result, `result_${resultIndex + 1}.json`, t);
 
   // 无数据但有影响行数（UPDATE/DELETE 等）
   if (result.rows.length === 0 && result.affected_rows > 0) {
@@ -460,8 +463,8 @@ function SingleResult({ result, resultIndex }: SingleResultProps) {
         />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
           <RowsIcon className="h-12 w-12 opacity-50" />
-          <p className="text-sm">查询执行成功</p>
-          <p className="text-xs">{result.affected_rows} 行受影响</p>
+          <p className="text-sm">{t('queryResult.queryExecutedSuccessfully')}</p>
+          <p className="text-xs">{result.affected_rows} {t('queryResult.rowsAffected')}</p>
         </div>
       </div>
     );
@@ -481,7 +484,7 @@ function SingleResult({ result, resultIndex }: SingleResultProps) {
         />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
           <EmptyIcon className="h-12 w-12 opacity-50" />
-          <p className="text-sm">查询返回空结果</p>
+          <p className="text-sm">{t('queryResult.queryReturnedEmpty')}</p>
         </div>
       </div>
     );
@@ -507,6 +510,7 @@ function SingleResult({ result, resultIndex }: SingleResultProps) {
 // ============================================================================
 
 export function QueryResultView({ results, loading, error, className }: ResultTableProps) {
+  const t = useT();
   const [activeResultIndex, setActiveResultIndex] = React.useState(0);
 
   // 当结果变化时重置选中的结果索引
@@ -540,7 +544,7 @@ export function QueryResultView({ results, loading, error, className }: ResultTa
     <div className={cn("flex h-full flex-col bg-background", className)}>
       {/* 结果集 Tab 栏 */}
       <div className="flex items-center gap-1 border-b border-border bg-muted/50 px-2 py-1">
-        <span className="text-xs text-muted-foreground mr-2">结果集:</span>
+        <span className="text-xs text-muted-foreground mr-2">{t('queryResult.resultSets')}</span>
         {results.map((_, index) => (
           <button
             key={index}
@@ -556,7 +560,7 @@ export function QueryResultView({ results, loading, error, className }: ResultTa
           </button>
         ))}
         <span className="ml-auto text-xs text-muted-foreground">
-          共 {results.length} 个结果集
+          {t('queryResult.totalResultSets', { count: results.length })}
         </span>
       </div>
       

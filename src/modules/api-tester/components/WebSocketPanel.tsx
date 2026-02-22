@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useT } from '@/i18n';
 
 interface Message {
   id: number;
@@ -8,6 +9,7 @@ interface Message {
 }
 
 export function WebSocketPanel() {
+  const t = useT();
   const [url, setUrl] = useState('wss://echo.websocket.org');
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,17 +31,17 @@ export function WebSocketPanel() {
       const ws = new WebSocket(url);
       ws.onopen = () => {
         setConnected(true);
-        addMessage('system', 'Connected');
+        addMessage('system', t('wsPanel.connected'));
       };
       ws.onmessage = (e) => {
         addMessage('received', e.data);
       };
       ws.onclose = () => {
         setConnected(false);
-        addMessage('system', 'Disconnected');
+        addMessage('system', t('wsPanel.disconnected'));
       };
       ws.onerror = () => {
-        addMessage('system', 'Connection error');
+        addMessage('system', t('wsPanel.connectionError'));
       };
       wsRef.current = ws;
     } catch (e) {
@@ -72,14 +74,14 @@ export function WebSocketPanel() {
         <span className="ws-badge">WS</span>
         <input className="ws-url" value={url} onChange={e => setUrl(e.target.value)} placeholder="wss://..." disabled={connected} />
         {connected ? (
-          <button className="btn danger" onClick={disconnect}>Disconnect</button>
+          <button className="btn danger" onClick={disconnect}>{t('wsPanel.disconnect')}</button>
         ) : (
-          <button className="btn" onClick={connect}>Connect</button>
+          <button className="btn" onClick={connect}>{t('wsPanel.connect')}</button>
         )}
       </div>
       <div className="ws-messages-header">
-        <span>Messages</span>
-        <button className="icon-btn" onClick={clear}>Clear</button>
+        <span>{t('wsPanel.messages')}</span>
+        <button className="icon-btn" onClick={clear}>{t('wsPanel.clear')}</button>
       </div>
       <div className="ws-messages">
         {messages.map(msg => (
@@ -92,8 +94,8 @@ export function WebSocketPanel() {
       </div>
       <div className="ws-input-bar">
         <input className="ws-input" value={input} onChange={e => setInput(e.target.value)} 
-          onKeyDown={e => e.key === 'Enter' && send()} placeholder="Message..." disabled={!connected} />
-        <button className="btn" onClick={send} disabled={!connected}>Send</button>
+          onKeyDown={e => e.key === 'Enter' && send()} placeholder={t('wsPanel.message')} disabled={!connected} />
+        <button className="btn" onClick={send} disabled={!connected}>{t('wsPanel.send')}</button>
       </div>
     </div>
   );

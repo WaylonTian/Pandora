@@ -182,7 +182,7 @@ export function SlowQueryLog({
           <span className="text-xs font-semibold">{t('slowQueryLog.title')}</span>
           {stats && (
             <span className="text-[10px] text-muted-foreground">
-              ({stats.count} 条)
+              ({stats.count} {t('slowQueryLog.count')})
             </span>
           )}
         </div>

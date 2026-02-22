@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/i18n";
 import { tauriCommands, type TableInfo, type ColumnDefinition } from "../store/index";
 
 /**
@@ -558,10 +559,11 @@ function validateForm(tableName: string, columns: EditableColumn[]): FormErrors 
  * Loading state component
  */
 function LoadingState() {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-muted-foreground">
       <LoadingSpinner className="h-8 w-8" />
-      <p className="text-sm">Loading table structure...</p>
+      <p className="text-sm">{t('tableDesigner.loadingStructure')}</p>
     </div>
   );
 }
@@ -570,11 +572,12 @@ function LoadingState() {
  * Error state component
  */
 function ErrorState({ error }: { error: string }) {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 p-4">
       <div className="flex items-center gap-2 text-destructive">
         <AlertIcon className="h-6 w-6" />
-        <span className="font-medium">Error</span>
+        <span className="font-medium">{t('tableDesigner.error')}</span>
       </div>
       <div className="max-w-full rounded-md border border-destructive/30 bg-destructive/10 p-4">
         <pre className="whitespace-pre-wrap break-words text-sm text-destructive">
@@ -593,6 +596,7 @@ interface ColumnRowProps {
   index: number;
   totalColumns: number;
   error?: string;
+  t: (key: string, params?: Record<string, any>) => string;
   onUpdate: (id: string, updates: Partial<EditableColumn>) => void;
   onDelete: (id: string) => void;
   onMoveUp: (id: string) => void;
@@ -604,6 +608,7 @@ function ColumnRow({
   index,
   totalColumns,
   error,
+  t,
   onUpdate,
   onDelete,
   onMoveUp,
@@ -684,7 +689,7 @@ function ColumnRow({
             ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
             : "bg-muted text-muted-foreground hover:bg-muted/80"
         )}
-        title="Primary Key"
+        title={t('tableDesigner.primaryKey')}
       >
         <KeyIcon className="h-4 w-4" />
       </button>
@@ -700,7 +705,7 @@ function ColumnRow({
             ? "bg-blue-500/20 text-blue-600 dark:text-blue-400"
             : "bg-muted text-muted-foreground hover:bg-muted/80"
         )}
-        title="Auto Increment"
+        title={t('tableDesigner.autoIncrement')}
       >
         <BoltIcon className="h-4 w-4" />
       </button>
@@ -712,7 +717,7 @@ function ColumnRow({
           onClick={() => onMoveUp(column.id)}
           disabled={isFirst || column.isDeleted}
           className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Move Up"
+          title={t('tableDesigner.moveUp')}
         >
           <ArrowUpIcon className="h-4 w-4" />
         </button>
@@ -721,7 +726,7 @@ function ColumnRow({
           onClick={() => onMoveDown(column.id)}
           disabled={isLast || column.isDeleted}
           className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Move Down"
+          title={t('tableDesigner.moveDown')}
         >
           <ArrowDownIcon className="h-4 w-4" />
         </button>
@@ -734,7 +739,7 @@ function ColumnRow({
               ? "text-green-600 hover:bg-green-500/20"
               : "text-destructive hover:bg-destructive/20"
           )}
-          title={column.isDeleted ? "Restore Column" : "Delete Column"}
+          title={column.isDeleted ? t('tableDesigner.restoreColumn') : t('tableDesigner.deleteColumn')}
         >
           <TrashIcon className="h-4 w-4" />
         </button>
@@ -748,9 +753,10 @@ function ColumnRow({
  */
 interface SqlPreviewProps {
   sql: string;
+  t: (key: string, params?: Record<string, any>) => string;
 }
 
-function SqlPreview({ sql }: SqlPreviewProps) {
+function SqlPreview({ sql, t }: SqlPreviewProps) {
   const [copied, setCopied] = React.useState(false);
 
   const handleCopy = async () => {
@@ -777,7 +783,7 @@ function SqlPreview({ sql }: SqlPreviewProps) {
           onClick={handleCopy}
           className="h-7 text-xs"
         >
-          {copied ? "Copied!" : "Copy"}
+          {copied ? t('tableDesigner.copied') : t('tableDesigner.copy')}
         </Button>
       </div>
       <pre className="overflow-auto p-3 text-sm font-mono text-muted-foreground max-h-[200px]">
@@ -805,6 +811,8 @@ export function TableDesigner({
   onCancel,
   className,
 }: TableDesignerProps) {
+  const t = useT();
+  
   // State
   const [tableName, setTableName] = React.useState(existingTableName || "");
   const [columns, setColumns] = React.useState<EditableColumn[]>([createDefaultColumn()]);
@@ -977,7 +985,7 @@ export function TableDesigner({
       <div className="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-3">
         <TableIcon className="h-5 w-5 text-muted-foreground" />
         <h2 className="font-medium">
-          {isEditMode ? `Edit Table: ${existingTableName}` : "Create New Table"}
+          {isEditMode ? t('tableDesigner.editTable', { name: existingTableName }) : t('tableDesigner.createNewTable')}
         </h2>
       </div>
 
@@ -1014,7 +1022,7 @@ export function TableDesigner({
         {/* Columns Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-base font-medium">Columns</Label>
+            <Label className="text-base font-medium">{t('tableDesigner.columns')}</Label>
             <Button
               type="button"
               variant="outline"
@@ -1029,13 +1037,13 @@ export function TableDesigner({
 
           {/* Column Headers */}
           <div className="grid grid-cols-[1fr_150px_80px_120px_60px_60px_100px] gap-2 px-2 text-xs font-medium text-muted-foreground">
-            <span>Name</span>
-            <span>Type</span>
-            <span className="text-center">Nullable</span>
-            <span>Default</span>
+            <span>{t('tableDesigner.name')}</span>
+            <span>{t('tableDesigner.type')}</span>
+            <span className="text-center">{t('tableDesigner.nullable')}</span>
+            <span>{t('tableDesigner.default')}</span>
             <span className="text-center" title="Primary Key">PK</span>
             <span className="text-center" title="Auto Increment">AI</span>
-            <span className="text-right">Actions</span>
+            <span className="text-right">{t('tableDesigner.actions')}</span>
           </div>
 
           {/* Column Rows */}
@@ -1047,6 +1055,7 @@ export function TableDesigner({
                 index={index}
                 totalColumns={displayColumns.length}
                 error={errors.columns?.[column.id]}
+                t={t}
                 onUpdate={handleUpdateColumn}
                 onDelete={handleDeleteColumn}
                 onMoveUp={handleMoveUp}
@@ -1057,7 +1066,7 @@ export function TableDesigner({
 
           {displayColumns.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">No columns defined</p>
+              <p className="text-sm">{t('tableDesigner.noColumns')}</p>
               <Button
                 type="button"
                 variant="outline"
@@ -1073,7 +1082,7 @@ export function TableDesigner({
         </div>
 
         {/* SQL Preview */}
-        <SqlPreview sql={sqlPreview} />
+        <SqlPreview sql={sqlPreview} t={t} />
       </div>
 
       {/* Footer with actions */}
@@ -1087,10 +1096,10 @@ export function TableDesigner({
           {isSaving ? (
             <>
               <LoadingSpinner className="mr-2 h-4 w-4" />
-              {isEditMode ? "Applying Changes..." : "Creating Table..."}
+              {isEditMode ? t('tableDesigner.applyingChanges') : t('tableDesigner.creatingTable')}
             </>
           ) : (
-            isEditMode ? "Apply Changes" : "Create Table"
+            isEditMode ? t('tableDesigner.applyChanges') : t('tableDesigner.createTable')
           )}
         </Button>
       </div>

@@ -6,7 +6,7 @@ export function ToolkitLayout() {
   const t = useT();
   const [activeToolId, setActiveToolId] = useState<string>(getTools()[0]?.id || "");
   const grouped = getToolsByCategory();
-  const activeTool = getTools().find(t => t.id === activeToolId);
+  const activeTool = getTools().find(item => item.id === activeToolId);
   const ActiveComponent = activeTool?.component;
 
   const categoryLabels: Record<string, string> = {
@@ -38,7 +38,7 @@ export function ToolkitLayout() {
                 <div className="w-7 h-7 flex items-center justify-center rounded bg-muted text-xs font-mono">
                   {tool.icon}
                 </div>
-                <span>{tool.name}</span>
+                <span>{t(tool.name)}</span>
               </button>
             ))}
           </div>
@@ -46,7 +46,7 @@ export function ToolkitLayout() {
       </div>
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-3xl">
-          {ActiveComponent ? <ActiveComponent /> : <div className="text-muted-foreground">Select a tool</div>}
+          {ActiveComponent ? <ActiveComponent /> : <div className="text-muted-foreground">{t('toolkit.selectTool')}</div>}
         </div>
       </div>
     </div>

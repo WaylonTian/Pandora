@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useT } from '@/i18n';
 import { generateCode } from '../utils/codegen';
 
 interface Props {
@@ -21,6 +22,7 @@ const LANGUAGES = [
 ];
 
 export function CodeGenModal({ method, url, headers, body, onClose }: Props) {
+  const t = useT();
   const [language, setLanguage] = useState('curl');
   const code = generateCode(language, method, url, headers, body);
 
@@ -32,7 +34,7 @@ export function CodeGenModal({ method, url, headers, body, onClose }: Props) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal codegen-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <span>Generate Code</span>
+          <span>{t('codeGenModal.title')}</span>
           <button className="icon-btn" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
@@ -46,8 +48,8 @@ export function CodeGenModal({ method, url, headers, body, onClose }: Props) {
           <pre className="codegen-output">{code}</pre>
         </div>
         <div className="modal-footer">
-          <button className="btn" onClick={copyCode}>Copy to Clipboard</button>
-          <button className="btn secondary" onClick={onClose}>Close</button>
+          <button className="btn" onClick={copyCode}>{t('codeGenModal.copyToClipboard')}</button>
+          <button className="btn secondary" onClick={onClose}>{t('codeGenModal.close')}</button>
         </div>
       </div>
     </div>

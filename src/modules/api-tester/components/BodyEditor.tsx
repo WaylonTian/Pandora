@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useT } from '@/i18n';
 
 type BodyType = 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw' | 'binary';
 
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function BodyEditor({ bodyType, body, formData, onBodyTypeChange, onBodyChange, onFormDataChange }: Props) {
+  const t = useT();
   const [rawType, setRawType] = useState('text');
 
   // 确保至少有一行空行
@@ -56,13 +58,13 @@ export function BodyEditor({ bodyType, body, formData, onBodyTypeChange, onBodyC
       </div>
 
       {bodyType === 'none' && (
-        <div className="body-none">This request does not have a body</div>
+        <div className="body-none">{t('bodyEditor.noBody')}</div>
       )}
 
       {bodyType === 'json' && (
         <div className="body-json">
           <div className="body-json-toolbar">
-            <button className="icon-btn" onClick={formatJson}>Format</button>
+            <button className="icon-btn" onClick={formatJson}>{t('bodyEditor.format')}</button>
           </div>
           <textarea className="body-textarea json" placeholder='{"key": "value"}' value={body} onChange={e => onBodyChange(e.target.value)} />
         </div>
@@ -78,7 +80,7 @@ export function BodyEditor({ bodyType, body, formData, onBodyTypeChange, onBodyC
               <option value="xml">XML</option>
             </select>
           </div>
-          <textarea className="body-textarea" placeholder="Raw body content" value={body} onChange={e => onBodyChange(e.target.value)} />
+          <textarea className="body-textarea" placeholder={t('bodyEditor.rawBodyContent')} value={body} onChange={e => onBodyChange(e.target.value)} />
         </div>
       )}
 
@@ -86,15 +88,15 @@ export function BodyEditor({ bodyType, body, formData, onBodyTypeChange, onBodyC
         <div className="body-form">
           <div className="kv-header">
             <span style={{ width: 30 }}></span>
-            <span style={{ flex: 2 }}>Key</span>
+            <span style={{ flex: 2 }}>{t('bodyEditor.key')}</span>
             {bodyType === 'form-data' && <span style={{ width: 80 }}>Type</span>}
-            <span style={{ flex: 3 }}>Value</span>
+            <span style={{ flex: 3 }}>{t('bodyEditor.value')}</span>
             <span style={{ width: 30 }}></span>
           </div>
           {displayFormData.map((item, i) => (
             <div key={i} className={`kv-row-advanced ${!item.enabled ? 'disabled' : ''}`}>
               <input type="checkbox" checked={item.enabled} onChange={e => updateFormItem(i, 'enabled', e.target.checked)} />
-              <input className="kv-input" placeholder="Key" value={item.key} onChange={e => updateFormItem(i, 'key', e.target.value)} />
+              <input className="kv-input" placeholder={t('bodyEditor.key')} value={item.key} onChange={e => updateFormItem(i, 'key', e.target.value)} />
               {bodyType === 'form-data' && (
                 <select className="form-type-select" value={item.type} onChange={e => updateFormItem(i, 'type', e.target.value)}>
                   <option value="text">Text</option>
@@ -104,7 +106,7 @@ export function BodyEditor({ bodyType, body, formData, onBodyTypeChange, onBodyC
               {item.type === 'file' && bodyType === 'form-data' ? (
                 <input type="file" className="kv-input file-input large" onChange={e => updateFormItem(i, 'value', e.target.files?.[0]?.name || '')} />
               ) : (
-                <input className="kv-input large" placeholder="Value" value={item.value} onChange={e => updateFormItem(i, 'value', e.target.value)} />
+                <input className="kv-input large" placeholder={t('bodyEditor.value')} value={item.value} onChange={e => updateFormItem(i, 'value', e.target.value)} />
               )}
               <button className="kv-delete" onClick={() => removeFormItem(i)}>×</button>
             </div>
@@ -115,7 +117,7 @@ export function BodyEditor({ bodyType, body, formData, onBodyTypeChange, onBodyC
       {bodyType === 'binary' && (
         <div className="body-binary">
           <input type="file" className="binary-input" />
-          <p className="body-hint">Select a file to send as binary data</p>
+          <p className="body-hint">{t('bodyEditor.selectBinaryFile')}</p>
         </div>
       )}
     </div>

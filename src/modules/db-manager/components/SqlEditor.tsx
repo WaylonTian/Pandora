@@ -628,6 +628,7 @@ interface ConnectedSqlEditorProps {
 }
 
 export function ConnectedSqlEditor({ className, onExplain, onAddFavorite }: ConnectedSqlEditorProps) {
+  const t = useT();
   const activeTab = useActiveTab();
   const activeConnection = useActiveConnection();
   const updateTabContent = useAppStore((state) => state.updateTabContent);
@@ -658,7 +659,7 @@ export function ConnectedSqlEditor({ className, onExplain, onAddFavorite }: Conn
   if (!activeTab) {
     return (
       <div className={cn("flex h-full items-center justify-center", className)}>
-        <p className="text-muted-foreground">No active tab</p>
+        <p className="text-muted-foreground">{t('sqlEditor.noActiveTab')}</p>
       </div>
     );
   }

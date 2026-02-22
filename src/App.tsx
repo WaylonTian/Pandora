@@ -5,11 +5,13 @@ import { getPanel, getAllPanels } from "@/layouts/panels";
 import { useLayoutStore } from "@/stores/layout";
 import { useThemeStore } from "@/stores/theme";
 import { Sidebar } from "@/components/Sidebar";
+import { useT } from '@/i18n';
 
 function PanelRenderer(props: IDockviewPanelProps) {
+  const t = useT();
   const panelId = props.params.panelId as string;
   const panel = getPanel(panelId);
-  if (!panel) return <div className="p-4 text-muted-foreground">Unknown panel: {panelId}</div>;
+  if (!panel) return <div className="p-4 text-muted-foreground">{t('app.unknownPanel', { panelId })}</div>;
   const Component = panel.component;
   return <Component {...props} />;
 }

@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
+import { useT } from '@/i18n';
 
 export function EnvironmentManager({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const store = useStore();
   const [selectedEnvId, setSelectedEnvId] = useState<number | null>(store.activeEnvId);
   const [newEnvName, setNewEnvName] = useState('');
@@ -40,7 +42,7 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
   };
 
   const handleDeleteEnv = async (id: number) => {
-    if (confirm('Delete this environment?')) {
+    if (confirm(t('envManager.deleteConfirm'))) {
       await store.deleteEnvironment(id);
       if (selectedEnvId === id) {
         setSelectedEnvId(null);
@@ -111,19 +113,19 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal env-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <span>Manage Environments</span>
+          <span>{t('envManager.title')}</span>
           <button className="icon-btn" onClick={onClose}>×</button>
         </div>
         <div className="modal-body env-body">
           {/* 左侧环境列表 */}
           <div className="env-list">
             <div className="env-list-header">
-              <span>Environments</span>
+              <span>{t('envManager.environments')}</span>
             </div>
             <div className="env-create">
               <input
                 className="env-input"
-                placeholder="New environment..."
+                placeholder={t('envManager.newEnvironment')}
                 value={newEnvName}
                 onChange={e => setNewEnvName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleCreateEnv()}
@@ -138,7 +140,7 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
                   onClick={() => env.id && handleSelectEnv(env.id)}
                 >
                   <span className="env-name">{env.name}</span>
-                  {env.is_active && <span className="env-active-badge">Active</span>}
+                  {env.is_active && <span className="env-active-badge">{t('envManager.active')}</span>}
                   <button
                     className="env-delete"
                     onClick={e => { e.stopPropagation(); env.id && handleDeleteEnv(env.id); }}
@@ -146,7 +148,7 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
               {store.environments.length === 0 && (
-                <div className="env-empty">No environments yet</div>
+                <div className="env-empty">{t('envManager.noEnvironments')}</div>
               )}
             </div>
           </div>
@@ -156,15 +158,15 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
             {selectedEnv ? (
               <>
                 <div className="env-var-header">
-                  <span>{selectedEnv.name} Variables</span>
-                  <span className="env-hint">Use {'{{variable}}'} in requests</span>
+                  <span>{selectedEnv.name} {t('envManager.variables')}</span>
+                  <span className="env-hint">{t('envManager.useHint')}</span>
                 </div>
                 <div className="env-var-table">
                   <div className="env-var-row header">
                     <span style={{ width: 30 }}></span>
-                    <span style={{ flex: 1 }}>Variable</span>
-                    <span style={{ flex: 2 }}>Value</span>
-                    <span style={{ width: 60 }}>Actions</span>
+                    <span style={{ flex: 1 }}>{t('envManager.variable')}</span>
+                    <span style={{ flex: 2 }}>{t('envManager.value')}</span>
+                    <span style={{ width: 60 }}>{t('envManager.actions')}</span>
                   </div>
                   {variables.map((v, i) => (
                     <div key={i} className={`env-var-row ${!v.enabled ? 'disabled' : ''}`}>
@@ -175,13 +177,13 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
                       />
                       <input
                         className="env-var-input"
-                        placeholder="Variable name"
+                        placeholder={t('envManager.variableName')}
                         value={v.key}
                         onChange={e => updateVariable(i, 'key', e.target.value)}
                       />
                       <input
                         className="env-var-input"
-                        placeholder="Value"
+                        placeholder={t('envManager.value')}
                         value={v.value}
                         onChange={e => updateVariable(i, 'value', e.target.value)}
                       />
@@ -192,7 +194,7 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
                   ))}
                 </div>
                 <div className="env-presets">
-                  <span className="env-preset-title">Quick Add:</span>
+                  <span className="env-preset-title">{t('envManager.quickAdd')}</span>
                   <button className="env-preset-btn" onClick={() => addPresetVariable('baseUrl', 'http://localhost:3000')}>baseUrl</button>
                   <button className="env-preset-btn" onClick={() => addPresetVariable('apiKey', '')}>apiKey</button>
                   <button className="env-preset-btn" onClick={() => addPresetVariable('token', '')}>token</button>
@@ -200,14 +202,14 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
               </>
             ) : (
               <div className="env-no-selection">
-                <p>Select an environment to edit variables</p>
-                <p className="env-hint">Or create a new environment</p>
+                <p>{t('envManager.selectEnv')}</p>
+                <p className="env-hint">{t('envManager.orCreateNew')}</p>
               </div>
             )}
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn" onClick={onClose}>Done</button>
+          <button className="btn" onClick={onClose}>{t('envManager.done')}</button>
         </div>
       </div>
     </div>

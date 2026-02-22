@@ -760,7 +760,7 @@ function PaginationControls({
       {/* Left side: Row count info */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>
-          {t('dataBrowser.showing')} {startRow}-{endRow} / {t('dataBrowser.total')} {totalRows} 行
+          {t('dataBrowser.showing')} {startRow}-{endRow} / {t('dataBrowser.total')} {totalRows} {t('dataBrowser.rows')}
         </span>
       </div>
 
@@ -776,7 +776,7 @@ function PaginationControls({
         </button>
         
         <span className="min-w-[80px] text-center text-xs text-muted-foreground">
-          {t('dataBrowser.page')} {currentPage} {t('dataBrowser.of')} {totalPages} 页
+          {t('dataBrowser.page')} {currentPage} {t('dataBrowser.of')} {totalPages}
         </span>
         
         <button

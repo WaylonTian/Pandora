@@ -1,61 +1,63 @@
 import { useSettingsStore } from '../stores/settings';
+import { useT } from '@/i18n';
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const settings = useSettingsStore();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal settings-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <span>Settings</span>
+          <span>{t('settingsModal.title')}</span>
           <button className="icon-btn" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
           <div className="settings-section">
-            <h3>Appearance</h3>
+            <h3>{t('settingsModal.appearance')}</h3>
             <div className="setting-row">
-              <label>Font Size</label>
+              <label>{t('settingsModal.fontSize')}</label>
               <input type="number" value={settings.fontSize} onChange={e => settings.setFontSize(Number(e.target.value))} min={10} max={20} />
             </div>
           </div>
 
           <div className="settings-section">
-            <h3>Request</h3>
+            <h3>{t('settingsModal.request')}</h3>
             <div className="setting-row">
-              <label>Timeout (ms)</label>
+              <label>{t('settingsModal.timeout')}</label>
               <input type="number" value={settings.timeout} onChange={e => settings.setTimeout(Number(e.target.value))} />
             </div>
             <div className="setting-row">
-              <label>Follow Redirects</label>
+              <label>{t('settingsModal.followRedirects')}</label>
               <input type="checkbox" checked={settings.followRedirects} onChange={e => settings.setFollowRedirects(e.target.checked)} />
             </div>
             <div className="setting-row">
-              <label>Validate SSL</label>
+              <label>{t('settingsModal.validateSSL')}</label>
               <input type="checkbox" checked={settings.validateSSL} onChange={e => settings.setValidateSSL(e.target.checked)} />
             </div>
           </div>
 
           <div className="settings-section">
-            <h3>Proxy</h3>
+            <h3>{t('settingsModal.proxy')}</h3>
             <div className="setting-row">
-              <label>Enable Proxy</label>
+              <label>{t('settingsModal.enableProxy')}</label>
               <input type="checkbox" checked={settings.proxy.enabled} onChange={e => settings.setProxy({ ...settings.proxy, enabled: e.target.checked })} />
             </div>
             {settings.proxy.enabled && (
               <>
                 <div className="setting-row">
-                  <label>Type</label>
+                  <label>{t('settingsModal.type')}</label>
                   <select value={settings.proxy.type} onChange={e => settings.setProxy({ ...settings.proxy, type: e.target.value as any })}>
                     <option value="http">HTTP</option>
                     <option value="socks5">SOCKS5</option>
                   </select>
                 </div>
                 <div className="setting-row">
-                  <label>Host</label>
+                  <label>{t('settingsModal.host')}</label>
                   <input value={settings.proxy.host} onChange={e => settings.setProxy({ ...settings.proxy, host: e.target.value })} placeholder="127.0.0.1" />
                 </div>
                 <div className="setting-row">
-                  <label>Port</label>
+                  <label>{t('settingsModal.port')}</label>
                   <input type="number" value={settings.proxy.port} onChange={e => settings.setProxy({ ...settings.proxy, port: Number(e.target.value) })} />
                 </div>
               </>
@@ -63,7 +65,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn" onClick={onClose}>Done</button>
+          <button className="btn" onClick={onClose}>{t('settingsModal.done')}</button>
         </div>
       </div>
     </div>

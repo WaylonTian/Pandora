@@ -118,7 +118,9 @@ export const zh: Record<string, string> = {
   "queryResult.queryExecutedSuccessfully": "查询执行成功",
   "queryResult.queryReturnedEmpty": "查询返回空结果",
   "queryResult.resultSets": "结果集:",
-  "queryResult.totalResultSets": "个结果集",
+  "queryResult.totalResultSets": "共 {count} 个结果集",
+  "queryResult.executionTime": "执行时间",
+  "queryResult.affectedRows": "影响行数",
   "queryHistory.searchHistory": "搜索历史...",
   "queryHistory.noQueryHistory": "暂无查询历史",
   "queryHistory.executeQueryToShow": "执行查询后会显示在这里",
@@ -231,6 +233,7 @@ export const zh: Record<string, string> = {
   "dataGenerator.cancelButton": "取消",
   "dataGenerator.generateRowsButton": "生成 {count} 行",
   "dataGenerator.generateSummary": "将生成 {rowCount} 行数据，包含 {fieldCount} 个字段",
+  "dataGenerator.testDataPrefix": "测试数据",
 
   // === DB Manager - Data Masking ===
   "dataMasking.dataMaskingTitle": "数据脱敏配置",
@@ -427,4 +430,268 @@ export const zh: Record<string, string> = {
   "toolkit.hostsEditorTool.readFailed": "读取 hosts 文件失败",
   "toolkit.hostsEditorTool.saveSuccess": "Hosts 文件保存成功",
   "toolkit.hostsEditorTool.saveFailed": "保存失败",
+
+  // === API Tester - Context Menu ===
+  "apiTester.newRequest": "新建请求",
+  "apiTester.rename": "重命名",
+  "apiTester.delete": "删除",
+  "apiTester.openInNewTab": "在新标签页打开",
+  "apiTester.duplicate": "复制",
+  "apiTester.renamePrompt": "重命名:",
+  "apiTester.copy": "(副本)",
+
+  // === API Tester - Sidebar ===
+  "apiTester.collections": "集合",
+  "apiTester.history": "历史",
+  "apiTester.newCollection": "新建集合...",
+  "apiTester.new": "+ 新建",
+  "apiTester.clear": "清除",
+
+  // === API Tester - Toolbar ===
+  "apiTester.importCurl": "导入 cURL",
+  "apiTester.importOpenApi": "导入 OpenAPI/Postman",
+  "apiTester.copyAsCurl": "复制为 cURL",
+  "apiTester.generateCode": "生成代码",
+  "apiTester.tools": "工具",
+  "apiTester.webSocket": "WebSocket",
+  "apiTester.collectionRunner": "集合运行器",
+  "apiTester.noEnvironment": "无环境",
+  "apiTester.manageEnvironments": "管理环境",
+  "apiTester.settings": "设置",
+
+  // === API Tester - Request ===
+  "apiTester.enterUrl": "输入 URL",
+  "apiTester.sending": "发送中...",
+  "apiTester.send": "发送",
+  "apiTester.save": "保存",
+  "apiTester.params": "参数",
+  "apiTester.headers": "请求头",
+  "apiTester.body": "请求体",
+  "apiTester.auth": "认证",
+  "apiTester.scripts": "脚本",
+  "apiTester.requestName": "请求名称",
+  "apiTester.queryParams": "查询参数",
+
+  // === API Tester - Auth ===
+  "apiTester.authorizationType": "认证类型",
+  "apiTester.noAuth": "无认证",
+  "apiTester.basicAuth": "Basic 认证",
+  "apiTester.bearerToken": "Bearer Token",
+  "apiTester.username": "用户名",
+  "apiTester.password": "密码",
+  "apiTester.token": "Token",
+
+  // === API Tester - Response ===
+  "apiTester.cookies": "Cookies",
+  "apiTester.timing": "耗时",
+  "apiTester.diff": "对比",
+  "apiTester.pretty": "美化",
+  "apiTester.raw": "原始",
+  "apiTester.tree": "树形",
+  "apiTester.search": "搜索...",
+  "apiTester.copy2": "复制",
+  "apiTester.noCookies": "无 Cookies",
+  "apiTester.sendRequest": "发送请求以查看响应",
+  "apiTester.openOrCreate": "打开请求或创建新标签页",
+  "apiTester.importedRequest": "导入的请求",
+
+  // === API Tester - Keyboard Shortcuts ===
+  "apiTester.keyboardShortcuts": "键盘快捷键",
+  "apiTester.shortcut.sendRequest": "发送请求",
+  "apiTester.shortcut.saveRequest": "保存请求",
+  "apiTester.shortcut.newTab": "新建标签页",
+  "apiTester.shortcut.closeTab": "关闭标签页",
+  "apiTester.shortcut.focusUrl": "聚焦 URL",
+  "apiTester.shortcut.settings": "设置",
+  "apiTester.shortcut.shortcuts": "快捷键",
+  "apiTester.shortcut.closeModal": "关闭弹窗",
+
+  // === API Tester - Body Editor ===
+  "bodyEditor.noBody": "此请求没有请求体",
+  "bodyEditor.format": "格式化",
+  "bodyEditor.rawBodyContent": "原始请求体内容",
+  "bodyEditor.selectBinaryFile": "选择文件作为二进制数据发送",
+  "bodyEditor.key": "键",
+  "bodyEditor.value": "值",
+
+  // === API Tester - KeyValue Editor ===
+  "kvEditor.bulkEdit": "批量编辑",
+  "kvEditor.key": "键",
+  "kvEditor.value": "值",
+  "kvEditor.description": "描述",
+  "kvEditor.bulkEditPrompt": "批量编辑 (格式: key: value)",
+
+  // === API Tester - Code Gen Modal ===
+  "codeGenModal.title": "生成代码",
+  "codeGenModal.copyToClipboard": "复制到剪贴板",
+  "codeGenModal.close": "关闭",
+
+  // === API Tester - Import cURL Modal ===
+  "importCurlModal.title": "导入 cURL",
+  "importCurlModal.hint": "粘贴 cURL 命令以导入",
+  "importCurlModal.cancel": "取消",
+
+  // === API Tester - Settings Modal ===
+  "settingsModal.title": "设置",
+  "settingsModal.appearance": "外观",
+  "settingsModal.fontSize": "字体大小",
+  "settingsModal.request": "请求",
+  "settingsModal.timeout": "超时 (ms)",
+  "settingsModal.followRedirects": "跟随重定向",
+  "settingsModal.validateSSL": "验证 SSL",
+  "settingsModal.proxy": "代理",
+  "settingsModal.enableProxy": "启用代理",
+  "settingsModal.type": "类型",
+  "settingsModal.host": "主机",
+  "settingsModal.port": "端口",
+  "settingsModal.done": "完成",
+
+  // === API Tester - Environment Manager ===
+  "envManager.title": "管理环境",
+  "envManager.environments": "环境",
+  "envManager.newEnvironment": "新建环境...",
+  "envManager.deleteConfirm": "确定删除此环境？",
+  "envManager.active": "活跃",
+  "envManager.noEnvironments": "暂无环境",
+  "envManager.variables": "变量",
+  "envManager.useHint": "在请求中使用 {{variable}}",
+  "envManager.variable": "变量",
+  "envManager.value": "值",
+  "envManager.actions": "操作",
+  "envManager.variableName": "变量名",
+  "envManager.quickAdd": "快速添加:",
+  "envManager.selectEnv": "选择一个环境来编辑变量",
+  "envManager.orCreateNew": "或创建新环境",
+  "envManager.done": "完成",
+
+  // === API Tester - WebSocket Panel ===
+  "wsPanel.disconnect": "断开",
+  "wsPanel.connect": "连接",
+  "wsPanel.messages": "消息",
+  "wsPanel.clear": "清除",
+  "wsPanel.message": "消息...",
+  "wsPanel.send": "发送",
+  "wsPanel.connected": "已连接",
+  "wsPanel.disconnected": "已断开",
+  "wsPanel.connectionError": "连接错误",
+
+  // === API Tester - Tools Panel ===
+  "toolsPanel.title": "工具",
+  "toolsPanel.jwtToken": "JWT Token",
+  "toolsPanel.pasteJwt": "粘贴 JWT token...",
+  "toolsPanel.decode": "解码",
+  "toolsPanel.result": "结果",
+  "toolsPanel.invalidJwt": "无效的 JWT token",
+  "toolsPanel.input": "输入",
+  "toolsPanel.enterText": "输入文本...",
+  "toolsPanel.encode": "编码",
+  "toolsPanel.output": "输出",
+  "toolsPanel.enterUrl": "输入 URL 或文本...",
+  "toolsPanel.timestampOrDate": "时间戳或日期",
+  "toolsPanel.toDate": "转为日期",
+  "toolsPanel.toTimestamp": "转为时间戳",
+  "toolsPanel.current": "当前",
+  "toolsPanel.seconds": "秒",
+  "toolsPanel.milliseconds": "毫秒",
+  "toolsPanel.now": "当前",
+  "toolsPanel.generatedUuid": "生成的 UUID",
+  "toolsPanel.generate": "生成",
+  "toolsPanel.copy": "复制",
+  "toolsPanel.json": "JSON",
+  "toolsPanel.format": "格式化",
+  "toolsPanel.minify": "压缩",
+  "toolsPanel.enterTextToHash": "输入要哈希的文本...",
+
+  // === API Tester - Collection Runner ===
+  "collectionRunner.title": "集合运行器",
+
+  // === DB Manager - Connection Dialog ===
+  "connectionDialog.editConnection": "编辑连接",
+  "connectionDialog.newConnection": "新建连接",
+  "connectionDialog.connectionName": "连接名称",
+  "connectionDialog.databaseType": "数据库类型",
+  "connectionDialog.databaseFilePath": "数据库文件路径",
+  "connectionDialog.databaseName": "数据库名称",
+  "connectionDialog.host": "主机",
+  "connectionDialog.port": "端口",
+  "connectionDialog.username": "用户名",
+  "connectionDialog.password": "密码",
+  "connectionDialog.database": "数据库",
+  "connectionDialog.testConnection": "测试连接",
+  "connectionDialog.testing": "测试中...",
+  "connectionDialog.testingConnection": "正在测试连接...",
+  "connectionDialog.connectionSuccessful": "连接成功！",
+  "connectionDialog.connectionFailed": "连接失败",
+  "connectionDialog.saving": "保存中...",
+  "connectionDialog.save": "保存",
+  "connectionDialog.connectionNameRequired": "连接名称为必填项",
+  "connectionDialog.filePathRequired": "数据库文件路径为必填项",
+  "connectionDialog.hostRequired": "主机为必填项",
+  "connectionDialog.portInvalid": "端口必须在 1 到 65535 之间",
+  "connectionDialog.databaseRequired": "数据库名称为必填项",
+  "connectionDialog.testFailed": "连接测试失败",
+  "connectionDialog.saveFailed": "保存连接失败",
+
+  // === DB Manager - SQL Editor ===
+  "sqlEditor.noActiveTab": "无活动标签页",
+
+  // === DB Manager - Table Structure ===
+  "tableStructure.schema": "Schema",
+
+  // === DB Manager - Data Browser ===
+  "dataBrowser.rows": "行",
+
+  // === DB Manager - Slow Query Log ===
+  "slowQueryLog.count": "条",
+
+  // === DB Manager - Table Designer ===
+  "tableDesigner.loadingStructure": "加载表结构中...",
+  "tableDesigner.error": "错误",
+  "tableDesigner.columns": "列",
+  "tableDesigner.name": "名称",
+  "tableDesigner.type": "类型",
+  "tableDesigner.nullable": "可空",
+  "tableDesigner.default": "默认值",
+  "tableDesigner.actions": "操作",
+  "tableDesigner.noColumns": "未定义列",
+  "tableDesigner.primaryKey": "主键",
+  "tableDesigner.autoIncrement": "自增",
+  "tableDesigner.moveUp": "上移",
+  "tableDesigner.moveDown": "下移",
+  "tableDesigner.restoreColumn": "恢复列",
+  "tableDesigner.deleteColumn": "删除列",
+  "tableDesigner.copied": "已复制！",
+  "tableDesigner.copy": "复制",
+  "tableDesigner.editTable": "编辑表: {name}",
+  "tableDesigner.createNewTable": "新建表",
+  "tableDesigner.applyingChanges": "应用更改中...",
+  "tableDesigner.creatingTable": "创建表中...",
+  "tableDesigner.applyChanges": "应用更改",
+  "tableDesigner.createTable": "创建表",
+  "tableDesigner.tableNameRequired": "表名为必填项",
+  "tableDesigner.tableNameInvalid": "表名必须以字母或下划线开头，且只能包含字母、数字和下划线",
+  "tableDesigner.atLeastOneColumn": "至少需要一列",
+  "tableDesigner.columnNameRequired": "列名为必填项",
+  "tableDesigner.invalidColumnName": "无效的列名",
+  "tableDesigner.duplicateColumnName": "列名重复",
+
+  // === Script Runner ===
+  "scriptRunner.newScript": "+ 新建脚本",
+  "scriptRunner.running": "运行中...",
+  "scriptRunner.run": "▶ 运行",
+  "scriptRunner.delete": "删除",
+  "scriptRunner.selectOrCreate": "选择或创建脚本",
+
+  // === Toolkit ===
+  "toolkit.selectTool": "选择工具",
+  "toolkit.cryptoTool.md5NotSupportedOption": "MD5 (不支持)",
+
+  // === Data Masking Examples ===
+  "dataMasking.example.none.input": "原始数据",
+  "dataMasking.example.none.output": "原始数据",
+  "dataMasking.example.custom.input": "自定义",
+  "dataMasking.example.custom.output": "自定义",
+
+  // === App ===
+  "app.unknownPanel": "未知面板: {panelId}",
 };

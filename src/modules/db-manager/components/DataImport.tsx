@@ -278,7 +278,7 @@ export function DataImport({
               <div className="flex items-center justify-center gap-2">
                 <FileIcon className="h-6 w-6 text-primary" />
                 <span className="font-medium">{file.name}</span>
-                <span className="text-muted-foreground">({parsedData.length} 行)</span>
+                <span className="text-muted-foreground">({parsedData.length} {t('dataBrowser.rows')})</span>
               </div>
             ) : (
               <div

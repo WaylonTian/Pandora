@@ -81,7 +81,7 @@ export function CollectionRunner({ collections, onClose, environment: _environme
     <div className="modal-overlay" onClick={onClose}>
       <div className="runner-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Collection Runner</h3>
+          <h3>{t('collectionRunner.title')}</h3>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
