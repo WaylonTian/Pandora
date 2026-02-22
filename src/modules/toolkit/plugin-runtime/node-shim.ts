@@ -108,6 +108,30 @@ export function generateNodeShimScript(pluginId: string, serverPort?: number): s
       run: (args) => nodeCall('ffmpeg', 'run', [args]),
       probe: (input) => nodeCall('ffmpeg', 'probe', [input]),
     },
+    crypto: {
+      createHash: (alg) => {
+        let _data = '';
+        return {
+          update: (d) => { _data += (typeof d === 'string' ? d : String(d)); return { digest: (enc) => {
+            // Simple hash via Web Crypto is async; fallback to a sync djb2 for md5/hex
+            let h = 0;
+            for (let i = 0; i < _data.length; i++) { h = ((h << 5) - h + _data.charCodeAt(i)) | 0; }
+            const hex = (h >>> 0).toString(16).padStart(8, '0');
+            return hex + hex + hex + hex; // 32-char pseudo-hash
+          }};
+          }
+        };
+      },
+      randomBytes: (n) => {
+        const arr = new Uint8Array(n);
+        crypto.getRandomValues(arr);
+        return arr;
+      },
+    },
+    url: {
+      pathToFileURL: (p) => ({ href: 'file:///' + p.replace(/\\\\\\\\/g, '/').replace(/^\\//,'') }),
+      fileURLToPath: (u) => u.replace(/^file:\\/\\/\\//, '/').replace(/^file:\\/\\//, ''),
+    },
   };
 
   window.require = function(name) {
@@ -118,11 +142,38 @@ export function generateNodeShimScript(pluginId: string, serverPort?: number): s
   };
 
   window.process = { platform: modules.os.platform(), env: {}, versions: { node: '16.0.0' }, once: () => {} };
-  window.Buffer = window.Buffer || { from: (d, e) => {
-    if (typeof d === 'string' && e === 'base64') return d;
-    if (d instanceof ArrayBuffer) return new Uint8Array(d);
-    return d;
-  }};
+  window.Buffer = window.Buffer || {
+    from: (d, e) => {
+      if (typeof d === 'string' && e === 'base64') {
+        const bin = atob(d);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        arr.toString = function(enc) {
+          if (enc === 'hex') return Array.from(this).map(b => b.toString(16).padStart(2,'0')).join('');
+          return new TextDecoder().decode(this);
+        };
+        return arr;
+      }
+      if (d instanceof ArrayBuffer || d instanceof Uint8Array) {
+        const arr = d instanceof Uint8Array ? d : new Uint8Array(d);
+        arr.toString = function(enc) {
+          if (enc === 'hex') return Array.from(this).map(b => b.toString(16).padStart(2,'0')).join('');
+          if (enc === 'base64') {
+            let b = ''; const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+            for (let i = 0; i < this.length; i += 3) {
+              const a0 = this[i], a1 = this[i+1] || 0, a2 = this[i+2] || 0;
+              b += c[a0>>2] + c[((a0&3)<<4)|(a1>>4)] + (i+1<this.length ? c[((a1&15)<<2)|(a2>>6)] : '=') + (i+2<this.length ? c[a2&63] : '=');
+            }
+            return b;
+          }
+          return new TextDecoder().decode(this);
+        };
+        return arr;
+      }
+      return d;
+    },
+    isBuffer: (o) => o instanceof Uint8Array,
+  };
 })();
 `;
 }
