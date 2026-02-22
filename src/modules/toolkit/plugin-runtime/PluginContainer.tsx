@@ -9,52 +9,35 @@ interface Props {
   featureCode?: string;
 }
 
-async function readPluginFile(pluginId: string, path: string): Promise<string> {
+async function readPluginText(pluginId: string, path: string): Promise<string> {
   const bytes: number[] = await invoke("plugin_read_file", { pluginId, path });
   return new TextDecoder().decode(new Uint8Array(bytes));
 }
 
-async function buildSrcdoc(plugin: InstalledPlugin): Promise<string> {
+function buildSrcdoc(plugin: InstalledPlugin, preloadCode: string): string {
   const shim = generateShimScript(plugin.id);
-  const mainFile = plugin.manifest.main || "index.html";
-  const html = await readPluginFile(plugin.id, mainFile);
+  const baseUrl = `plugin://${encodeURIComponent(plugin.id)}/`;
 
-  const doc = new DOMParser().parseFromString(html, "text/html");
-
-  // Inline all <script src="..."> tags
-  const scripts = doc.querySelectorAll("script[src]");
-  for (const el of scripts) {
-    const src = el.getAttribute("src");
-    if (src && !src.startsWith("http")) {
-      try {
-        const code = await readPluginFile(plugin.id, src);
-        const inline = doc.createElement("script");
-        inline.textContent = code;
-        el.replaceWith(inline);
-      } catch { /* skip missing files */ }
-    }
-  }
-
-  // Inline all <link rel="stylesheet" href="...">
-  const links = doc.querySelectorAll('link[rel="stylesheet"]');
-  for (const el of links) {
-    const href = el.getAttribute("href");
-    if (href && !href.startsWith("http")) {
-      try {
-        const css = await readPluginFile(plugin.id, href);
-        const style = doc.createElement("style");
-        style.textContent = css;
-        el.replaceWith(style);
-      } catch { /* skip */ }
-    }
-  }
-
-  // Inject shim as first script in head
-  const shimEl = doc.createElement("script");
-  shimEl.textContent = shim;
-  doc.head.insertBefore(shimEl, doc.head.firstChild);
-
-  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+  return `<!DOCTYPE html>
+<html><head>
+<base href="${baseUrl}">
+<script>${shim}<\/script>
+${preloadCode ? `<script>${preloadCode}<\/script>` : ""}
+</head><body>
+<script>
+fetch("${baseUrl}${plugin.manifest.main || "index.html"}")
+  .then(r => r.text())
+  .then(html => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('link[rel="stylesheet"],style').forEach(el => document.head.appendChild(el.cloneNode(true)));
+    document.body.innerHTML = doc.body.innerHTML;
+    doc.querySelectorAll('script').forEach(el => {
+      const s = document.createElement('script');
+      if (el.src) s.src = el.src; else s.textContent = el.textContent;
+      document.body.appendChild(s);
+    });
+  });
+<\/script></body></html>`;
 }
 
 export function PluginContainer({ plugin, featureCode }: Props) {
@@ -63,7 +46,14 @@ export function PluginContainer({ plugin, featureCode }: Props) {
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    buildSrcdoc(plugin).then(setSrcdoc).catch((e) => setError(String(e)));
+    const preloadPath = plugin.manifest.preload;
+    if (preloadPath) {
+      readPluginText(plugin.id, preloadPath)
+        .then((code) => setSrcdoc(buildSrcdoc(plugin, code)))
+        .catch((e) => setError(String(e)));
+    } else {
+      setSrcdoc(buildSrcdoc(plugin, ""));
+    }
   }, [plugin.id]);
 
   useEffect(() => {

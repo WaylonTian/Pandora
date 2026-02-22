@@ -160,6 +160,41 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .register_uri_scheme_protocol("plugin", |_ctx, req| {
+            // URL: plugin://plugin-id/path/to/file
+            let uri = req.uri().to_string();
+            // parse: plugin://plugin-id/path
+            let stripped = uri.strip_prefix("plugin://").unwrap_or("");
+            let (plugin_id, path) = stripped.split_once('/').unwrap_or((stripped, ""));
+            let plugin_id = urlencoding::decode(plugin_id).unwrap_or_default();
+            let path = urlencoding::decode(path).unwrap_or_default();
+            let file_path = plugin::manager::plugins_dir().join(plugin_id.as_ref()).join(path.as_ref());
+
+            let mime = match file_path.extension().and_then(|e| e.to_str()) {
+                Some("html") => "text/html",
+                Some("js") => "application/javascript",
+                Some("css") => "text/css",
+                Some("json") => "application/json",
+                Some("png") => "image/png",
+                Some("jpg" | "jpeg") => "image/jpeg",
+                Some("svg") => "image/svg+xml",
+                Some("woff" | "woff2") => "font/woff2",
+                Some("ttf") => "font/ttf",
+                _ => "application/octet-stream",
+            };
+
+            match std::fs::read(&file_path) {
+                Ok(data) => tauri::http::Response::builder()
+                    .header("Content-Type", mime)
+                    .header("Access-Control-Allow-Origin", "*")
+                    .body(data)
+                    .unwrap(),
+                Err(_) => tauri::http::Response::builder()
+                    .status(404)
+                    .body(b"Not Found".to_vec())
+                    .unwrap(),
+            }
+        })
         .manage(AppState { 
             db: Mutex::new(db),
             db_state: DbState::new(),
