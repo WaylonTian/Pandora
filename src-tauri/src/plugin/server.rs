@@ -112,7 +112,25 @@ fn handle(mut stream: std::net::TcpStream, plugins_dir: &PathBuf) {
             let _ = stream.write_all(&body);
         }
         Err(_) => {
-            let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");
+            // For preload-only plugins: generate a minimal HTML shell instead of 404
+            if query.contains("__inject__") && mime == "text/html; charset=utf-8" {
+                let plugin_id = decoded.split('/').next().unwrap_or("");
+                let shim_path = plugins_dir.join(plugin_id).join("__shim__.js");
+                let preload_tag = std::fs::read_to_string(plugins_dir.join(plugin_id).join("plugin.json")).ok()
+                    .and_then(|m| serde_json::from_str::<serde_json::Value>(&m).ok())
+                    .and_then(|v| v.get("preload").and_then(|p| p.as_str()).map(|p| format!("<script src=\"{}\"></script>", p)))
+                    .unwrap_or_default();
+                let shim_tag = if shim_path.exists() { "<script src=\"__shim__.js\"></script>".to_string() } else { String::new() };
+                let html = format!("<!DOCTYPE html><html><head><meta charset=\"utf-8\">{}{}</head><body></body></html>", shim_tag, preload_tag);
+                let header = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\n\r\n",
+                    html.len()
+                );
+                let _ = stream.write_all(header.as_bytes());
+                let _ = stream.write_all(html.as_bytes());
+            } else {
+                let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");
+            }
         }
     }
 }

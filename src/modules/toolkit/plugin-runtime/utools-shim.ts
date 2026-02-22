@@ -32,6 +32,13 @@ export function generateShimScript(pluginId: string, serverPort?: number): strin
     }
     if (msg.type === 'utools-event') {
       (_listeners[msg.event] || []).forEach(fn => fn(msg.data));
+      // Template plugin support: window.exports[code].args.enter(action)
+      if (msg.event === 'pluginEnter' && window.exports && msg.data && msg.data.code) {
+        const tpl = window.exports[msg.data.code];
+        if (tpl && tpl.args && typeof tpl.args.enter === 'function') {
+          tpl.args.enter(msg.data);
+        }
+      }
     }
   });
 
