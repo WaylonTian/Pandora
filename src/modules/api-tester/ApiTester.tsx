@@ -18,6 +18,7 @@ import { DiffViewer } from './components/DiffViewer';
 import { TimingChart } from './components/TimingChart';
 import { ImportApiModal } from './components/ImportApiModal';
 import { CollectionRunner } from './components/CollectionRunner';
+import { CollectionTree } from './components/CollectionTree';
 import { Icons } from './components/Icons';
 import { generateCurl } from './utils/codegen';
 import { executeScript, ScriptContext, TestResult } from './utils/scripting';
@@ -40,12 +41,10 @@ export function ApiTester() {
   const [requestTab, setRequestTab] = useState<'params' | 'headers' | 'body' | 'auth' | 'scripts'>('params');
   const [responseTab, setResponseTab] = useState<'body' | 'headers' | 'cookies' | 'timing' | 'diff'>('body');
   const [responseView, setResponseView] = useState<'pretty' | 'raw' | 'tree'>('pretty');
-  const [newCollectionName, setNewCollectionName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; type: 'collection' | 'request'; id: number } | null>(null);
   const [authType, setAuthType] = useState<'none' | 'basic' | 'bearer'>('none');
   const [authData, setAuthData] = useState({ username: '', password: '', token: '' });
-  const [collapsedCollections, setCollapsedCollections] = useState<Set<number>>(new Set());
 
   const [showTools, setShowTools] = useState(false);
   const [showCodeGen, setShowCodeGen] = useState(false);
@@ -356,6 +355,16 @@ export function ApiTester() {
 
   const getMethodClass = (method: string) => `method-${method.toLowerCase()}`;
 
+  const getCollectionDepth = (id: number): number => {
+    let depth = 0;
+    let current = store.collections.find(c => c.id === id);
+    while (current?.parent_id) {
+      depth++;
+      current = store.collections.find(c => c.id === current!.parent_id);
+    }
+    return depth;
+  };
+
   const formatJson = (str: string) => {
     try { return JSON.stringify(JSON.parse(str), null, 2); } catch { return str; }
   };
@@ -376,54 +385,7 @@ export function ApiTester() {
         </div>
         <div className="sidebar-content">
           {sidebarTab === 'collections' ? (
-            <>
-              <div className="sidebar-header">
-                <span className="sidebar-title">{t('apiTester.collections')}</span>
-                <button className="icon-btn" onClick={handleNewTab}>{t('apiTester.new')}</button>
-              </div>
-              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                <input className="kv-input" placeholder={t('apiTester.newCollection')} value={newCollectionName}
-                  onChange={e => setNewCollectionName(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && newCollectionName.trim()) { store.createCollection(newCollectionName.trim()); setNewCollectionName(''); }}} />
-                <button className="icon-btn" onClick={() => { if (newCollectionName.trim()) { store.createCollection(newCollectionName.trim()); setNewCollectionName(''); }}}>+</button>
-              </div>
-              {store.collections.map(col => {
-                const isCollapsed = col.id ? collapsedCollections.has(col.id) : false;
-                const toggleCollapse = () => {
-                  if (!col.id) return;
-                  setCollapsedCollections(prev => {
-                    const next = new Set(prev);
-                    if (next.has(col.id!)) next.delete(col.id!);
-                    else next.add(col.id!);
-                    return next;
-                  });
-                };
-                return (
-                  <div key={col.id}>
-                    <div className="tree-item collection-item" onContextMenu={e => col.id && handleContextMenu(e, 'collection', col.id)}
-                      onDoubleClick={() => { const n = prompt(t('apiTester.renamePrompt'), col.name); if (n && col.id) store.renameCollection(col.id, n); }}>
-                      <span className={`collapse-icon ${isCollapsed ? 'collapsed' : ''}`} onClick={toggleCollapse}>▶</span>
-                      {Icons.folder}<span className="name">{col.name}</span>
-                      <span className="collection-count">{store.requests.filter(r => r.collection_id === col.id).length}</span>
-                    </div>
-                    {!isCollapsed && store.requests.filter(r => r.collection_id === col.id).map(req => (
-                      <div key={req.id} className="tree-item" style={{ paddingLeft: 32 }}
-                        onClick={() => openRequestInTab(req)} onContextMenu={e => req.id && handleContextMenu(e, 'request', req.id)}>
-                        <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>
-                        <span className="name">{req.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-              {store.requests.filter(r => !r.collection_id).map(req => (
-                <div key={req.id} className="tree-item" onClick={() => openRequestInTab(req)}
-                  onContextMenu={e => req.id && handleContextMenu(e, 'request', req.id)}>
-                  <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>
-                  <span className="name">{req.name}</span>
-                </div>
-              ))}
-            </>
+            <CollectionTree onOpenRequest={openRequestInTab} onContextMenu={handleContextMenu} />
           ) : (
             <>
               <div className="sidebar-header">
@@ -628,6 +590,7 @@ export function ApiTester() {
           {contextMenu.type === 'collection' ? (
             <>
               <div className="context-item" onClick={() => { tabs.addTab({ name: t('apiTester.newRequest') }); setContextMenu(null); }}>{t('apiTester.newRequest')}</div>
+              {(() => { const depth = getCollectionDepth(contextMenu.id); return depth < 3 ? <div className="context-item" onClick={() => { const n = prompt(t('apiTester.newSubfolder')); if (n) store.createCollection(n, contextMenu.id); setContextMenu(null); }}>{t('apiTester.newSubfolder')}</div> : null; })()}
               <div className="context-item" onClick={() => { const n = prompt(t('apiTester.renamePrompt')); if (n) store.renameCollection(contextMenu.id, n); setContextMenu(null); }}>{t('apiTester.rename')}</div>
               <div className="context-item danger" onClick={() => { store.deleteCollection(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
             </>
