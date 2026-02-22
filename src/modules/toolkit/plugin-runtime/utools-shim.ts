@@ -132,6 +132,7 @@ export function generateShimScript(pluginId: string, serverPort?: number): strin
     isDarkColors: () => document.documentElement.classList.contains('dark'),
     getAppVersion: () => '0.1.0',
     isMacOS: () => navigator.platform.includes('Mac'),
+    isMacOs: () => navigator.platform.includes('Mac'),
     isWindows: () => navigator.platform.includes('Win'),
     isLinux: () => navigator.platform.includes('Linux'),
 
