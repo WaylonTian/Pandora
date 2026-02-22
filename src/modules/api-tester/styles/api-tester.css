@@ -23,6 +23,15 @@
   --method-patch: #a855f7;
   --method-delete: #ef4444;
 
+  --json-key: #0369a1;
+  --json-string: #15803d;
+  --json-number: #a16207;
+  --json-boolean: #7c3aed;
+  --status-pass: #16a34a;
+  --status-fail: #dc2626;
+  --status-warn: #ca8a04;
+  --status-info: #2563eb;
+
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -37,6 +46,14 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  --json-key: #7dd3fc;
+  --json-string: #86efac;
+  --json-number: #fde68a;
+  --json-boolean: #c4b5fd;
+  --status-pass: #2ea043;
+  --status-fail: #f85149;
+  --status-warn: #f59e0b;
+  --status-info: #388bfd;
 }
 
 .app {

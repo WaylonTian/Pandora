@@ -115,8 +115,8 @@
   font-weight: 600;
 }
 
-.summary-value.pass { color: #2ea043; }
-.summary-value.fail { color: #f85149; }
+.summary-value.pass { color: var(--status-pass); }
+.summary-value.fail { color: var(--status-fail); }
 
 .summary-label {
   font-size: 11px;
@@ -140,8 +140,8 @@
   border: 1px solid var(--border);
 }
 
-.result-item.pass { border-left: 3px solid #2ea043; }
-.result-item.fail { border-left: 3px solid #f85149; }
+.result-item.pass { border-left: 3px solid var(--status-pass); }
+.result-item.fail { border-left: 3px solid var(--status-fail); }
 
 .result-status {
   width: 50px;
@@ -149,9 +149,9 @@
   font-weight: 600;
 }
 
-.result-status.s2xx { color: #2ea043; }
-.result-status.s4xx { color: #f59e0b; }
-.result-status.s5xx { color: #f85149; }
+.result-status.s2xx { color: var(--status-pass); }
+.result-status.s4xx { color: var(--status-warn); }
+.result-status.s5xx { color: var(--status-fail); }
 
 .result-method {
   width: 60px;
@@ -180,8 +180,8 @@
   font-size: 11px;
 }
 
-.result-tests .pass { color: #2ea043; }
-.result-tests .fail { color: #f85149; }
+.result-tests .pass { color: var(--status-pass); }
+.result-tests .fail { color: var(--status-fail); }
 
 .runner-empty {
   padding: 40px;
