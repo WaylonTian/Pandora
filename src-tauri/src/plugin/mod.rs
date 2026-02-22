@@ -5,3 +5,5 @@ pub mod marketplace;
 pub mod commands;
 pub mod node_bridge;
 pub mod server;
+pub mod simulate;
+pub mod screen;

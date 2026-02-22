@@ -93,6 +93,22 @@ async function routeCall(pluginId: string, method: string, args: any[]): Promise
     case "subInputFocus": return null;
     case "subInputBlur": return null;
     case "subInputSelect": return null;
+    case "simulateKeyboardTap": return invoke("plugin_simulate_keyboard_tap", { key: args[0], modifiers: args.slice(1) });
+    case "simulateMouseMove": return invoke("plugin_simulate_mouse_move", { x: args[0], y: args[1] });
+    case "simulateMouseClick": return invoke("plugin_simulate_mouse_click", { x: args[0], y: args[1] });
+    case "simulateMouseDoubleClick": return invoke("plugin_simulate_mouse_double_click", { x: args[0], y: args[1] });
+    case "simulateMouseRightClick": return invoke("plugin_simulate_mouse_right_click", { x: args[0], y: args[1] });
+    case "screenColorPick": return invoke("plugin_screen_color_pick");
+    case "getPrimaryDisplay": return invoke("plugin_get_primary_display");
+    case "getAllDisplays": return invoke("plugin_get_all_displays");
+    case "getCursorScreenPoint": return invoke("plugin_get_cursor_screen_point");
+    case "getDisplayNearestPoint": return invoke("plugin_get_display_nearest_point", { x: args[0]?.x || 0, y: args[0]?.y || 0 });
+    case "getDisplayMatching": return invoke("plugin_get_display_nearest_point", { x: args[0]?.x || 0, y: args[0]?.y || 0 });
+    case "screenToDipPoint": return invoke("plugin_screen_to_dip_point", { x: args[0]?.x || 0, y: args[0]?.y || 0 });
+    case "dipToScreenPoint": return invoke("plugin_dip_to_screen_point", { x: args[0]?.x || 0, y: args[0]?.y || 0 });
+    case "screenToDipRect": { const r = args[0] || {}; const tl = await invoke("plugin_screen_to_dip_point", { x: r.x||0, y: r.y||0 }) as any; const br = await invoke("plugin_screen_to_dip_point", { x: (r.x||0)+(r.width||0), y: (r.y||0)+(r.height||0) }) as any; return { x: tl.x, y: tl.y, width: br.x-tl.x, height: br.y-tl.y }; }
+    case "dipToScreenRect": { const r2 = args[0] || {}; const tl2 = await invoke("plugin_dip_to_screen_point", { x: r2.x||0, y: r2.y||0 }) as any; const br2 = await invoke("plugin_dip_to_screen_point", { x: (r2.x||0)+(r2.width||0), y: (r2.y||0)+(r2.height||0) }) as any; return { x: tl2.x, y: tl2.y, width: br2.x-tl2.x, height: br2.y-tl2.y }; }
+    case "desktopCaptureSources": return [];
     default:
       console.warn(`[plugin-bridge] Unhandled: ${method}`);
       return null;

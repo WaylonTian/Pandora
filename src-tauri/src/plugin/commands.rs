@@ -311,3 +311,65 @@ pub fn plugin_paste_image(base64: String) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+// P2: Simulate commands
+#[tauri::command]
+pub fn plugin_simulate_keyboard_tap(key: String, modifiers: Vec<String>) -> Result<(), String> {
+    super::simulate::keyboard_tap(&key, &modifiers)
+}
+
+#[tauri::command]
+pub fn plugin_simulate_mouse_move(x: i32, y: i32) -> Result<(), String> {
+    super::simulate::mouse_move(x, y)
+}
+
+#[tauri::command]
+pub fn plugin_simulate_mouse_click(x: i32, y: i32) -> Result<(), String> {
+    super::simulate::mouse_click(x, y)
+}
+
+#[tauri::command]
+pub fn plugin_simulate_mouse_double_click(x: i32, y: i32) -> Result<(), String> {
+    super::simulate::mouse_double_click(x, y)
+}
+
+#[tauri::command]
+pub fn plugin_simulate_mouse_right_click(x: i32, y: i32) -> Result<(), String> {
+    super::simulate::mouse_right_click(x, y)
+}
+
+// P2: Screen commands
+#[tauri::command]
+pub fn plugin_get_primary_display() -> Result<serde_json::Value, String> {
+    super::screen::get_primary_display()
+}
+
+#[tauri::command]
+pub fn plugin_get_all_displays() -> Result<Vec<serde_json::Value>, String> {
+    super::screen::get_all_displays()
+}
+
+#[tauri::command]
+pub fn plugin_get_cursor_screen_point() -> Result<serde_json::Value, String> {
+    super::screen::get_cursor_screen_point()
+}
+
+#[tauri::command]
+pub fn plugin_screen_color_pick() -> Result<String, String> {
+    super::screen::screen_color_pick()
+}
+
+#[tauri::command]
+pub fn plugin_get_display_nearest_point(x: i32, y: i32) -> Result<serde_json::Value, String> {
+    super::screen::get_display_nearest_point(x, y)
+}
+
+#[tauri::command]
+pub fn plugin_screen_to_dip_point(x: i32, y: i32) -> Result<serde_json::Value, String> {
+    super::screen::screen_to_dip_point(x, y)
+}
+
+#[tauri::command]
+pub fn plugin_dip_to_screen_point(x: i32, y: i32) -> Result<serde_json::Value, String> {
+    super::screen::dip_to_screen_point(x, y)
+}
