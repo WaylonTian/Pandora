@@ -161,31 +161,33 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .register_uri_scheme_protocol("plugin", |_ctx, req| {
-            // URL: plugin://plugin-id/path/to/file
             let uri = req.uri().to_string();
-            // parse: plugin://plugin-id/path
             let stripped = uri.strip_prefix("plugin://").unwrap_or("");
+            // Remove query string if present
+            let stripped = stripped.split('?').next().unwrap_or(stripped);
             let (plugin_id, path) = stripped.split_once('/').unwrap_or((stripped, ""));
             let plugin_id = urlencoding::decode(plugin_id).unwrap_or_default();
             let path = urlencoding::decode(path).unwrap_or_default();
-            let file_path = plugin::manager::plugins_dir().join(plugin_id.as_ref()).join(path.as_ref());
+            let plugin_dir = plugin::manager::plugins_dir().join(plugin_id.as_ref());
 
-            let mime = match file_path.extension().and_then(|e| e.to_str()) {
-                Some("html") => "text/html",
-                Some("js") => "application/javascript",
+            let mime = |p: &std::path::Path| match p.extension().and_then(|e| e.to_str()) {
+                Some("html") => "text/html; charset=utf-8",
+                Some("js" | "mjs") => "application/javascript",
                 Some("css") => "text/css",
                 Some("json") => "application/json",
                 Some("png") => "image/png",
                 Some("jpg" | "jpeg") => "image/jpeg",
                 Some("svg") => "image/svg+xml",
-                Some("woff" | "woff2") => "font/woff2",
+                Some("woff2") => "font/woff2",
+                Some("woff") => "font/woff",
                 Some("ttf") => "font/ttf",
                 _ => "application/octet-stream",
             };
 
+            let file_path = plugin_dir.join(path.as_ref());
             match std::fs::read(&file_path) {
                 Ok(data) => tauri::http::Response::builder()
-                    .header("Content-Type", mime)
+                    .header("Content-Type", mime(&file_path))
                     .header("Access-Control-Allow-Origin", "*")
                     .body(data)
                     .unwrap(),

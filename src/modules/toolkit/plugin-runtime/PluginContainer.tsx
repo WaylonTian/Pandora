@@ -9,55 +9,51 @@ interface Props {
   featureCode?: string;
 }
 
-async function readPluginText(pluginId: string, path: string): Promise<string> {
-  const bytes: number[] = await invoke("plugin_read_file", { pluginId, path });
-  return new TextDecoder().decode(new Uint8Array(bytes));
-}
-
-function buildSrcdoc(plugin: InstalledPlugin, preloadCode: string): string {
-  const shim = generateShimScript(plugin.id);
-  const baseUrl = `plugin://${encodeURIComponent(plugin.id)}/`;
-
-  return `<!DOCTYPE html>
-<html><head>
-<base href="${baseUrl}">
-<script>${shim}<\/script>
-${preloadCode ? `<script>${preloadCode}<\/script>` : ""}
-</head><body>
-<script>
-fetch("${baseUrl}${plugin.manifest.main || "index.html"}")
-  .then(r => r.text())
-  .then(html => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    doc.querySelectorAll('link[rel="stylesheet"],style').forEach(el => document.head.appendChild(el.cloneNode(true)));
-    document.body.innerHTML = doc.body.innerHTML;
-    doc.querySelectorAll('script').forEach(el => {
-      const s = document.createElement('script');
-      if (el.src) s.src = el.src; else s.textContent = el.textContent;
-      document.body.appendChild(s);
-    });
-  });
-<\/script></body></html>`;
-}
-
 export function PluginContainer({ plugin, featureCode }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [srcdoc, setSrcdoc] = useState<string>("");
+  const [blobUrl, setBlobUrl] = useState<string>("");
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    const preloadPath = plugin.manifest.preload;
-    if (preloadPath) {
-      readPluginText(plugin.id, preloadPath)
-        .then((code) => setSrcdoc(buildSrcdoc(plugin, code)))
-        .catch((e) => setError(String(e)));
-    } else {
-      setSrcdoc(buildSrcdoc(plugin, ""));
-    }
+    let url = "";
+    (async () => {
+      const shim = generateShimScript(plugin.id);
+      const mainFile = plugin.manifest.main || "index.html";
+      const baseUrl = `plugin://${encodeURIComponent(plugin.id)}/`;
+
+      // Read main HTML
+      const htmlBytes: number[] = await invoke("plugin_read_file", { pluginId: plugin.id, path: mainFile });
+      let html = new TextDecoder().decode(new Uint8Array(htmlBytes));
+
+      // Read preload if exists
+      let preloadCode = "";
+      if (plugin.manifest.preload) {
+        try {
+          const preBytes: number[] = await invoke("plugin_read_file", { pluginId: plugin.id, path: plugin.manifest.preload });
+          preloadCode = new TextDecoder().decode(new Uint8Array(preBytes));
+        } catch { /* optional */ }
+      }
+
+      // Inject base href + shim + preload into <head>
+      const injection = `<base href="${baseUrl}"><script>${shim}<\/script>${preloadCode ? `<script>${preloadCode}<\/script>` : ""}`;
+      if (html.includes("<head>")) {
+        html = html.replace("<head>", `<head>${injection}`);
+      } else if (html.includes("<HEAD>")) {
+        html = html.replace("<HEAD>", `<HEAD>${injection}`);
+      } else {
+        html = injection + html;
+      }
+
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      url = URL.createObjectURL(blob);
+      setBlobUrl(url);
+    })().catch((e) => setError(String(e)));
+
+    return () => { if (url) URL.revokeObjectURL(url); };
   }, [plugin.id]);
 
   useEffect(() => {
-    if (!srcdoc) return;
+    if (!blobUrl) return;
     const cleanup = createPluginBridge({
       pluginId: plugin.id,
       onReady: () => {
@@ -72,15 +68,15 @@ export function PluginContainer({ plugin, featureCode }: Props) {
       onResize: () => {},
     });
     return cleanup;
-  }, [plugin.id, srcdoc, featureCode]);
+  }, [plugin.id, blobUrl, featureCode]);
 
   if (error) return <div className="p-4 text-red-500">Failed to load plugin: {error}</div>;
-  if (!srcdoc) return <div className="p-4 text-muted-foreground">Loading plugin...</div>;
+  if (!blobUrl) return <div className="p-4 text-muted-foreground">Loading plugin...</div>;
 
   return (
     <iframe
       ref={iframeRef}
-      srcDoc={srcdoc}
+      src={blobUrl}
       sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
       className="w-full border-0 flex-1"
       style={{ minHeight: "200px" }}
