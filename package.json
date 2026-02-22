@@ -20,6 +20,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dockview-react": "^4",
+    "js-yaml": "^4.1.1",
     "monaco-editor": "^0.52.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4",
     "@tauri-apps/cli": "^2",
+    "@types/js-yaml": "^4.0.9",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.6.0",

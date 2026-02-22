@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useT } from '@/i18n';
 import { parseOpenAPI, parsePostmanCollection, ParsedCollection } from '../utils/openapi';
+import yaml from 'js-yaml';
 import '../styles/ImportApiModal.css';
 
 interface Props {
@@ -18,9 +19,10 @@ export function ImportApiModal({ onClose, onImport }: Props) {
   const handleParse = () => {
     setError('');
     try {
-      const json = JSON.parse(content);
+      let json: any;
+      try { json = JSON.parse(content); } catch { json = yaml.load(content) as any; }
       let parsed: ParsedCollection;
-      
+
       if (json.openapi || json.swagger) {
         parsed = parseOpenAPI(content);
       } else if (json.info?._postman_id || json.item) {
@@ -28,7 +30,7 @@ export function ImportApiModal({ onClose, onImport }: Props) {
       } else {
         throw new Error(t('importApiModal.unrecognizedFormat'));
       }
-      
+
       setPreview(parsed);
     } catch (e: any) {
       setError(e.message);
