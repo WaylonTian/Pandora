@@ -7,6 +7,7 @@ interface PluginStore {
   marketPlugins: MarketPlugin[];
   marketLoading: boolean;
   installing: Set<string>;
+  installError: string | null;
   loadInstalled: () => Promise<void>;
   installFromMarket: (name: string) => Promise<void>;
   installFromFile: (path: string) => Promise<void>;
@@ -22,6 +23,7 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
   marketPlugins: [],
   marketLoading: false,
   installing: new Set(),
+  installError: null,
 
   loadInstalled: async () => {
     const installed = await invoke<InstalledPlugin[]>("plugin_list");
@@ -29,10 +31,12 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
   },
 
   installFromMarket: async (name) => {
-    set((s) => ({ installing: new Set(s.installing).add(name) }));
+    set((s) => ({ installing: new Set(s.installing).add(name), installError: null }));
     try {
       await invoke("plugin_install_from_market", { name });
       await get().loadInstalled();
+    } catch (e: any) {
+      set({ installError: `Failed to install ${name}: ${e.message || e}` });
     } finally {
       set((s) => {
         const next = new Set(s.installing);

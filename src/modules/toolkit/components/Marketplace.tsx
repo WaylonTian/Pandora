@@ -14,6 +14,7 @@ const TOPICS = [
 export function Marketplace() {
   const t = useT();
   const { marketPlugins, marketLoading, installing, installed, searchMarket, loadTopic, installFromMarket } = usePluginStore();
+  const installError = usePluginStore((s) => s.installError);
   const [query, setQuery] = useState("");
   const [activeTopic, setActiveTopic] = useState(17);
 
@@ -55,13 +56,19 @@ export function Marketplace() {
         ))}
       </div>
 
+      {installError && (
+        <div className="p-2 rounded bg-destructive/10 text-destructive text-sm">{installError}</div>
+      )}
+
       {marketLoading ? (
         <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {marketPlugins.map((plugin) => (
             <div key={plugin.name} className="flex items-center gap-3 p-3 border rounded-lg bg-card hover:bg-muted/30 transition-colors">
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">📦</div>
+              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">
+                {plugin.logo ? <img src={plugin.logo} alt="" className="w-10 h-10 rounded-lg" /> : "📦"}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{plugin.name}</div>
                 <div className="text-xs text-muted-foreground truncate">{plugin.description || plugin.name}</div>

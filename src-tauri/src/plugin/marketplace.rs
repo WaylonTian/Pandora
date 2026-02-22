@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 pub struct MarketPlugin {
     pub name: String,
     pub description: String,
-    pub url: String,
-    pub detail_url: String,
+    pub logo: String,
+    pub plugin_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,21 +25,21 @@ pub async fn search_plugins(query: &str) -> Result<Vec<MarketPlugin>, String> {
     let url = format!("https://www.u-tools.cn/plugins/search/?q={}", urlencoding::encode(query));
     let html = reqwest::get(&url).await.map_err(|e| e.to_string())?
         .text().await.map_err(|e| e.to_string())?;
-    Ok(parse_plugin_list(&html))
+    parse_next_data_list(&html)
 }
 
 pub async fn list_topic(topic_id: u32) -> Result<Vec<MarketPlugin>, String> {
     let url = format!("https://www.u-tools.cn/plugins/topic/{}/", topic_id);
     let html = reqwest::get(&url).await.map_err(|e| e.to_string())?
         .text().await.map_err(|e| e.to_string())?;
-    Ok(parse_plugin_list(&html))
+    parse_next_data_list(&html)
 }
 
 pub async fn get_plugin_detail(name: &str) -> Result<MarketPluginDetail, String> {
     let url = format!("https://www.u-tools.cn/plugins/detail/{}/", urlencoding::encode(name));
     let html = reqwest::get(&url).await.map_err(|e| e.to_string())?
         .text().await.map_err(|e| e.to_string())?;
-    parse_plugin_detail(&html, name)
+    parse_next_data_detail(&html, name)
 }
 
 pub async fn download_plugin(download_url: &str, dest: &std::path::Path) -> Result<(), String> {
@@ -51,53 +51,128 @@ pub async fn download_plugin(download_url: &str, dest: &std::path::Path) -> Resu
     std::fs::write(dest, bytes).map_err(|e| e.to_string())
 }
 
-fn parse_plugin_list(html: &str) -> Vec<MarketPlugin> {
+/// Extract the JSON from `<script id="__NEXT_DATA__">...</script>`
+fn extract_next_data(html: &str) -> Option<serde_json::Value> {
+    let marker = r#"id="__NEXT_DATA__""#;
+    let pos = html.find(marker)?;
+    let rest = &html[pos..];
+    let start = rest.find('>')?;
+    let json_start = start + 1;
+    let end = rest[json_start..].find("</script>")?;
+    serde_json::from_str(&rest[json_start..json_start + end]).ok()
+}
+
+fn parse_next_data_list(html: &str) -> Result<Vec<MarketPlugin>, String> {
+    let data = extract_next_data(html).ok_or("Failed to find __NEXT_DATA__")?;
+
+    // Try topic page: pageProps.topic.componentsList[0].data.items
+    if let Some(items) = data.pointer("/props/pageProps/topic/componentsList/0/data/items")
+        .and_then(|v| v.as_array())
+    {
+        return Ok(items.iter().filter_map(|item| {
+            Some(MarketPlugin {
+                name: item.get("plugin_name")?.as_str()?.to_string(),
+                description: item.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                logo: item.get("logo").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                plugin_id: item.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            })
+        }).collect());
+    }
+
+    // Try search page: pageProps.plugins or pageProps.list
+    for key in &["plugins", "list", "data"] {
+        if let Some(items) = data.pointer(&format!("/props/pageProps/{}", key))
+            .and_then(|v| v.as_array())
+        {
+            return Ok(items.iter().filter_map(|item| {
+                Some(MarketPlugin {
+                    name: item.get("plugin_name").or(item.get("name"))?.as_str()?.to_string(),
+                    description: item.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    logo: item.get("logo").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    plugin_id: item.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                })
+            }).collect());
+        }
+    }
+
+    // Fallback: scan HTML for href="/plugins/detail/..."
+    Ok(parse_plugin_list_fallback(html))
+}
+
+fn parse_plugin_list_fallback(html: &str) -> Vec<MarketPlugin> {
     let mut plugins = vec![];
-    for line in html.lines() {
-        if let Some(start) = line.find("/plugins/detail/") {
-            let rest = &line[start + 16..];
-            if let Some(end) = rest.find('/') {
-                let name = urlencoding::decode(&rest[..end]).unwrap_or_default().to_string();
+    let pattern = "/plugins/detail/";
+    let mut search_from = 0;
+    while let Some(pos) = html[search_from..].find(pattern) {
+        let abs = search_from + pos + pattern.len();
+        if let Some(end) = html[abs..].find('/') {
+            let raw = &html[abs..abs + end];
+            // Skip if it looks like a quote or tag
+            if !raw.is_empty() && !raw.contains('<') {
+                let name = urlencoding::decode(raw).unwrap_or_default().to_string();
                 if !name.is_empty() && !plugins.iter().any(|p: &MarketPlugin| p.name == name) {
                     plugins.push(MarketPlugin {
                         name: name.clone(),
                         description: String::new(),
-                        url: format!("https://www.u-tools.cn/plugins/detail/{}/", urlencoding::encode(&name)),
-                        detail_url: format!("https://www.u-tools.cn/plugins/detail/{}/", urlencoding::encode(&name)),
+                        logo: String::new(),
+                        plugin_id: String::new(),
                     });
                 }
             }
         }
+        search_from = abs + 1;
     }
     plugins
 }
 
-fn parse_plugin_detail(html: &str, name: &str) -> Result<MarketPluginDetail, String> {
-    let download_url = html.lines()
-        .find(|l| l.contains("res.u-tools.cn/plugins/") && l.contains(".upxs"))
-        .and_then(|l| {
-            let start = l.find("https://res.u-tools.cn")?;
-            let rest = &l[start..];
-            let end = rest.find('"').or_else(|| rest.find('\''))?;
-            Some(rest[..end].to_string())
-        });
+fn parse_next_data_detail(html: &str, name: &str) -> Result<MarketPluginDetail, String> {
+    let data = extract_next_data(html);
 
-    let extract_after = |label: &str| -> String {
-        html.lines()
-            .skip_while(|l| !l.contains(label))
-            .nth(1)
-            .map(|l| l.trim().replace("<br>", "").replace("</div>", "").replace("</span>", ""))
-            .unwrap_or_default()
-            .trim().to_string()
-    };
+    let mut download_url = None;
+    let mut version = String::new();
+    let mut description = String::new();
+    let mut developer = String::new();
+    let mut plugin_id = String::new();
+
+    if let Some(data) = &data {
+        // pageProps.plugin or pageProps.detail
+        let plugin = data.pointer("/props/pageProps/plugin")
+            .or_else(|| data.pointer("/props/pageProps/detail"));
+
+        if let Some(p) = plugin {
+            version = p.get("version").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            description = p.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            developer = p.get("author").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            plugin_id = p.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        }
+    }
+
+    // Build download URL: https://res.u-tools.cn/plugins/upload/{plugin_id}/{plugin_id}_latest.upxs
+    // or try to find .upxs link in HTML
+    if !plugin_id.is_empty() {
+        download_url = Some(format!(
+            "https://res.u-tools.cn/plugins/upload/{}/{}_latest.upxs",
+            plugin_id, plugin_id
+        ));
+    }
+
+    // Fallback: scan for .upxs URL in HTML
+    if download_url.is_none() {
+        if let Some(pos) = html.find("res.u-tools.cn/plugins/") {
+            let start = html[..pos].rfind("https://").unwrap_or(pos);
+            if let Some(end_offset) = html[start..].find(".upxs") {
+                download_url = Some(html[start..start + end_offset + 5].to_string());
+            }
+        }
+    }
 
     Ok(MarketPluginDetail {
         name: name.to_string(),
-        description: String::new(),
-        version: extract_after("版本"),
-        size: extract_after("大小"),
+        description,
+        version,
+        size: String::new(),
         download_url,
-        developer: String::new(),
+        developer,
         rating: String::new(),
         users: String::new(),
         detail_html: String::new(),

@@ -28,8 +28,8 @@ export interface InstalledPlugin {
 export interface MarketPlugin {
   name: string;
   description: string;
-  url: string;
-  detail_url: string;
+  logo: string;
+  plugin_id: string;
 }
 
 export interface MarketPluginDetail {
