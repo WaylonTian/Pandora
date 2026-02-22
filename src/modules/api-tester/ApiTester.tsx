@@ -19,11 +19,23 @@ import { TimingChart } from './components/TimingChart';
 import { ImportApiModal } from './components/ImportApiModal';
 import { CollectionRunner } from './components/CollectionRunner';
 import { CollectionTree } from './components/CollectionTree';
+import { CookieManager } from './components/CookieManager';
 import { Icons } from './components/Icons';
 import { generateCurl } from './utils/codegen';
 import { executeScript, ScriptContext, TestResult } from './utils/scripting';
 import { ParsedCollection } from './utils/openapi';
 import { resolveTemplate, resolveHeaders } from './utils/template';
+
+const isTauri = !!(window as any).__TAURI_INTERNALS__;
+async function safeInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  if (isTauri) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return invoke<T>(cmd, args);
+  }
+  return [] as unknown as T;
+}
+
+interface CookieRecord { id: number; domain: string; name: string; value: string; path: string; expires: string | null; http_only: boolean; secure: boolean; }
 import './styles/api-tester.css';
 import './styles/components.css';
 
@@ -56,6 +68,7 @@ export function ApiTester() {
   const [showEnvManager, setShowEnvManager] = useState(false);
   const [showImportApi, setShowImportApi] = useState(false);
   const [showRunner, setShowRunner] = useState(false);
+  const [showCookieManager, setShowCookieManager] = useState(false);
 
   // Request state
   const [params, setParams] = useState<KVItem[]>([{ key: '', value: '', enabled: true }]);
@@ -250,6 +263,15 @@ export function ApiTester() {
     body = resolveTemplate(body, envVars);
     const resolvedHeaders = resolveHeaders(headersObj, envVars);
 
+    // Auto-attach cookies
+    try {
+      const domain = new URL(finalUrl).hostname;
+      const cookies = await safeInvoke<CookieRecord[]>('get_cookies', { domain });
+      if (cookies.length > 0) {
+        resolvedHeaders['Cookie'] = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+      }
+    } catch { /* invalid URL, skip */ }
+
     // Use store to send request
     store.setActiveRequest({
       name: activeTab.name,
@@ -264,6 +286,34 @@ export function ApiTester() {
     
     if (store.response) {
       updateTab({ response: store.response });
+
+      // Auto-save Set-Cookie headers
+      try {
+        const domain = new URL(finalUrl).hostname;
+        const sc = store.response.headers['set-cookie'] || store.response.headers['Set-Cookie'];
+        if (sc) {
+          for (const raw of sc.split(/,(?=\s*\w+=)/)) {
+            const parts = raw.trim().split(';');
+            const [nv, ...attrs] = parts;
+            const eqIdx = nv.indexOf('=');
+            if (eqIdx < 0) continue;
+            const name = nv.substring(0, eqIdx).trim();
+            const value = nv.substring(eqIdx + 1).trim();
+            let path = '/';
+            let expires: string | null = null;
+            let httpOnly = false;
+            let secure = false;
+            for (const attr of attrs) {
+              const a = attr.trim().toLowerCase();
+              if (a.startsWith('path=')) path = attr.trim().substring(5);
+              else if (a.startsWith('expires=')) expires = attr.trim().substring(8);
+              else if (a === 'httponly') httpOnly = true;
+              else if (a === 'secure') secure = true;
+            }
+            await safeInvoke('set_cookie', { cookie: { id: null, domain, name, value, path, expires, http_only: httpOnly, secure } });
+          }
+        }
+      } catch { /* skip */ }
       
       // Test script
       if (testScript) {
@@ -478,6 +528,7 @@ export function ApiTester() {
               </div>
               <button className="send-btn" onClick={handleSend} disabled={store.loading}>{store.loading ? t('apiTester.sending') : t('apiTester.send')}</button>
               <button className="icon-btn" onClick={handleSaveRequest} title={t('apiTester.save')}>{Icons.save}</button>
+              <button className="icon-btn" onClick={() => setShowCookieManager(true)} title="Cookies">🍪</button>
             </div>
 
             <ResizableSplit
@@ -662,6 +713,7 @@ export function ApiTester() {
       {showEnvManager && <EnvironmentManager onClose={() => setShowEnvManager(false)} />}
       {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} />}
       {showRunner && <CollectionRunner collections={store.collections} onClose={() => setShowRunner(false)} environment={store.variables.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {})} />}
+      {showCookieManager && <CookieManager onClose={() => setShowCookieManager(false)} />}
 
       <ResizableLayout sidebar={sidebarContent} main={mainContent} className="app" />
     </>
