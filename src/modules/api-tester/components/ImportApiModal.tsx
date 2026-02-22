@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useT } from '@/i18n';
 import { parseOpenAPI, parsePostmanCollection, ParsedCollection } from '../utils/openapi';
 import '../styles/ImportApiModal.css';
 
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function ImportApiModal({ onClose, onImport }: Props) {
+  const t = useT();
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<ParsedCollection | null>(null);
@@ -24,7 +26,7 @@ export function ImportApiModal({ onClose, onImport }: Props) {
       } else if (json.info?._postman_id || json.item) {
         parsed = parsePostmanCollection(content);
       } else {
-        throw new Error('无法识别格式，请使用 OpenAPI 3.0/Swagger 2.0 或 Postman Collection');
+        throw new Error(t('importApiModal.unrecognizedFormat'));
       }
       
       setPreview(parsed);
@@ -48,13 +50,13 @@ export function ImportApiModal({ onClose, onImport }: Props) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="import-api-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>导入 API 文档</h3>
+          <h3>{t('importApiModal.title')}</h3>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
         <div className="modal-body">
           <div className="import-hint">
-            支持 OpenAPI 3.0、Swagger 2.0、Postman Collection v2.1
+            {t('importApiModal.supportedFormats')}
           </div>
 
           <div className="import-actions">
@@ -65,8 +67,8 @@ export function ImportApiModal({ onClose, onImport }: Props) {
               onChange={handleFile}
               style={{ display: 'none' }}
             />
-            <button onClick={() => fileRef.current?.click()}>选择文件</button>
-            <span className="or">或粘贴 JSON 内容</span>
+            <button onClick={() => fileRef.current?.click()}>{t('importApiModal.chooseFile')}</button>
+            <span className="or">{t('importApiModal.orPasteJson')}</span>
           </div>
 
           <textarea
@@ -80,7 +82,7 @@ export function ImportApiModal({ onClose, onImport }: Props) {
 
           {!preview && (
             <button className="parse-btn" onClick={handleParse} disabled={!content}>
-              解析
+              {t('importApiModal.parse')}
             </button>
           )}
 
@@ -88,7 +90,7 @@ export function ImportApiModal({ onClose, onImport }: Props) {
             <div className="import-preview">
               <div className="preview-header">
                 <span className="preview-title">{preview.name}</span>
-                <span className="preview-stats">{preview.folders.length} 文件夹 · {totalRequests} 请求</span>
+                <span className="preview-stats">{preview.folders.length} {t('importApiModal.folders')} · {totalRequests} {t('importApiModal.requests')}</span>
               </div>
               <div className="preview-folders">
                 {preview.folders.map((folder, i) => (
@@ -102,7 +104,7 @@ export function ImportApiModal({ onClose, onImport }: Props) {
                         </div>
                       ))}
                       {folder.requests.length > 5 && (
-                        <div className="more">...还有 {folder.requests.length - 5} 个请求</div>
+                        <div className="more">{t('importApiModal.moreRequests', { count: folder.requests.length - 5 })}</div>
                       )}
                     </div>
                   </div>
@@ -113,13 +115,13 @@ export function ImportApiModal({ onClose, onImport }: Props) {
         </div>
 
         <div className="modal-footer">
-          <button className="cancel-btn" onClick={onClose}>取消</button>
+          <button className="cancel-btn" onClick={onClose}>{t('importApiModal.cancel')}</button>
           <button 
             className="import-btn" 
             onClick={() => preview && onImport(preview)}
             disabled={!preview}
           >
-            导入 {totalRequests > 0 && `(${totalRequests} 请求)`}
+            {totalRequests > 0 ? t('importApiModal.importWithCount', { count: totalRequests }) : t('importApiModal.import')}
           </button>
         </div>
       </div>

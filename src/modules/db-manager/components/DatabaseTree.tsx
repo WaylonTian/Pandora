@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import {
   useAppStore,
   ConnectionConfig,
@@ -223,6 +224,7 @@ interface StatusIndicatorProps {
 }
 
 function StatusIndicator({ status }: StatusIndicatorProps) {
+  const t = useT();
   const statusColors: Record<ConnectionStatus, string> = {
     connected: "bg-success shadow-[0_0_6px_hsl(var(--success)/0.5)]",
     disconnected: "bg-muted-foreground/40",
@@ -230,9 +232,9 @@ function StatusIndicator({ status }: StatusIndicatorProps) {
   };
 
   const statusLabels: Record<ConnectionStatus, string> = {
-    connected: "已连接",
-    disconnected: "未连接",
-    connecting: "连接中",
+    connected: t('dbManager.connected'),
+    disconnected: t('dbManager.disconnected'),
+    connecting: t('dbManager.connecting'),
   };
 
   return (
@@ -272,6 +274,7 @@ function ContextMenu({
   isConnecting,
 }: ContextMenuProps) {
   const menuRef = React.useRef<HTMLDivElement>(null);
+  const t = useT();
 
   // Close menu when clicking outside
   React.useEffect(() => {
@@ -318,7 +321,7 @@ function ContextMenu({
               disabled={isConnecting}
             >
               <PlugIcon className="h-4 w-4" />
-              {isConnecting ? "连接中..." : "连接"}
+              {isConnecting ? t('dbManager.connecting') : t('dbManager.connect')}
             </button>
           ) : (
             <button
@@ -329,7 +332,7 @@ function ContextMenu({
               }}
             >
               <UnplugIcon className="h-4 w-4" />
-              断开连接
+              {t('dbManager.disconnect')}
             </button>
           )}
           <button
@@ -341,7 +344,7 @@ function ContextMenu({
             disabled={!isConnected}
           >
             <RefreshIcon className="h-4 w-4" />
-            刷新
+            {t('dbManager.refresh')}
           </button>
           <div className="my-1 h-px bg-border" />
           <button
@@ -352,7 +355,7 @@ function ContextMenu({
             }}
           >
             <TrashIcon className="h-4 w-4" />
-            删除连接
+            {t('dbManager.deleteConnection')}
           </button>
         </>
       )}
@@ -365,7 +368,7 @@ function ContextMenu({
           }}
         >
           <RefreshIcon className="h-4 w-4" />
-          刷新表
+          {t('dbManager.refreshTables')}
         </button>
       )}
       {state.type === "table" && (
@@ -377,7 +380,7 @@ function ContextMenu({
           }}
         >
           <RefreshIcon className="h-4 w-4" />
-          刷新
+          {t('dbManager.refresh')}
         </button>
       )}
     </div>
@@ -579,6 +582,7 @@ export function DatabaseTree({
   onSelectConnection,
   className,
 }: DatabaseTreeProps) {
+  const t = useT();
   // Store state
   const connections = useAppStore((state) => state.connections);
   const connectionStatus = useAppStore((state) => state.connectionStatus);
@@ -795,15 +799,15 @@ export function DatabaseTree({
     <div className={cn("flex h-full flex-col", className)}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">连接</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('dbManager.connections')}</h2>
       </div>
 
       {/* Tree Content */}
-      <div className="flex-1 overflow-auto py-1 scrollbar-thin" role="tree" aria-label="数据库连接">
+      <div className="flex-1 overflow-auto py-1 scrollbar-thin" role="tree" aria-label={t('dbManager.connections')}>
         {connections.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            <p>暂无连接</p>
-            <p className="mt-1 text-xs">点击 + 创建新连接</p>
+            <p>{t('dbManager.noConnections')}</p>
+            <p className="mt-1 text-xs">{t('dbManager.noConnectionsHint')}</p>
           </div>
         ) : (
           connections.map((connection) => {

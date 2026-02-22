@@ -2,6 +2,7 @@ import * as React from "react";
 import Editor, { type OnMount, type Monaco } from "@monaco-editor/react";
 import { format as formatSql } from "sql-formatter";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import { Button } from "@/components/ui/button";
 import { useAppStore, useActiveTab, useActiveConnection } from "../store/index";
 import { createSqlCompletionProvider, type SchemaCache } from "../lib/sqlCompletion";
@@ -160,6 +161,7 @@ interface ConnectionStatusProps {
 }
 
 function ConnectionStatus({ connectionId, className }: ConnectionStatusProps) {
+  const t = useT();
   const connectionStatus = useAppStore((state) => state.connectionStatus);
   const connections = useAppStore((state) => state.connections);
 
@@ -182,17 +184,17 @@ function ConnectionStatus({ connectionId, className }: ConnectionStatusProps) {
       {isConnecting ? (
         <>
           <LoadingSpinner className="h-3.5 w-3.5" />
-          <span>连接中...</span>
+          <span>{t('sqlEditor.connecting')}</span>
         </>
       ) : isConnected ? (
         <>
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_4px_hsl(var(--success)/0.5)]" />
-          <span>{connection?.name || "已连接"}</span>
+          <span>{connection?.name || t('sqlEditor.connected')}</span>
         </>
       ) : (
         <>
           <DisconnectedIcon className="h-3.5 w-3.5" />
-          <span>未连接</span>
+          <span>{t('sqlEditor.notConnected')}</span>
         </>
       )}
     </div>
@@ -286,6 +288,7 @@ function EditorToolbar({
   connectionId,
   hasSelection,
 }: EditorToolbarProps) {
+  const t = useT();
   return (
     <div className="flex items-center justify-between border-b border-border bg-card/50 px-3 py-1.5">
       {/* 左侧：执行按钮和操作 */}
@@ -295,23 +298,23 @@ function EditorToolbar({
           onClick={onExecute}
           disabled={isExecuting || !isConnected}
           className="gap-1.5 h-7 px-3 text-xs cursor-pointer"
-          title={hasSelection ? "执行选中的 SQL (Ctrl+Enter)" : "执行全部 SQL (Ctrl+Enter)"}
+          title={hasSelection ? t('sqlEditor.executeShortcut') : t('sqlEditor.executeAllShortcut')}
         >
           {isExecuting ? (
             <>
               <LoadingSpinner className="h-3.5 w-3.5" />
-              <span>执行中...</span>
+              <span>{t('sqlEditor.executing')}</span>
             </>
           ) : (
             <>
               <PlayIcon className="h-3.5 w-3.5" />
-              <span>{hasSelection ? "执行选中" : "执行"}</span>
+              <span>{hasSelection ? t('sqlEditor.executeSelected') : t('sqlEditor.execute')}</span>
             </>
           )}
         </Button>
         <span className="text-[10px] text-muted-foreground/60">Ctrl+Enter</span>
         {hasSelection && (
-          <span className="text-[10px] text-primary">（已选中）</span>
+          <span className="text-[10px] text-primary">{t('sqlEditor.selected')}</span>
         )}
         
         <div className="mx-1 h-4 w-px bg-border" />
@@ -320,10 +323,10 @@ function EditorToolbar({
           <button
             onClick={onFormat}
             className="flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-            title="格式化 SQL (Shift+Alt+F)"
+            title={t('sqlEditor.formatSqlShortcut')}
           >
             <FormatIcon className="h-3.5 w-3.5" />
-            <span>格式化</span>
+            <span>{t('sqlEditor.format')}</span>
           </button>
         )}
         
@@ -332,10 +335,10 @@ function EditorToolbar({
             onClick={onExplain}
             disabled={isExecuting || !isConnected}
             className="flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-colors"
-            title="分析查询执行计划"
+            title={t('sqlEditor.analyzeQueryPlan')}
           >
             <ChartIcon className="h-3.5 w-3.5" />
-            <span>EXPLAIN</span>
+            <span>{t('sqlEditor.explain')}</span>
           </button>
         )}
         
@@ -344,7 +347,7 @@ function EditorToolbar({
             onClick={onAddFavorite}
             disabled={!isConnected}
             className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-warning disabled:opacity-50 cursor-pointer transition-colors"
-            title="添加到收藏夹"
+            title={t('sqlEditor.addToFavorites')}
           >
             <StarIcon className="h-3.5 w-3.5" />
           </button>

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 
 export interface LoadingOverlayProps {
   isVisible: boolean;
@@ -46,6 +47,7 @@ export function LoadingOverlay({
   showBackdrop = true,
   size = "lg",
 }: LoadingOverlayProps) {
+  const t = useT();
   if (!isVisible) return null;
 
   return (
@@ -57,7 +59,7 @@ export function LoadingOverlay({
       )}
       role="dialog"
       aria-modal="true"
-      aria-label={message || "Loading"}
+      aria-label={message || t('dbManager.loading')}
       aria-busy="true"
     >
       <div className="flex flex-col items-center gap-5 animate-fade-in">

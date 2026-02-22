@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import { tauriCommands, ExplainResult, useActualConnectionId } from "../store/index";
 
 /**
@@ -111,6 +112,7 @@ interface ExplainPanelProps {
 }
 
 export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelProps) {
+  const t = useT();
   const [result, setResult] = React.useState<ExplainResult | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -151,7 +153,7 @@ export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelPr
       <div className="flex items-center justify-between px-4 py-1.5 border-b border-border bg-card/50">
         <div className="flex items-center gap-2">
           <ChartIcon className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-semibold">查询执行计划</span>
+          <span className="text-xs font-semibold">{t('explainPanel.queryExecutionPlan')}</span>
         </div>
         
         <div className="flex items-center gap-1.5">
@@ -176,9 +178,9 @@ export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelPr
                   ? "bg-primary/15 text-primary"
                   : "bg-background hover:bg-muted"
               )}
-              title="实际执行查询并分析"
+              title={t('explainPanel.analyzeModeTooltip')}
             >
-              ANALYZE
+              {t('explainPanel.analyzeMode')}
             </button>
           </div>
           
@@ -208,7 +210,7 @@ export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelPr
           </div>
         ) : error ? (
           <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-xs">
-            <div className="font-semibold mb-1">执行失败</div>
+            <div className="font-semibold mb-1">{t('explainPanel.executionFailed')}</div>
             <div>{error}</div>
           </div>
         ) : result ? (
@@ -216,7 +218,7 @@ export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelPr
             {/* 警告和建议 */}
             {result.warnings.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">分析结果</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('explainPanel.analysisResults')}</div>
                 {result.warnings.map((warning, index) => (
                   <WarningItem key={index} message={warning} />
                 ))}
@@ -227,12 +229,12 @@ export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelPr
             {result.total_time_ms !== undefined && (
               <div className="flex items-center gap-4 text-xs">
                 <div>
-                  <span className="text-muted-foreground">执行时间: </span>
+                  <span className="text-muted-foreground">{t('explainPanel.executionTime')}</span>
                   <span className="font-semibold text-foreground">{result.total_time_ms.toFixed(2)} ms</span>
                 </div>
                 {result.total_cost !== undefined && (
                   <div>
-                    <span className="text-muted-foreground">预估成本: </span>
+                    <span className="text-muted-foreground">{t('explainPanel.estimatedCost')}</span>
                     <span className="font-semibold text-foreground">{result.total_cost.toFixed(2)}</span>
                   </div>
                 )}
@@ -241,15 +243,15 @@ export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelPr
             
             {/* 原始执行计划 */}
             <div>
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">执行计划</div>
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{t('explainPanel.executionPlan')}</div>
               <pre className="text-xs bg-muted/50 p-3 rounded-lg overflow-auto max-h-[200px] whitespace-pre-wrap font-mono scrollbar-thin">
-                {result.raw_plan || "无执行计划数据"}
+                {result.raw_plan || t('explainPanel.noExecutionPlan')}
               </pre>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-center h-32 text-xs text-muted-foreground">
-            <span>点击运行按钮分析查询</span>
+            <span>{t('explainPanel.clickToAnalyze')}</span>
           </div>
         )}
       </div>

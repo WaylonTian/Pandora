@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useT } from '@/i18n';
 import { TestResult } from '../utils/scripting';
 import '../styles/ScriptEditor.css';
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function ScriptEditor({ preScript, testScript, onPreScriptChange, onTestScriptChange, lastTestResults }: Props) {
+  const t = useT();
   const [tab, setTab] = useState<'pre' | 'test'>('pre');
 
   return (
@@ -28,24 +30,24 @@ export function ScriptEditor({ preScript, testScript, onPreScriptChange, onTestS
         {tab === 'pre' ? (
           <>
             <div className="script-hint">
-              在请求发送前执行。可用: pm.environment.set/get, pm.variables.set/get, pm.request.setHeader
+              {t('scriptEditor.preRequestHint')}
             </div>
             <textarea
               value={preScript}
               onChange={e => onPreScriptChange(e.target.value)}
-              placeholder={`// 示例: 添加时间戳\npm.request.setHeader('X-Timestamp', Date.now().toString());`}
+              placeholder={t('scriptEditor.preRequestExample')}
               spellCheck={false}
             />
           </>
         ) : (
           <>
             <div className="script-hint">
-              响应后执行断言。可用: pm.test(), pm.expect(), pm.response.json()
+              {t('scriptEditor.testsHint')}
             </div>
             <textarea
               value={testScript}
               onChange={e => onTestScriptChange(e.target.value)}
-              placeholder={`// 示例: 检查状态码\npm.test("Status is 200", () => {\n  pm.expect(pm.response.code).to.equal(200);\n});`}
+              placeholder={t('scriptEditor.testsExample')}
               spellCheck={false}
             />
             {lastTestResults && lastTestResults.length > 0 && (

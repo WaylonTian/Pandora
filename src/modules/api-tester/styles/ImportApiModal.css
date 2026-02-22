@@ -93,7 +93,7 @@
   margin-top: 12px;
   width: 100%;
   padding: 10px;
-  background: var(--accent);
+  background: var(--gm-accent);
   border: none;
   border-radius: var(--radius-sm);
   color: white;
@@ -207,7 +207,7 @@
 
 .import-btn {
   padding: 8px 20px;
-  background: var(--accent);
+  background: var(--gm-accent);
   border: none;
   border-radius: var(--radius-sm);
   color: white;

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useT } from '@/i18n';
 import { invoke } from "@tauri-apps/api/core";
 
 /**
@@ -149,6 +150,7 @@ function TableRow({ stats, maxSize }: TableRowProps) {
 // ============================================================================
 
 export function TableSpaceAnalyzer({ connectionId, className }: TableSpaceAnalyzerProps) {
+  const t = useT();
   const [stats, setStats] = React.useState<TableStats[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -194,9 +196,9 @@ export function TableSpaceAnalyzer({ connectionId, className }: TableSpaceAnalyz
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/50">
         <div className="flex items-center gap-2">
           <DatabaseIcon className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">表空间分析</h3>
+          <h3 className="text-sm font-semibold">{t('tableSpaceAnalyzer.tableSpaceAnalysis')}</h3>
           <span className="text-xs text-muted-foreground">
-            ({stats.length} 个表)
+            {t('tableSpaceAnalyzer.tablesCount', { count: stats.length })}
           </span>
         </div>
         <Button
@@ -207,7 +209,7 @@ export function TableSpaceAnalyzer({ connectionId, className }: TableSpaceAnalyz
           className="h-7 text-xs cursor-pointer"
         >
           <RefreshIcon className={cn("h-3.5 w-3.5 mr-1", isLoading && "animate-spin")} />
-          刷新
+          {t('tableSpaceAnalyzer.refreshButton')}
         </Button>
       </div>
 
@@ -217,25 +219,25 @@ export function TableSpaceAnalyzer({ connectionId, className }: TableSpaceAnalyz
           <div className="text-lg font-bold text-primary">
             {formatNumber(totals.rowCount)}
           </div>
-          <div className="text-[10px] text-muted-foreground">总行数</div>
+          <div className="text-[10px] text-muted-foreground">{t('tableSpaceAnalyzer.totalRows')}</div>
         </div>
         <div className="bg-muted/50 rounded-lg p-2.5 text-center">
           <div className="text-lg font-bold text-primary">
             {formatBytes(totals.dataSize)}
           </div>
-          <div className="text-[10px] text-muted-foreground">数据大小</div>
+          <div className="text-[10px] text-muted-foreground">{t('tableSpaceAnalyzer.dataSize')}</div>
         </div>
         <div className="bg-muted/50 rounded-lg p-2.5 text-center">
           <div className="text-lg font-bold text-success">
             {formatBytes(totals.indexSize)}
           </div>
-          <div className="text-[10px] text-muted-foreground">索引大小</div>
+          <div className="text-[10px] text-muted-foreground">{t('tableSpaceAnalyzer.indexSize')}</div>
         </div>
         <div className="bg-muted/50 rounded-lg p-2.5 text-center">
           <div className="text-lg font-bold text-warning">
             {formatBytes(totals.totalSize)}
           </div>
-          <div className="text-[10px] text-muted-foreground">总大小</div>
+          <div className="text-[10px] text-muted-foreground">{t('tableSpaceAnalyzer.totalSize')}</div>
         </div>
       </div>
 
@@ -252,17 +254,17 @@ export function TableSpaceAnalyzer({ connectionId, className }: TableSpaceAnalyz
         ) : stats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <DatabaseIcon className="h-10 w-10 opacity-20 mb-2" />
-            <p className="text-xs">暂无表数据</p>
+            <p className="text-xs">{t('tableSpaceAnalyzer.noTableData')}</p>
           </div>
         ) : (
           <table className="w-full text-xs">
             <thead className="bg-muted sticky top-0">
               <tr>
-                <th className="px-3 py-1.5 text-left font-medium">表名</th>
-                <th className="px-3 py-1.5 text-right font-medium">行数</th>
-                <th className="px-3 py-1.5 text-right font-medium">数据大小</th>
-                <th className="px-3 py-1.5 text-right font-medium">索引大小</th>
-                <th className="px-3 py-1.5 text-left font-medium">总大小</th>
+                <th className="px-3 py-1.5 text-left font-medium">{t('tableSpaceAnalyzer.tableNameHeader')}</th>
+                <th className="px-3 py-1.5 text-right font-medium">{t('tableSpaceAnalyzer.rowCountHeader')}</th>
+                <th className="px-3 py-1.5 text-right font-medium">{t('tableSpaceAnalyzer.dataSizeHeader')}</th>
+                <th className="px-3 py-1.5 text-right font-medium">{t('tableSpaceAnalyzer.indexSizeHeader')}</th>
+                <th className="px-3 py-1.5 text-left font-medium">{t('tableSpaceAnalyzer.totalSizeHeader')}</th>
               </tr>
             </thead>
             <tbody>

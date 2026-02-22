@@ -1,0 +1,1 @@
+export { useI18nStore, t, useT, type Locale } from './store';

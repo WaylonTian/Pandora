@@ -3,15 +3,15 @@
   --bg-primary: hsl(var(--background));
   --bg-secondary: hsl(var(--card));
   --bg-tertiary: hsl(var(--muted));
-  --bg-hover: hsl(var(--accent));
-  --bg-active: hsl(var(--accent) / 0.15);
+  --bg-hover: hsl(var(--primary));
+  --bg-active: hsl(var(--primary) / 0.15);
   --border-color: hsl(var(--border));
   --border-hover: hsl(var(--ring));
   --text-primary: hsl(var(--foreground));
   --text-secondary: hsl(var(--muted-foreground));
   --text-muted: hsl(var(--muted-foreground) / 0.7);
-  --accent: hsl(var(--primary));
-  --accent-hover: hsl(var(--primary) / 0.8);
+  --gm-accent: hsl(var(--primary));
+  --gm-accent-hover: hsl(var(--primary) / 0.8);
   --accent-glow: hsl(var(--primary) / 0.15);
   --blue: #3b82f6;
   --success: #22c55e;
@@ -42,6 +42,7 @@
 .app {
   display: flex;
   flex: 1;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -92,7 +93,7 @@
   left: 12px;
   right: 12px;
   height: 2px;
-  background: var(--accent);
+  background: var(--gm-accent);
   border-radius: 2px 2px 0 0;
 }
 
@@ -191,7 +192,7 @@
 .toolbar-title {
   font-weight: 700;
   font-size: 15px;
-  background: linear-gradient(135deg, var(--accent) 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--gm-accent) 0%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -230,7 +231,7 @@
 
 .method-select:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--gm-accent);
 }
 
 .url-input {
@@ -247,7 +248,7 @@
 
 .url-input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--gm-accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
@@ -257,7 +258,7 @@
 
 .send-btn {
   padding: 9px 24px;
-  background: var(--accent);
+  background: var(--gm-accent);
   border: none;
   border-radius: var(--radius-md);
   color: hsl(var(--primary-foreground));
@@ -269,7 +270,7 @@
 }
 
 .send-btn:hover {
-  background: var(--accent-hover);
+  background: var(--gm-accent-hover);
   box-shadow: 0 2px 12px rgba(34, 197, 94, 0.3);
 }
 
@@ -316,7 +317,7 @@
 
 .tab.active {
   color: var(--text-primary);
-  border-bottom-color: var(--accent);
+  border-bottom-color: var(--gm-accent);
 }
 
 /* ═══════════════════════════════════════════
@@ -381,7 +382,7 @@
   height: 15px;
   cursor: pointer;
   flex-shrink: 0;
-  accent-color: var(--accent);
+  accent-color: var(--gm-accent);
 }
 
 .kv-row-advanced .kv-input {
@@ -418,7 +419,7 @@
 }
 
 .body-type-option.active { color: var(--text-primary); }
-.body-type-option input[type="radio"] { accent-color: var(--accent); }
+.body-type-option input[type="radio"] { accent-color: var(--gm-accent); }
 
 .body-none {
   color: var(--text-muted);
@@ -458,7 +459,7 @@
 
 .body-textarea:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--gm-accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
@@ -508,7 +509,7 @@
 
 .kv-input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--gm-accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
@@ -540,7 +541,7 @@
 
 .body-editor:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--gm-accent);
 }
 
 /* ═══════════════════════════════════════════
@@ -652,7 +653,7 @@
 }
 
 .env-select:hover { border-color: var(--border-hover); }
-.env-select:focus { outline: none; border-color: var(--accent); }
+.env-select:focus { outline: none; border-color: var(--gm-accent); }
 
 /* ═══════════════════════════════════════════
    Icon Button
@@ -744,7 +745,7 @@
 
 .search-input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--gm-accent);
 }
 
 /* Auth Panel */
@@ -813,7 +814,7 @@
   transition: background 0.2s;
 }
 
-.resizer:hover { background: var(--accent); }
+.resizer:hover { background: var(--gm-accent); }
 
 .h-resizer {
   height: 3px;
@@ -822,7 +823,7 @@
   transition: background 0.2s;
 }
 
-.h-resizer:hover { background: var(--accent); }
+.h-resizer:hover { background: var(--gm-accent); }
 
 /* Split Pane */
 .split-pane {
@@ -843,7 +844,7 @@
 .collection-item { font-weight: 500; }
 
 .collection-item svg {
-  color: var(--accent);
+  color: var(--gm-accent);
   flex-shrink: 0;
   opacity: 0.7;
 }
@@ -892,8 +893,8 @@
 .view-btn:hover { color: var(--text-secondary); }
 
 .view-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--gm-accent);
+  border-color: var(--gm-accent);
   color: hsl(var(--primary-foreground));
   font-weight: 500;
 }

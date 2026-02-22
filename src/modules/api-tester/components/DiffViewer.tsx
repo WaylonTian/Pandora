@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useT } from '@/i18n';
 import { diffJson, diffText, DiffLine } from '../utils/diff';
 import '../styles/DiffViewer.css';
 
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function DiffViewer({ currentResponse, snapshots, onSaveSnapshot, onDeleteSnapshot }: Props) {
+  const t = useT();
   const [leftId, setLeftId] = useState<string>('current');
   const [rightId, setRightId] = useState<string>(snapshots[0]?.id || '');
   const [snapshotName, setSnapshotName] = useState('');
@@ -49,7 +51,7 @@ export function DiffViewer({ currentResponse, snapshots, onSaveSnapshot, onDelet
       <div className="diff-toolbar">
         <div className="diff-selectors">
           <select value={leftId} onChange={e => setLeftId(e.target.value)}>
-            <option value="current">当前响应</option>
+            <option value="current">{t('diffViewer.currentResponse')}</option>
             {snapshots.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -59,13 +61,13 @@ export function DiffViewer({ currentResponse, snapshots, onSaveSnapshot, onDelet
             {snapshots.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
-            {snapshots.length === 0 && <option value="">无快照</option>}
+            {snapshots.length === 0 && <option value="">{t('diffViewer.noSnapshot')}</option>}
           </select>
         </div>
         <div className="diff-actions">
           <input
             type="text"
-            placeholder="快照名称"
+            placeholder={t('diffViewer.snapshotNamePlaceholder')}
             value={snapshotName}
             onChange={e => setSnapshotName(e.target.value)}
           />
@@ -73,19 +75,19 @@ export function DiffViewer({ currentResponse, snapshots, onSaveSnapshot, onDelet
             onClick={() => { onSaveSnapshot(snapshotName || `Snapshot ${Date.now()}`); setSnapshotName(''); }}
             disabled={!currentResponse}
           >
-            保存快照
+            {t('diffViewer.saveSnapshot')}
           </button>
         </div>
       </div>
 
       <div className="diff-stats">
-        <span className="stat-added">+{stats.added} 新增</span>
-        <span className="stat-removed">-{stats.removed} 删除</span>
+        <span className="stat-added">+{stats.added} {t('diffViewer.added')}</span>
+        <span className="stat-removed">-{stats.removed} {t('diffViewer.removed')}</span>
       </div>
 
       <div className="diff-content">
         {diffLines.length === 0 ? (
-          <div className="diff-empty">选择两个响应进行对比</div>
+          <div className="diff-empty">{t('diffViewer.selectTwoResponses')}</div>
         ) : (
           diffLines.map((line, i) => (
             <div key={i} className={`diff-line ${line.type}`}>
@@ -102,7 +104,7 @@ export function DiffViewer({ currentResponse, snapshots, onSaveSnapshot, onDelet
 
       {snapshots.length > 0 && (
         <div className="snapshot-list">
-          <div className="snapshot-header">已保存快照</div>
+          <div className="snapshot-header">{t('diffViewer.savedSnapshots')}</div>
           {snapshots.map(s => (
             <div key={s.id} className="snapshot-item">
               <span className="snapshot-name">{s.name}</span>

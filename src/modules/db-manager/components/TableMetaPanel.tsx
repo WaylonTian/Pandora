@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import { tauriCommands, useActiveTab, useActualConnectionId, TableInfo } from "../store/index";
 
 /**
@@ -82,11 +83,12 @@ interface ColumnRowProps {
 }
 
 function ColumnRow({ name, dataType, nullable, isPrimaryKey, isAutoIncrement, defaultValue }: ColumnRowProps) {
+  const t = useT();
   return (
     <tr className="border-b border-border hover:bg-accent/30 transition-colors">
       <td className="px-2 py-1 text-xs font-medium">
         {name}
-        {isPrimaryKey && <span className="ml-1 text-warning" title="主键">🔑</span>}
+        {isPrimaryKey && <span className="ml-1 text-warning" title={t('tableMetaPanel.primaryKeyTooltip')}>🔑</span>}
       </td>
       <td className="px-2 py-1 text-xs text-muted-foreground font-mono">{dataType}</td>
       <td className="px-2 py-1 text-xs text-center">
@@ -108,6 +110,7 @@ interface TableMetaPanelProps {
 }
 
 export function TableMetaPanel({ className }: TableMetaPanelProps) {
+  const t = useT();
   const [isExpanded, setIsExpanded] = React.useState(true);
   const [activeSection, setActiveSection] = React.useState<'structure' | 'ddl'>('structure');
   const [tableInfo, setTableInfo] = React.useState<TableInfo | null>(null);
@@ -176,7 +179,7 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-center w-5 border-l border-border bg-card/50 hover:bg-muted transition-colors cursor-pointer"
-        title={isExpanded ? "折叠面板" : "展开面板"}
+        title={isExpanded ? t('tableMetaPanel.collapsePanel') : t('tableMetaPanel.expandPanel')}
       >
         {isExpanded ? (
           <ChevronRightIcon className="h-3.5 w-3.5 text-muted-foreground" />
@@ -206,7 +209,7 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
               )}
             >
               <TableIcon className="h-3 w-3 inline mr-1" />
-              结构
+              {t('tableMetaPanel.structureTab')}
             </button>
             <button
               onClick={() => setActiveSection('ddl')}
@@ -218,7 +221,7 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
               )}
             >
               <CodeIcon className="h-3 w-3 inline mr-1" />
-              DDL
+              {t('tableMetaPanel.ddlTab')}
             </button>
           </div>
 
@@ -236,10 +239,10 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">列名</th>
-                        <th className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">类型</th>
-                        <th className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider text-center">NULL</th>
-                        <th className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">默认值</th>
+                        <th className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t('tableMetaPanel.columnNameHeader')}</th>
+                        <th className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t('tableMetaPanel.typeHeader')}</th>
+                        <th className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider text-center">{t('tableMetaPanel.nullHeader')}</th>
+                        <th className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t('tableMetaPanel.defaultValueHeader')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -257,19 +260,19 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="text-xs text-muted-foreground text-center py-4">无列信息</div>
+                  <div className="text-xs text-muted-foreground text-center py-4">{t('tableMetaPanel.noColumnInfo')}</div>
                 )}
 
                 {/* 索引信息 */}
                 {tableInfo && tableInfo.indexes.length > 0 && (
                   <div className="mt-3">
-                    <h4 className="text-[10px] font-medium text-muted-foreground mb-1.5 px-2 uppercase tracking-wider">索引</h4>
+                    <h4 className="text-[10px] font-medium text-muted-foreground mb-1.5 px-2 uppercase tracking-wider">{t('tableMetaPanel.indexesTitle')}</h4>
                     <div className="space-y-1">
                       {tableInfo.indexes.map((idx) => (
                         <div key={idx.name} className="px-2 py-1 text-xs bg-muted/30 rounded-md">
                           <span className="font-medium">{idx.name}</span>
-                          {idx.is_primary && <span className="ml-1 text-warning">(主键)</span>}
-                          {idx.is_unique && !idx.is_primary && <span className="ml-1 text-primary">(唯一)</span>}
+                          {idx.is_primary && <span className="ml-1 text-warning">({t('tableStructure.primaryKeyHeader')})</span>}
+                          {idx.is_unique && !idx.is_primary && <span className="ml-1 text-primary">({t('tableStructure.uniqueHeader')})</span>}
                           <div className="text-muted-foreground text-[10px]">{idx.columns.join(', ')}</div>
                         </div>
                       ))}
@@ -280,18 +283,18 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
             ) : (
               <div className="p-2">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">建表语句</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('tableMetaPanel.createTableStatement')}</span>
                   <button
                     onClick={handleCopyDdl}
                     className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-md hover:bg-muted transition-colors cursor-pointer"
-                    title="复制 DDL"
+                    title={t('tableMetaPanel.copyButton')}
                   >
                     <CopyIcon className="h-3 w-3" />
-                    {copied ? '已复制' : '复制'}
+                    {copied ? t('tableMetaPanel.copiedButton') : t('tableMetaPanel.copyButton')}
                   </button>
                 </div>
                 <pre className="text-xs bg-muted/50 p-2 rounded-lg overflow-auto max-h-[400px] whitespace-pre-wrap break-all font-mono scrollbar-thin">
-                  {ddl || '无 DDL 信息'}
+                  {ddl || t('tableMetaPanel.noDdlInfo')}
                 </pre>
               </div>
             )}

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { tauriCommands, type Value, type ColumnDefinition } from "../store/index";
@@ -167,6 +168,7 @@ interface ColumnConfigRowProps {
 }
 
 function ColumnConfigRow({ config, onChange }: ColumnConfigRowProps) {
+  const t = useT();
   const { column, rule, enabled } = config;
 
   return (
@@ -195,17 +197,17 @@ function ColumnConfigRow({ config, onChange }: ColumnConfigRowProps) {
           disabled={!enabled}
           className="w-full px-2 py-1 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="auto">自动</option>
-          <option value="sequence">序列</option>
-          <option value="random">随机数</option>
-          <option value="fixed">固定值</option>
-          <option value="pattern">从列表选择</option>
+          <option value="auto">{t('dataGenerator.autoGeneration')}</option>
+          <option value="sequence">{t('dataGenerator.sequenceGeneration')}</option>
+          <option value="random">{t('dataGenerator.randomGeneration')}</option>
+          <option value="fixed">{t('dataGenerator.fixedGeneration')}</option>
+          <option value="pattern">{t('dataGenerator.patternGeneration')}</option>
         </select>
       </td>
       <td className="px-3 py-2">
         {rule.type === "sequence" && (
           <Input
-            placeholder="前缀"
+            placeholder={t('dataGenerator.prefixPlaceholder')}
             value={rule.prefix || ""}
             onChange={(e) =>
               onChange({ ...config, rule: { ...rule, prefix: e.target.value } })
@@ -218,7 +220,7 @@ function ColumnConfigRow({ config, onChange }: ColumnConfigRowProps) {
           <div className="flex gap-2">
             <Input
               type="number"
-              placeholder="最小"
+              placeholder={t('dataGenerator.minPlaceholder')}
               value={rule.min ?? ""}
               onChange={(e) =>
                 onChange({
@@ -231,7 +233,7 @@ function ColumnConfigRow({ config, onChange }: ColumnConfigRowProps) {
             />
             <Input
               type="number"
-              placeholder="最大"
+              placeholder={t('dataGenerator.maxPlaceholder')}
               value={rule.max ?? ""}
               onChange={(e) =>
                 onChange({
@@ -246,7 +248,7 @@ function ColumnConfigRow({ config, onChange }: ColumnConfigRowProps) {
         )}
         {rule.type === "fixed" && (
           <Input
-            placeholder="固定值"
+            placeholder={t('dataGenerator.fixedValuePlaceholder')}
             value={rule.fixedValue || ""}
             onChange={(e) =>
               onChange({
@@ -260,7 +262,7 @@ function ColumnConfigRow({ config, onChange }: ColumnConfigRowProps) {
         )}
         {rule.type === "pattern" && (
           <Input
-            placeholder="值1,值2,值3"
+            placeholder={t('dataGenerator.valuesPlaceholder')}
             value={rule.values?.join(",") || ""}
             onChange={(e) =>
               onChange({
@@ -289,6 +291,7 @@ export function DataGenerator({
   onSuccess,
   className,
 }: DataGeneratorProps) {
+  const t = useT();
   const [rowCount, setRowCount] = React.useState(100);
   const [configs, setConfigs] = React.useState<ColumnConfig[]>(() =>
     columns.map((col) => ({
@@ -366,7 +369,7 @@ export function DataGenerator({
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
           <div className="flex items-center gap-2">
             <WandIcon className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">生成测试数据</h3>
+            <h3 className="text-sm font-semibold">{t('dataGenerator.generateTestDataTitle')}</h3>
             <span className="text-xs text-muted-foreground">- {tableName}</span>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md cursor-pointer transition-colors">
@@ -378,7 +381,7 @@ export function DataGenerator({
         <div className="flex-1 overflow-auto p-4 space-y-4">
           {/* Row Count */}
           <div className="flex items-center gap-4">
-            <label className="text-sm font-medium">生成行数:</label>
+            <label className="text-sm font-medium">{t('dataGenerator.rowCountLabel')}</label>
             <Input
               type="number"
               value={rowCount}
@@ -388,7 +391,7 @@ export function DataGenerator({
               max={10000}
             />
             <Button variant="outline" size="sm" onClick={generatePreview}>
-              预览
+              {t('dataGenerator.previewButton')}
             </Button>
           </div>
 
@@ -398,9 +401,9 @@ export function DataGenerator({
               <thead className="bg-muted">
                 <tr>
                   <th className="px-3 py-2 w-10"></th>
-                  <th className="px-3 py-2 text-left">列</th>
-                  <th className="px-3 py-2 text-left w-32">生成方式</th>
-                  <th className="px-3 py-2 text-left">参数</th>
+                  <th className="px-3 py-2 text-left">{t('dataGenerator.columnHeader')}</th>
+                  <th className="px-3 py-2 text-left w-32">{t('dataGenerator.generationMethodHeader')}</th>
+                  <th className="px-3 py-2 text-left">{t('dataGenerator.parametersHeader')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -418,7 +421,7 @@ export function DataGenerator({
           {/* Preview */}
           {preview.length > 0 && (
             <div>
-              <h4 className="font-medium mb-2">数据预览</h4>
+              <h4 className="font-medium mb-2">{t('dataGenerator.dataPreviewTitle')}</h4>
               <div className="border border-border rounded-lg overflow-auto max-h-40">
                 <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
@@ -459,14 +462,14 @@ export function DataGenerator({
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-border">
           <span className="text-xs text-muted-foreground">
-            将生成 {rowCount} 行数据，包含 {enabledCount} 个字段
+            {t('dataGenerator.generateSummary', { rowCount, fieldCount: enabledCount })}
           </span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={onClose} disabled={isGenerating} className="cursor-pointer">
-              取消
+              {t('dataGenerator.cancelButton')}
             </Button>
             <Button size="sm" onClick={handleGenerate} disabled={isGenerating || enabledCount === 0} className="cursor-pointer">
-              {isGenerating ? "生成中..." : `生成 ${rowCount} 行`}
+              {isGenerating ? t('dataGenerator.generatingMessage') : t('dataGenerator.generateRowsButton', { count: rowCount })}
             </Button>
           </div>
         </div>

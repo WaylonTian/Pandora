@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { t } from '@/i18n';
 
 /**
  * Error Boundary Component
@@ -151,21 +152,21 @@ function ErrorDisplay({
       <AlertTriangleIcon className="mb-4 text-destructive" />
 
       <h2 className="mb-2 text-lg font-semibold text-foreground">
-        出了点问题
+        {t('errorBoundary.somethingWentWrong')}
       </h2>
 
       <p className="mb-6 max-w-md text-center text-sm text-muted-foreground">
-        发生了意外错误。你可以尝试重试或重新加载应用。
+        {t('errorBoundary.unexpectedError')}
       </p>
 
       <div className="mb-6 flex gap-3">
         <Button variant="outline" size="sm" onClick={onRetry} className="cursor-pointer">
           <RefreshIcon className="mr-2" />
-          重试
+          {t('errorBoundary.retry')}
         </Button>
         <Button size="sm" onClick={onReload} className="cursor-pointer">
           <HomeIcon className="mr-2" />
-          重新加载
+          {t('errorBoundary.reload')}
         </Button>
       </div>
 
@@ -182,7 +183,7 @@ function ErrorDisplay({
               showDetails && "rotate-180"
             )}
           />
-          {showDetails ? "隐藏" : "显示"}错误详情
+          {showDetails ? t('errorBoundary.hideDetails') : t('errorBoundary.showDetails')}{t('errorBoundary.errorDetails')}
         </button>
 
         {showDetails && (
@@ -196,7 +197,7 @@ function ErrorDisplay({
             {error.stack && (
               <div className="mb-3">
                 <p className="mb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  堆栈跟踪:
+                  {t('errorBoundary.stackTrace')}:
                 </p>
                 <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-md bg-background p-2 text-[10px] text-muted-foreground scrollbar-thin">
                   {error.stack}
@@ -207,7 +208,7 @@ function ErrorDisplay({
             {errorInfo?.componentStack && (
               <div>
                 <p className="mb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  组件堆栈:
+                  {t('errorBoundary.componentStack')}:
                 </p>
                 <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-md bg-background p-2 text-[10px] text-muted-foreground scrollbar-thin">
                   {errorInfo.componentStack}

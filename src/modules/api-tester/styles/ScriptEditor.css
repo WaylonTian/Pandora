@@ -22,9 +22,9 @@
 }
 
 .script-tabs button.active {
-  background: var(--accent);
+  background: var(--gm-accent);
   color: white;
-  border-color: var(--accent);
+  border-color: var(--gm-accent);
 }
 
 .script-content {

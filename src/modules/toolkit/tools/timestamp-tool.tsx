@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { useT } from '@/i18n';
 
 export function TimestampTool() {
+  const t = useT();
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [currentTime, setCurrentTime] = useState("");
@@ -8,17 +10,17 @@ export function TimestampTool() {
   useEffect(() => {
     const updateTime = () => {
       const now = Date.now();
-      setCurrentTime(`当前时间戳: ${now} (${new Date(now).toLocaleString()})`);
+      setCurrentTime(`${t("toolkit.timestampTool.currentTimestamp")}: ${now} (${new Date(now).toLocaleString()})`);
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [t]);
 
   const handleToDate = () => {
     const timestamp = parseInt(input);
     if (isNaN(timestamp)) {
-      setOutput("请输入有效的时间戳");
+      setOutput(t("toolkit.timestampTool.invalidTimestamp"));
       return;
     }
     const date = new Date(timestamp.toString().length === 10 ? timestamp * 1000 : timestamp);
@@ -28,7 +30,7 @@ export function TimestampTool() {
   const handleToTimestamp = () => {
     const date = new Date(input);
     if (isNaN(date.getTime())) {
-      setOutput("请输入有效的日期格式");
+      setOutput(t("toolkit.timestampTool.invalidDate"));
       return;
     }
     setOutput(Math.floor(date.getTime() / 1000).toString());
@@ -36,24 +38,24 @@ export function TimestampTool() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">时间戳转换</h2>
+      <h2 className="text-lg font-semibold">{t("toolkit.timestampTool.title")}</h2>
       <div className="text-sm text-muted-foreground">{currentTime}</div>
       <div className="flex gap-2">
         <button onClick={handleToDate} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
-          转为日期
+          {t("toolkit.timestampTool.toDate")}
         </button>
         <button onClick={handleToTimestamp} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
-          转为时间戳
+          {t("toolkit.timestampTool.toTimestamp")}
         </button>
       </div>
       <input
         className="w-full p-2 border rounded bg-background text-foreground"
         value={input}
         onChange={e => setInput(e.target.value)}
-        placeholder="输入时间戳或日期..."
+        placeholder={t("toolkit.timestampTool.inputPlaceholder")}
       />
       <div className="p-2 border rounded bg-muted font-mono text-sm min-h-[2.5rem]">
-        {output || "输出..."}
+        {output || t("toolkit.timestampTool.outputPlaceholder")}
       </div>
     </div>
   );

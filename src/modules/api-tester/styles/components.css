@@ -51,7 +51,7 @@
 .tab-item.active {
   background: var(--bg-primary);
   color: var(--text-primary);
-  border-bottom: 2px solid var(--accent);
+  border-bottom: 2px solid var(--gm-accent);
   margin-bottom: -1px;
 }
 
@@ -143,7 +143,7 @@
    ═══════════════════════════════════════════ */
 .btn {
   padding: 7px 16px;
-  background: var(--accent);
+  background: var(--gm-accent);
   border: none;
   border-radius: var(--radius-sm);
   color: hsl(var(--primary-foreground));
@@ -153,7 +153,7 @@
   transition: var(--transition-fast);
 }
 
-.btn:hover { background: var(--accent-hover); }
+.btn:hover { background: var(--gm-accent-hover); }
 .btn.secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); }
 .btn.secondary:hover { background: var(--bg-hover); }
 .btn.danger { background: var(--error); color: white; }
@@ -182,8 +182,8 @@
 .lang-btn:hover { border-color: var(--border-hover); }
 
 .lang-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--gm-accent);
+  border-color: var(--gm-accent);
   color: hsl(var(--primary-foreground));
   font-weight: 500;
 }
@@ -299,7 +299,7 @@
 
 .tool-btn {
   padding: 6px 12px;
-  background: var(--accent);
+  background: var(--gm-accent);
   border: none;
   border-radius: var(--radius-sm);
   color: hsl(var(--primary-foreground));
@@ -467,7 +467,7 @@
 .setting-row input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: var(--accent);
+  accent-color: var(--gm-accent);
 }
 
 /* cURL Import */
@@ -648,7 +648,7 @@
 .env-var-row input[type="checkbox"] {
   width: 15px;
   height: 15px;
-  accent-color: var(--accent);
+  accent-color: var(--gm-accent);
 }
 
 .env-var-input {
@@ -662,7 +662,7 @@
 }
 
 .env-var-input:focus {
-  border-color: var(--accent);
+  border-color: var(--gm-accent);
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-glow);
 }

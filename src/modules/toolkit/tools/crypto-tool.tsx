@@ -1,19 +1,21 @@
 import { useState } from "react";
+import { useT } from '@/i18n';
 
 export function CryptoTool() {
+  const t = useT();
   const [input, setInput] = useState("");
   const [algorithm, setAlgorithm] = useState("SHA-256");
   const [output, setOutput] = useState("");
 
   const handleHash = async () => {
     if (!input) {
-      setOutput("请输入要哈希的文本");
+      setOutput(t("toolkit.cryptoTool.pleaseInputText"));
       return;
     }
 
     try {
       if (algorithm === "MD5") {
-        setOutput("MD5 需要额外库支持，请使用 SHA 算法");
+        setOutput(t("toolkit.cryptoTool.md5NotSupported"));
         return;
       }
 
@@ -24,13 +26,13 @@ export function CryptoTool() {
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
       setOutput(hashHex);
     } catch (e) {
-      setOutput(`哈希错误: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      setOutput(`${t("toolkit.cryptoTool.hashError")}: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
   };
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">哈希生成器</h2>
+      <h2 className="text-lg font-semibold">{t("toolkit.cryptoTool.title")}</h2>
       <div className="flex gap-2 items-center">
         <select
           value={algorithm}
@@ -44,20 +46,20 @@ export function CryptoTool() {
           <option value="MD5">MD5 (不支持)</option>
         </select>
         <button onClick={handleHash} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
-          生成哈希
+          {t("toolkit.cryptoTool.generateHash")}
         </button>
       </div>
       <textarea
         className="w-full h-32 p-2 border rounded bg-background text-foreground font-mono text-sm resize-y"
         value={input}
         onChange={e => setInput(e.target.value)}
-        placeholder="输入要哈希的文本..."
+        placeholder={t("toolkit.cryptoTool.inputPlaceholder")}
       />
       <textarea
         className="w-full h-20 p-2 border rounded bg-background text-foreground font-mono text-sm resize-y"
         value={output}
         readOnly
-        placeholder="哈希结果..."
+        placeholder={t("toolkit.cryptoTool.outputPlaceholder")}
       />
     </div>
   );

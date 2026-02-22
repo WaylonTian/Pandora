@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useT } from '@/i18n';
 import { tauriCommands, type Value, type ColumnInfo } from "../store/index";
 
 /**
@@ -138,6 +139,7 @@ export function DataImport({
   onSuccess,
   className,
 }: DataImportProps) {
+  const t = useT();
   const [file, setFile] = React.useState<File | null>(null);
   const [parsedData, setParsedData] = React.useState<ImportRow[]>([]);
   const [sourceFields, setSourceFields] = React.useState<string[]>([]);
@@ -148,7 +150,7 @@ export function DataImport({
   
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // 处理文件选择
+  // Handle file selection
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -164,22 +166,22 @@ export function DataImport({
     } else if (selectedFile.name.endsWith(".json")) {
       data = parseJSON(content);
     } else {
-      setError("不支持的文件格式，请使用 CSV 或 JSON 文件");
+      setError("Unsupported file format, please use CSV or JSON files");
       return;
     }
     
     if (data.length === 0) {
-      setError("文件为空或格式错误");
+      setError("File is empty or format is incorrect");
       return;
     }
     
     setParsedData(data);
     
-    // 提取源字段
+    // Extract source fields
     const fields = Object.keys(data[0]);
     setSourceFields(fields);
     
-    // 自动映射同名字段
+    // Auto-map fields with same names
     const autoMappings: FieldMapping[] = [];
     fields.forEach((field) => {
       const matchingColumn = columns.find(
@@ -195,7 +197,7 @@ export function DataImport({
     setMappings(autoMappings);
   };
 
-  // 更新字段映射
+  // Update field mapping
   const updateMapping = (sourceField: string, targetColumn: string) => {
     setMappings((prev) => {
       const existing = prev.find((m) => m.sourceField === sourceField);
@@ -214,10 +216,10 @@ export function DataImport({
     });
   };
 
-  // 执行导入
+  // Execute import
   const handleImport = async () => {
     if (mappings.length === 0) {
-      setError("请至少映射一个字段");
+      setError("Please map at least one field");
       return;
     }
     
@@ -255,7 +257,7 @@ export function DataImport({
       <div className="bg-card border border-border rounded-xl shadow-xl w-[700px] max-h-[80vh] flex flex-col animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-          <h3 className="text-sm font-semibold">导入数据到 {tableName}</h3>
+          <h3 className="text-sm font-semibold">{t("dataImport.importDataTitle", { tableName })}</h3>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md cursor-pointer transition-colors">
             <CloseIcon className="h-4 w-4" />
           </button>
@@ -285,10 +287,10 @@ export function DataImport({
               >
                 <UploadIcon className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  点击选择文件或拖拽文件到此处
+                  {t("dataImport.uploadPrompt")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  支持 CSV、JSON 格式
+                  {t("dataImport.supportedFormats")}
                 </p>
               </div>
             )}
@@ -297,13 +299,13 @@ export function DataImport({
           {/* Field Mapping */}
           {sourceFields.length > 0 && (
             <div>
-              <h4 className="font-medium mb-2">字段映射</h4>
+              <h4 className="font-medium mb-2">{t("dataImport.fieldMappingTitle")}</h4>
               <div className="border border-border rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-muted">
                     <tr>
-                      <th className="px-3 py-2 text-left">源字段</th>
-                      <th className="px-3 py-2 text-left">目标列</th>
+                      <th className="px-3 py-2 text-left">{t("dataImport.sourceFieldHeader")}</th>
+                      <th className="px-3 py-2 text-left">{t("dataImport.targetColumnHeader")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -316,7 +318,7 @@ export function DataImport({
                             onChange={(e) => updateMapping(field, e.target.value)}
                             className="w-full px-2 py-1 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                           >
-                            <option value="">-- 不导入 --</option>
+                            <option value="">{t("dataImport.noImportOption")}</option>
                             {columns.map((col) => (
                               <option key={col.name} value={col.name}>
                                 {col.name} ({col.data_type})
@@ -335,7 +337,7 @@ export function DataImport({
           {/* Preview */}
           {parsedData.length > 0 && mappings.length > 0 && (
             <div>
-              <h4 className="font-medium mb-2">数据预览 (前 5 行)</h4>
+              <h4 className="font-medium mb-2">{t("dataImport.dataPreviewTitle")}</h4>
               <div className="border border-border rounded-lg overflow-auto max-h-40">
                 <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
@@ -380,7 +382,7 @@ export function DataImport({
                 />
               </div>
               <p className="text-xs text-center text-muted-foreground">
-                正在导入...
+                {t("dataImport.importingMessage")}
               </p>
             </div>
           )}
@@ -389,7 +391,7 @@ export function DataImport({
         {/* Footer */}
         <div className="flex justify-end gap-2 px-4 py-2.5 border-t border-border">
           <Button variant="outline" size="sm" onClick={onClose} disabled={isImporting} className="cursor-pointer">
-            取消
+            {t("dataImport.cancelButton")}
           </Button>
           <Button
             size="sm"
@@ -397,7 +399,7 @@ export function DataImport({
             disabled={isImporting || mappings.length === 0}
             className="cursor-pointer"
           >
-            {isImporting ? "导入中..." : `导入 ${parsedData.length} 行`}
+            {isImporting ? t("dataImport.importingMessage") : t("dataImport.importRowsButton", { count: parsedData.length })}
           </Button>
         </div>
       </div>

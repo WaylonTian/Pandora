@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 
 export interface AppLayoutProps {
   sidebar: React.ReactNode;
@@ -22,6 +23,7 @@ export function AppLayout({
   minSidebarWidth = MIN_SIDEBAR_WIDTH,
   maxSidebarWidth = MAX_SIDEBAR_WIDTH,
 }: AppLayoutProps) {
+  const t = useT();
   const [sidebarWidth, setSidebarWidth] = React.useState(defaultSidebarWidth);
   const [isResizing, setIsResizing] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -69,7 +71,7 @@ export function AppLayout({
     <div
       ref={containerRef}
       className={cn(
-        "flex h-screen w-full overflow-hidden bg-background text-foreground",
+        "flex h-full w-full overflow-hidden bg-background text-foreground",
         className
       )}
     >
@@ -92,7 +94,7 @@ export function AppLayout({
         onMouseDown={handleMouseDown}
         role="separator"
         aria-orientation="vertical"
-        aria-label="调整侧边栏宽度"
+        aria-label={t('dbManager.layout.adjustSidebarWidth')}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === "ArrowLeft") {

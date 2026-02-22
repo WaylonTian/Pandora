@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useT } from '@/i18n';
 import type { ColumnDefinition, Value } from "../store/index";
 
 /**
@@ -108,16 +109,18 @@ const maskingFunctions: Record<MaskingType, (value: string) => string> = {
   custom: (v) => v,
 };
 
-const maskingLabels: Record<MaskingType, string> = {
-  none: "不脱敏",
-  phone: "手机号",
-  email: "邮箱",
-  idcard: "身份证",
-  name: "姓名",
-  address: "地址",
-  bankcard: "银行卡",
-  custom: "自定义",
-};
+function getMaskingLabels(t: (key: string) => string): Record<MaskingType, string> {
+  return {
+    none: t("dataMasking.noMasking"),
+    phone: t("dataMasking.phoneMasking"),
+    email: t("dataMasking.emailMasking"),
+    idcard: t("dataMasking.idcardMasking"),
+    name: t("dataMasking.nameMasking"),
+    address: t("dataMasking.addressMasking"),
+    bankcard: t("dataMasking.bankcardMasking"),
+    custom: t("dataMasking.customMasking"),
+  };
+}
 
 const maskingExamples: Record<MaskingType, { input: string; output: string }> = {
   none: { input: "原始数据", output: "原始数据" },
@@ -182,8 +185,10 @@ interface MaskingRuleRowProps {
 }
 
 function MaskingRuleRow({ column, config, onChange }: MaskingRuleRowProps) {
+  const t = useT();
   const rule = config?.rule || { type: "none" as MaskingType };
   const example = maskingExamples[rule.type];
+  const maskingLabels = getMaskingLabels(t);
 
   return (
     <tr className="border-b border-border">
@@ -213,7 +218,7 @@ function MaskingRuleRow({ column, config, onChange }: MaskingRuleRowProps) {
         {rule.type === "custom" ? (
           <div className="flex gap-2">
             <Input
-              placeholder="正则表达式"
+              placeholder={t("dataMasking.regexPlaceholder")}
               value={rule.customPattern || ""}
               onChange={(e) =>
                 onChange({
@@ -224,7 +229,7 @@ function MaskingRuleRow({ column, config, onChange }: MaskingRuleRowProps) {
               className="h-8 text-sm flex-1"
             />
             <Input
-              placeholder="替换为"
+              placeholder={t("dataMasking.replacementPlaceholder")}
               value={rule.customReplacement || ""}
               onChange={(e) =>
                 onChange({
@@ -252,6 +257,7 @@ function MaskingRuleRow({ column, config, onChange }: MaskingRuleRowProps) {
 // ============================================================================
 
 export function DataMasking({ columns, configs, onChange, className }: DataMaskingProps) {
+  const t = useT();
   const updateConfig = (config: ColumnMaskingConfig) => {
     const existing = configs.findIndex((c) => c.columnName === config.columnName);
     if (existing >= 0) {
@@ -271,10 +277,10 @@ export function DataMasking({ columns, configs, onChange, className }: DataMaski
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ShieldIcon className="h-5 w-5 text-primary" />
-          <h4 className="font-semibold">数据脱敏配置</h4>
+          <h4 className="font-semibold">{t("dataMasking.dataMaskingTitle")}</h4>
           {activeCount > 0 && (
             <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-              {activeCount} 个字段已配置
+              {t("dataMasking.fieldsConfiguredBadge", { count: activeCount })}
             </span>
           )}
         </div>
@@ -284,7 +290,7 @@ export function DataMasking({ columns, configs, onChange, className }: DataMaski
           onClick={() => onChange([])}
           disabled={configs.length === 0}
         >
-          清除全部
+          {t("dataMasking.clearAllButton")}
         </Button>
       </div>
 
@@ -292,7 +298,7 @@ export function DataMasking({ columns, configs, onChange, className }: DataMaski
       <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-sm">
         <EyeOffIcon className="h-4 w-4 text-muted-foreground mt-0.5" />
         <div className="text-muted-foreground">
-          配置脱敏规则后，导出数据时将自动应用脱敏处理，保护敏感信息。
+          {t("dataMasking.infoMessage")}
         </div>
       </div>
 
@@ -301,9 +307,9 @@ export function DataMasking({ columns, configs, onChange, className }: DataMaski
         <table className="w-full text-sm">
           <thead className="bg-muted">
             <tr>
-              <th className="px-3 py-2 text-left w-40">列名</th>
-              <th className="px-3 py-2 text-left w-32">脱敏类型</th>
-              <th className="px-3 py-2 text-left">预览/配置</th>
+              <th className="px-3 py-2 text-left w-40">{t("dataMasking.columnNameHeader")}</th>
+              <th className="px-3 py-2 text-left w-32">{t("dataMasking.maskingTypeHeader")}</th>
+              <th className="px-3 py-2 text-left">{t("dataMasking.previewConfigHeader")}</th>
             </tr>
           </thead>
           <tbody>

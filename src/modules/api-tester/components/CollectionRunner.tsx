@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useT } from '@/i18n';
 import { TestResult } from '../utils/scripting';
 import type { Collection, Request } from '../store';
 import '../styles/CollectionRunner.css';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function CollectionRunner({ collections, onClose, environment: _environment }: Props) {
+  const t = useT();
   const validCollections = collections.filter(c => c.id !== undefined) as { id: number; name: string }[];
   const [selectedCol, setSelectedCol] = useState<number>(validCollections[0]?.id || 0);
   const [iterations, setIterations] = useState(1);
@@ -85,21 +87,21 @@ export function CollectionRunner({ collections, onClose, environment: _environme
 
         <div className="runner-config">
           <label>
-            集合:
+            {t('collectionRunner.collection')}
             <select value={selectedCol} onChange={e => setSelectedCol(Number(e.target.value))}>
               {validCollections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </label>
           <label>
-            迭代:
+            {t('collectionRunner.iterations')}
             <input type="number" min={1} max={100} value={iterations} onChange={e => setIterations(Number(e.target.value))} />
           </label>
           <label>
-            延迟 (ms):
+            {t('collectionRunner.delay')}
             <input type="number" min={0} max={5000} step={100} value={delay} onChange={e => setDelay(Number(e.target.value))} />
           </label>
           <button className="run-btn" onClick={runCollection} disabled={running || !selectedCol}>
-            {running ? '运行中...' : '开始运行'}
+            {running ? t('collectionRunner.running') : t('collectionRunner.startRun')}
           </button>
         </div>
 
@@ -119,26 +121,26 @@ export function CollectionRunner({ collections, onClose, environment: _environme
           <div className="runner-summary">
             <div className="summary-item">
               <div className="summary-value pass">{passed}</div>
-              <div className="summary-label">通过</div>
+              <div className="summary-label">{t('collectionRunner.passed')}</div>
             </div>
             <div className="summary-item">
               <div className="summary-value fail">{failed}</div>
-              <div className="summary-label">失败</div>
+              <div className="summary-label">{t('collectionRunner.failed')}</div>
             </div>
             <div className="summary-item">
               <div className="summary-value">{avgTime}ms</div>
-              <div className="summary-label">平均耗时</div>
+              <div className="summary-label">{t('collectionRunner.avgTime')}</div>
             </div>
             <div className="summary-item">
               <div className="summary-value">{passedTests}/{totalTests}</div>
-              <div className="summary-label">测试通过</div>
+              <div className="summary-label">{t('collectionRunner.testsPassed')}</div>
             </div>
           </div>
         )}
 
         <div className="runner-results">
           {results.length === 0 && !running && (
-            <div className="runner-empty">选择集合并点击"开始运行"</div>
+            <div className="runner-empty">{t('collectionRunner.selectCollectionAndRun')}</div>
           )}
           {results.map((r, i) => (
             <div key={i} className={`result-item ${r.error || r.status >= 400 ? 'fail' : 'pass'}`}>

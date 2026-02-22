@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAppStore, type QueryHistoryItem } from "../store/index";
+import { useT } from '@/i18n';
 
 /**
  * SlowQueryLog Component
@@ -91,6 +92,7 @@ interface SlowQueryItemProps {
 }
 
 function SlowQueryItem({ item, threshold, onExecute }: SlowQueryItemProps) {
+  const t = useT();
   const severity = getSeverity(item.execution_time_ms, threshold);
   
   const severityColors = {
@@ -126,12 +128,12 @@ function SlowQueryItem({ item, threshold, onExecute }: SlowQueryItemProps) {
         {onExecute && (
           <Button size="sm" variant="ghost" onClick={onExecute} className="h-6 px-2 text-[10px] cursor-pointer">
             <PlayIcon className="h-3 w-3 mr-1" />
-            重新执行
+            {t('slowQueryLog.reExecute')}
           </Button>
         )}
         {item.error_message && (
           <span className="text-[10px] text-destructive truncate flex-1">
-            错误: {item.error_message}
+            {t('slowQueryLog.error')}: {item.error_message}
           </span>
         )}
       </div>
@@ -148,6 +150,7 @@ export function SlowQueryLog({
   threshold = 1000,
   onExecute,
 }: SlowQueryLogProps) {
+  const t = useT();
   const queryHistory = useAppStore((state) => state.queryHistory);
   const clearHistory = useAppStore((state) => state.clearHistory);
   const [localThreshold, setLocalThreshold] = React.useState(threshold);
@@ -176,7 +179,7 @@ export function SlowQueryLog({
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card/50">
         <div className="flex items-center gap-2">
           <ClockIcon className="h-3.5 w-3.5 text-warning" />
-          <span className="text-xs font-semibold">慢查询日志</span>
+          <span className="text-xs font-semibold">{t('slowQueryLog.title')}</span>
           {stats && (
             <span className="text-[10px] text-muted-foreground">
               ({stats.count} 条)
@@ -188,7 +191,7 @@ export function SlowQueryLog({
           size="sm"
           onClick={clearHistory}
           disabled={queryHistory.length === 0}
-          title="清空历史"
+          title={t('slowQueryLog.clearHistory')}
           className="h-6 w-6 p-0 cursor-pointer"
         >
           <TrashIcon className="h-3.5 w-3.5" />
@@ -197,7 +200,7 @@ export function SlowQueryLog({
       
       {/* Threshold Setting */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-muted/30">
-        <span className="text-[10px] text-muted-foreground">阈值:</span>
+        <span className="text-[10px] text-muted-foreground">{t('slowQueryLog.threshold')}:</span>
         <select
           value={localThreshold}
           onChange={(e) => setLocalThreshold(Number(e.target.value))}
@@ -217,19 +220,19 @@ export function SlowQueryLog({
         <div className="grid grid-cols-3 gap-2 px-3 py-2 border-b border-border text-center">
           <div>
             <div className="text-base font-bold text-warning">{stats.count}</div>
-            <div className="text-[10px] text-muted-foreground">慢查询数</div>
+            <div className="text-[10px] text-muted-foreground">{t('slowQueryLog.slowQueryCount')}</div>
           </div>
           <div>
             <div className="text-base font-bold text-warning">
               {formatDuration(stats.avgTime)}
             </div>
-            <div className="text-[10px] text-muted-foreground">平均耗时</div>
+            <div className="text-[10px] text-muted-foreground">{t('slowQueryLog.averageTime')}</div>
           </div>
           <div>
             <div className="text-base font-bold text-destructive">
               {formatDuration(stats.maxTime)}
             </div>
-            <div className="text-[10px] text-muted-foreground">最大耗时</div>
+            <div className="text-[10px] text-muted-foreground">{t('slowQueryLog.maxTime')}</div>
           </div>
         </div>
       )}
@@ -239,8 +242,8 @@ export function SlowQueryLog({
         {slowQueries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <ClockIcon className="h-8 w-8 opacity-20 mb-2" />
-            <p className="text-xs">暂无慢查询</p>
-            <p className="text-[10px]">执行时间超过 {formatDuration(localThreshold)} 的查询将显示在这里</p>
+            <p className="text-xs">{t('slowQueryLog.noSlowQueries')}</p>
+            <p className="text-[10px]">{t('slowQueryLog.thresholdDescription', { threshold: formatDuration(localThreshold) })}</p>
           </div>
         ) : (
           slowQueries.map((item) => (

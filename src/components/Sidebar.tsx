@@ -1,3 +1,5 @@
+import { useI18nStore } from "@/i18n";
+
 interface SidebarProps {
   onPanelSelect: (panelId: string) => void;
   activePanel: string | null;
@@ -61,6 +63,7 @@ const modules = [
 ];
 
 export function Sidebar({ onPanelSelect, activePanel, onThemeToggle, isDark }: SidebarProps) {
+  const { locale, setLocale } = useI18nStore();
   return (
     <div className="w-12 bg-background border-r border-border flex flex-col items-center py-2 shrink-0">
       {modules.map(m => {
@@ -82,6 +85,13 @@ export function Sidebar({ onPanelSelect, activePanel, onThemeToggle, isDark }: S
         );
       })}
       <div className="flex-1" />
+      <button
+        onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
+        title={locale === "zh" ? "English" : "中文"}
+        className="w-10 h-10 flex items-center justify-center rounded-md hover:bg-muted cursor-pointer transition-all duration-150 focus:ring-2 focus:ring-ring text-muted-foreground mb-1 text-xs font-bold"
+      >
+        {locale === "zh" ? "EN" : "中"}
+      </button>
       <button
         onClick={onThemeToggle}
         title={isDark ? "Light mode" : "Dark mode"}

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import { useAppStore, type ColumnDefinition, type IndexInfo, type ForeignKeyInfo } from "../store/index";
 
 /**
@@ -297,10 +298,11 @@ function EmptyIcon({ className }: { className?: string }) {
  * Loading state component
  */
 function LoadingState() {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-muted-foreground">
       <LoadingSpinner className="h-5 w-5" />
-      <p className="text-xs">加载表结构中...</p>
+      <p className="text-xs">{t('tableStructure.loadingMessage')}</p>
     </div>
   );
 }
@@ -309,11 +311,12 @@ function LoadingState() {
  * Error state component
  */
 function ErrorState({ error }: { error: string }) {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 p-4">
       <div className="flex items-center gap-2 text-destructive">
         <AlertIcon className="h-5 w-5" />
-        <span className="text-sm font-semibold">加载表结构失败</span>
+        <span className="text-sm font-semibold">{t('tableStructure.loadFailedMessage')}</span>
       </div>
       <div className="max-w-full rounded-lg border border-destructive/30 bg-destructive/10 p-3">
         <pre className="whitespace-pre-wrap break-words text-xs text-destructive">
@@ -401,12 +404,13 @@ function TableHeader({ tableName, schema }: TableHeaderProps) {
  * Boolean indicator component
  */
 function BooleanIndicator({ value, trueLabel, falseLabel }: { value: boolean; trueLabel?: string; falseLabel?: string }) {
+  const t = useT();
   return value ? (
-    <span className="flex items-center gap-1 text-green-600 dark:text-green-400" title={trueLabel || "Yes"}>
+    <span className="flex items-center gap-1 text-green-600 dark:text-green-400" title={trueLabel || t('tableStructure.nullableTrue')}>
       <CheckIcon className="h-4 w-4" />
     </span>
   ) : (
-    <span className="flex items-center gap-1 text-muted-foreground" title={falseLabel || "No"}>
+    <span className="flex items-center gap-1 text-muted-foreground" title={falseLabel || t('tableStructure.nullableFalse')}>
       <XIcon className="h-4 w-4 opacity-30" />
     </span>
   );
@@ -421,8 +425,9 @@ interface ColumnsTabProps {
 }
 
 function ColumnsTab({ columns }: ColumnsTabProps) {
+  const t = useT();
   if (columns.length === 0) {
-    return <EmptyTabState message="无列定义" />;
+    return <EmptyTabState message={t('tableStructure.noColumnsMessage')} />;
   }
 
   return (
@@ -431,27 +436,27 @@ function ColumnsTab({ columns }: ColumnsTabProps) {
         <thead>
           <tr>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              列名
+              {t('tableStructure.columnNameHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              类型
+              {t('tableStructure.typeHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-center text-xs font-medium">
-              可空
+              {t('tableStructure.nullableHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              默认值
+              {t('tableStructure.defaultValueHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-center text-xs font-medium">
-              <span className="flex items-center justify-center gap-1" title="主键">
+              <span className="flex items-center justify-center gap-1" title={t('tableStructure.primaryKeyTooltip')}>
                 <KeyIcon className="h-3.5 w-3.5" />
-                <span className="sr-only">主键</span>
+                <span className="sr-only">{t('tableStructure.primaryKeyTooltip')}</span>
               </span>
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-border bg-muted px-3 py-1.5 text-center text-xs font-medium">
-              <span className="flex items-center justify-center gap-1" title="自增">
+              <span className="flex items-center justify-center gap-1" title={t('tableStructure.autoIncrementTooltip')}>
                 <AutoIncrementIcon className="h-3.5 w-3.5" />
-                <span className="sr-only">自增</span>
+                <span className="sr-only">{t('tableStructure.autoIncrementTooltip')}</span>
               </span>
             </th>
           </tr>
@@ -468,7 +473,7 @@ function ColumnsTab({ columns }: ColumnsTabProps) {
               <td className="whitespace-nowrap border-b border-r border-border px-3 py-1.5 text-xs">
                 <div className="flex items-center gap-1.5">
                   {column.is_primary_key && (
-                    <KeyIcon className="h-3.5 w-3.5 text-warning" title="主键" />
+                    <KeyIcon className="h-3.5 w-3.5 text-warning" title={t('tableStructure.primaryKeyTooltip')} />
                   )}
                   <span className={cn(column.is_primary_key && "font-semibold")}>
                     {column.name}
@@ -479,20 +484,20 @@ function ColumnsTab({ columns }: ColumnsTabProps) {
                 {column.data_type}
               </td>
               <td className="whitespace-nowrap border-b border-r border-border px-3 py-1.5 text-center text-xs">
-                <BooleanIndicator value={column.nullable} trueLabel="可空" falseLabel="非空" />
+                <BooleanIndicator value={column.nullable} trueLabel={t('tableStructure.nullableTrue')} falseLabel={t('tableStructure.nullableFalse')} />
               </td>
               <td className="whitespace-nowrap border-b border-r border-border px-3 py-1.5 text-xs">
                 {column.default_value ? (
                   <span className="font-mono text-muted-foreground">{column.default_value}</span>
                 ) : (
-                  <span className="italic text-muted-foreground/50">无</span>
+                  <span className="italic text-muted-foreground/50">{t('tableStructure.noDefaultValue')}</span>
                 )}
               </td>
               <td className="whitespace-nowrap border-b border-r border-border px-3 py-1.5 text-center text-xs">
-                <BooleanIndicator value={column.is_primary_key} trueLabel="主键" falseLabel="非主键" />
+                <BooleanIndicator value={column.is_primary_key} trueLabel={t('tableStructure.primaryKeyTrue')} falseLabel={t('tableStructure.primaryKeyFalse')} />
               </td>
               <td className="whitespace-nowrap border-b border-border px-3 py-1.5 text-center text-xs">
-                <BooleanIndicator value={column.is_auto_increment} trueLabel="自增" falseLabel="非自增" />
+                <BooleanIndicator value={column.is_auto_increment} trueLabel={t('tableStructure.autoIncrementTrue')} falseLabel={t('tableStructure.autoIncrementFalse')} />
               </td>
             </tr>
           ))}
@@ -511,8 +516,9 @@ interface IndexesTabProps {
 }
 
 function IndexesTab({ indexes }: IndexesTabProps) {
+  const t = useT();
   if (indexes.length === 0) {
-    return <EmptyTabState message="无索引定义" />;
+    return <EmptyTabState message={t('tableStructure.noIndexesMessage')} />;
   }
 
   return (
@@ -521,16 +527,16 @@ function IndexesTab({ indexes }: IndexesTabProps) {
         <thead>
           <tr>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              索引名
+              {t('tableStructure.indexNameHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              列
+              {t('tableStructure.columnsHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-center text-xs font-medium">
-              唯一
+              {t('tableStructure.uniqueHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-border bg-muted px-3 py-1.5 text-center text-xs font-medium">
-              主键
+              {t('tableStructure.primaryKeyHeader')}
             </th>
           </tr>
         </thead>
@@ -546,7 +552,7 @@ function IndexesTab({ indexes }: IndexesTabProps) {
               <td className="whitespace-nowrap border-b border-r border-border px-3 py-1.5 text-xs">
                 <div className="flex items-center gap-1.5">
                   {index.is_primary && (
-                    <KeyIcon className="h-3.5 w-3.5 text-warning" title="主键索引" />
+                    <KeyIcon className="h-3.5 w-3.5 text-warning" title={t('tableStructure.primaryKeyTooltip')} />
                   )}
                   <span className={cn(index.is_primary && "font-semibold")}>
                     {index.name}
@@ -567,10 +573,10 @@ function IndexesTab({ indexes }: IndexesTabProps) {
                 </div>
               </td>
               <td className="whitespace-nowrap border-b border-r border-border px-3 py-1.5 text-center text-xs">
-                <BooleanIndicator value={index.is_unique} trueLabel="唯一" falseLabel="非唯一" />
+                <BooleanIndicator value={index.is_unique} trueLabel={t('tableStructure.uniqueTrue')} falseLabel={t('tableStructure.uniqueFalse')} />
               </td>
               <td className="whitespace-nowrap border-b border-border px-3 py-1.5 text-center text-xs">
-                <BooleanIndicator value={index.is_primary} trueLabel="主键" falseLabel="非主键" />
+                <BooleanIndicator value={index.is_primary} trueLabel={t('tableStructure.primaryKeyTrue')} falseLabel={t('tableStructure.primaryKeyFalse')} />
               </td>
             </tr>
           ))}
@@ -589,8 +595,9 @@ interface ForeignKeysTabProps {
 }
 
 function ForeignKeysTab({ foreignKeys }: ForeignKeysTabProps) {
+  const t = useT();
   if (foreignKeys.length === 0) {
-    return <EmptyTabState message="无外键定义" />;
+    return <EmptyTabState message={t('tableStructure.noForeignKeysMessage')} />;
   }
 
   return (
@@ -599,22 +606,22 @@ function ForeignKeysTab({ foreignKeys }: ForeignKeysTabProps) {
         <thead>
           <tr>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              外键名
+              {t('tableStructure.foreignKeyNameHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              列
+              {t('tableStructure.columnsHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              引用表
+              {t('tableStructure.referencedTableHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              引用列
+              {t('tableStructure.referencedColumnsHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-r border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              删除时
+              {t('tableStructure.onDeleteHeader')}
             </th>
             <th className="sticky top-0 z-10 whitespace-nowrap border-b border-border bg-muted px-3 py-1.5 text-left text-xs font-medium">
-              更新时
+              {t('tableStructure.onUpdateHeader')}
             </th>
           </tr>
         </thead>
@@ -629,7 +636,7 @@ function ForeignKeysTab({ foreignKeys }: ForeignKeysTabProps) {
             >
               <td className="whitespace-nowrap border-b border-r border-border px-3 py-1.5 text-xs">
                 <div className="flex items-center gap-1.5">
-                  <LinkIcon className="h-3.5 w-3.5 text-primary" title="外键" />
+                  <LinkIcon className="h-3.5 w-3.5 text-primary" title={t('tableStructure.foreignKeyNameHeader')} />
                   <span>{fk.name}</span>
                 </div>
               </td>
@@ -666,7 +673,7 @@ function ForeignKeysTab({ foreignKeys }: ForeignKeysTabProps) {
                     {fk.on_delete}
                   </span>
                 ) : (
-                  <span className="italic text-muted-foreground/50">无</span>
+                  <span className="italic text-muted-foreground/50">{t('tableStructure.noDefaultValue')}</span>
                 )}
               </td>
               <td className="whitespace-nowrap border-b border-border px-3 py-1.5 text-xs">
@@ -675,7 +682,7 @@ function ForeignKeysTab({ foreignKeys }: ForeignKeysTabProps) {
                     {fk.on_update}
                   </span>
                 ) : (
-                  <span className="italic text-muted-foreground/50">无</span>
+                  <span className="italic text-muted-foreground/50">{t('tableStructure.noDefaultValue')}</span>
                 )}
               </td>
             </tr>
@@ -701,6 +708,7 @@ function ForeignKeysTab({ foreignKeys }: ForeignKeysTabProps) {
  * **Validates: Requirements 5.1, 5.4, 5.5**
  */
 export function TableStructure({ tableName, className }: TableStructureProps) {
+  const t = useT();
   // State for active tab
   const [activeTab, setActiveTab] = React.useState<TabType>("columns");
 
@@ -741,8 +749,8 @@ export function TableStructure({ tableName, className }: TableStructureProps) {
       <div className={cn("flex h-full flex-col bg-background", className)}>
         <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
           <TableIcon className="h-10 w-10 opacity-20" />
-          <p className="text-xs">未选择表</p>
-          <p className="text-[10px]">选择一个表来查看结构</p>
+          <p className="text-xs">{t('tableStructure.noTableSelectedMessage')}</p>
+          <p className="text-[10px]">{t('tableStructure.selectTableMessage')}</p>
         </div>
       </div>
     );
@@ -761,21 +769,21 @@ export function TableStructure({ tableName, className }: TableStructureProps) {
       {/* Tab navigation */}
       <div className="flex border-b border-border bg-muted/20">
         <TabButton
-          label="列"
+          label={t('tableStructure.columnsTab')}
           icon={<ColumnsIcon className="h-3.5 w-3.5" />}
           count={columnsCount}
           isActive={activeTab === "columns"}
           onClick={() => setActiveTab("columns")}
         />
         <TabButton
-          label="索引"
+          label={t('tableStructure.indexesTab')}
           icon={<IndexIcon className="h-3.5 w-3.5" />}
           count={indexesCount}
           isActive={activeTab === "indexes"}
           onClick={() => setActiveTab("indexes")}
         />
         <TabButton
-          label="外键"
+          label={t('tableStructure.foreignKeysTab')}
           icon={<LinkIcon className="h-3.5 w-3.5" />}
           count={foreignKeysCount}
           isActive={activeTab === "foreignKeys"}

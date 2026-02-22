@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { useT } from '@/i18n';
 import { useStore, Request } from './store';
 import { useTabsStore, Tab } from './stores/tabs';
 import { useSettingsStore } from './stores/settings';
@@ -30,6 +31,7 @@ interface FormDataItem { key: string; value: string; type: 'text' | 'file'; enab
 type BodyType = 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw' | 'binary';
 
 export function ApiTester() {
+  const t = useT();
   const store = useStore();
   const tabs = useTabsStore();
   const settings = useSettingsStore();
@@ -457,7 +459,7 @@ export function ApiTester() {
                 return (
                   <div key={col.id}>
                     <div className="tree-item collection-item" onContextMenu={e => col.id && handleContextMenu(e, 'collection', col.id)}
-                      onDoubleClick={() => { const n = prompt('重命名集合:', col.name); if (n && col.id) store.renameCollection(col.id, n); }}>
+                      onDoubleClick={() => { const n = prompt(t('apiTester.renameCollection'), col.name); if (n && col.id) store.renameCollection(col.id, n); }}>
                       <span className={`collapse-icon ${isCollapsed ? 'collapsed' : ''}`} onClick={toggleCollapse}>▶</span>
                       {Icons.folder}<span className="name">{col.name}</span>
                       <span className="collection-count">{store.requests.filter(r => r.collection_id === col.id).length}</span>
@@ -642,13 +644,13 @@ export function ApiTester() {
                     ) : responseTab === 'headers' ? (
                       <div className="panel-content">
                         {Object.entries(store.response.headers).map(([k, v]) => (
-                          <div key={k} style={{ marginBottom: 4 }}><span style={{ color: 'var(--accent)' }}>{k}:</span> {v}</div>
+                          <div key={k} style={{ marginBottom: 4 }}><span style={{ color: 'var(--gm-accent)' }}>{k}:</span> {v}</div>
                         ))}
                       </div>
                     ) : (
                       <div className="panel-content">
                         {parseCookies().length > 0 ? parseCookies().map((c, i) => (
-                          <div key={i} style={{ marginBottom: 4 }}><span style={{ color: 'var(--accent)' }}>{c.name}:</span> {c.value}</div>
+                          <div key={i} style={{ marginBottom: 4 }}><span style={{ color: 'var(--gm-accent)' }}>{c.name}:</span> {c.value}</div>
                         )) : <div className="empty-state">No cookies</div>}
                       </div>
                     )}

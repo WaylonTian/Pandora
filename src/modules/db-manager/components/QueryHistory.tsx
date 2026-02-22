@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { useAppStore, type QueryHistoryItem } from "../store/index";
+import { useT } from '@/i18n';
 
 /**
  * QueryHistory Component
@@ -223,7 +224,8 @@ interface SearchInputProps {
   placeholder?: string;
 }
 
-function SearchInput({ value, onChange, placeholder = "搜索历史..." }: SearchInputProps) {
+function SearchInput({ value, onChange }: SearchInputProps) {
+  const t = useT();
   return (
     <div className="relative">
       <SearchIcon className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -231,9 +233,9 @@ function SearchInput({ value, onChange, placeholder = "搜索历史..." }: Searc
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
+        placeholder={t('queryHistory.searchHistory')}
         className="h-8 w-full rounded-lg border border-input bg-background pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-        aria-label="搜索查询历史"
+        aria-label={t('queryHistory.searchHistory')}
       />
     </div>
   );
@@ -243,16 +245,17 @@ function SearchInput({ value, onChange, placeholder = "搜索历史..." }: Searc
  * Empty state component
  */
 function EmptyState({ hasSearchQuery }: { hasSearchQuery: boolean }) {
+  const t = useT();
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-2 p-4 text-muted-foreground">
       <HistoryIcon className="h-8 w-8 opacity-20" />
       <p className="text-xs">
-        {hasSearchQuery ? "没有匹配的查询" : "暂无查询历史"}
+        {hasSearchQuery ? t('queryHistory.noMatchingQueries') : t('queryHistory.noQueryHistory')}
       </p>
       <p className="text-[10px] opacity-60">
         {hasSearchQuery
-          ? "尝试其他搜索词"
-          : "执行查询后会显示在这里"}
+          ? t('queryHistory.tryOtherSearchTerms')
+          : t('queryHistory.executeQueryToShow')}
       </p>
     </div>
   );
@@ -267,6 +270,7 @@ interface HistoryItemProps {
 }
 
 function HistoryItem({ item, onClick }: HistoryItemProps) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -297,7 +301,7 @@ function HistoryItem({ item, onClick }: HistoryItemProps) {
           ) : (
             <XIcon className="h-3 w-3" />
           )}
-          <span>{item.success ? "成功" : "失败"}</span>
+          <span>{item.success ? t('queryHistory.success') : t('queryHistory.failed')}</span>
         </div>
 
         <div className="flex items-center gap-1">
@@ -331,11 +335,12 @@ interface HeaderProps {
 }
 
 function Header({ itemCount, onClear }: HeaderProps) {
+  const t = useT();
   return (
     <div className="flex items-center justify-between">
       {itemCount > 0 && (
         <span className="text-[10px] text-muted-foreground">
-          {itemCount} 条记录
+          {t('queryHistory.records', { count: itemCount })}
         </span>
       )}
       <div className="flex-1" />
@@ -344,10 +349,10 @@ function Header({ itemCount, onClear }: HeaderProps) {
           type="button"
           onClick={onClear}
           className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-          title="清除所有历史"
+          title={t('queryHistory.clearAllHistory')}
         >
           <TrashIcon className="h-3 w-3" />
-          <span>清除</span>
+          <span>{t('queryHistory.clear')}</span>
         </button>
       )}
     </div>

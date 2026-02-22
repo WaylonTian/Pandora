@@ -1,3 +1,4 @@
+import { useT } from '@/i18n';
 import '../styles/TimingChart.css';
 
 export interface TimingData {
@@ -14,12 +15,14 @@ interface Props {
 }
 
 export function TimingChart({ timing, totalTime }: Props) {
+  const t = useT();
+  
   if (!timing) {
     return (
       <div className="timing-chart">
         <div className="timing-total">{totalTime} ms</div>
         <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-          详细时间分析需要 Rust 后端支持
+          {t('timingChart.detailedAnalysisNote')}
         </div>
       </div>
     );
@@ -29,17 +32,17 @@ export function TimingChart({ timing, totalTime }: Props) {
   const getWidth = (v: number) => `${(v / maxTime) * 100}%`;
 
   const phases = [
-    { key: 'dns', label: 'DNS 解析', value: timing.dns },
-    { key: 'tcp', label: 'TCP 连接', value: timing.tcp },
-    { key: 'tls', label: 'TLS 握手', value: timing.tls },
-    { key: 'ttfb', label: '首字节 (TTFB)', value: timing.ttfb },
-    { key: 'download', label: '内容下载', value: timing.download },
+    { key: 'dns', label: t('timingChart.dnsResolution'), value: timing.dns },
+    { key: 'tcp', label: t('timingChart.tcpConnection'), value: timing.tcp },
+    { key: 'tls', label: t('timingChart.tlsHandshake'), value: timing.tls },
+    { key: 'ttfb', label: t('timingChart.firstByte'), value: timing.ttfb },
+    { key: 'download', label: t('timingChart.contentDownload'), value: timing.download },
   ];
 
   return (
     <div className="timing-chart">
       <div className="timing-total">
-        {totalTime} ms <span>总耗时</span>
+        {totalTime} ms <span>{t('timingChart.totalTime')}</span>
       </div>
       
       <div className="timing-bars">

@@ -1,18 +1,20 @@
 import { useState } from "react";
+import { useT } from '@/i18n';
 import { getToolsByCategory, getTools } from "./plugin-interface";
 
 export function ToolkitLayout() {
+  const t = useT();
   const [activeToolId, setActiveToolId] = useState<string>(getTools()[0]?.id || "");
   const grouped = getToolsByCategory();
   const activeTool = getTools().find(t => t.id === activeToolId);
   const ActiveComponent = activeTool?.component;
 
   const categoryLabels: Record<string, string> = {
-    encoding: "编码/解码",
-    crypto: "加密/解密",
-    network: "网络工具",
-    text: "文本工具",
-    other: "其他",
+    encoding: t("toolkit.encoding"),
+    crypto: t("toolkit.crypto"),
+    network: t("toolkit.network"),
+    text: t("toolkit.text"),
+    other: t("toolkit.other"),
   };
 
   return (

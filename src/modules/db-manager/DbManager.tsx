@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { useT } from '@/i18n';
 
 // Layout and Navigation Components
 import { AppLayout } from "./components/Layout";
@@ -105,6 +106,7 @@ function Sidebar({
   onToggleFavorites,
   onExecuteSql,
 }: SidebarProps) {
+  const t = useT();
   return (
     <div className="flex h-full flex-col">
       {/* 侧边栏头部 - 品牌区域 */}
@@ -115,7 +117,7 @@ function Sidebar({
         <button
           onClick={onNewConnection}
           className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-          title="新建连接"
+          title={t('dbManager.newConnection')}
         >
           <PlusIcon className="h-4 w-4" />
         </button>
@@ -136,7 +138,7 @@ function Sidebar({
             <svg className="h-3.5 w-3.5 text-warning" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span>收藏夹</span>
+            <span>{t('dbManager.favorites')}</span>
           </div>
           {showFavorites ? (
             <ChevronDownIcon className="h-3.5 w-3.5" />
@@ -162,7 +164,7 @@ function Sidebar({
         >
           <div className="flex items-center gap-2">
             <HistoryIcon className="h-3.5 w-3.5" />
-            <span>查询历史</span>
+            <span>{t('dbManager.queryHistory')}</span>
           </div>
           {showHistory ? (
             <ChevronDownIcon className="h-3.5 w-3.5" />
@@ -185,6 +187,7 @@ function Sidebar({
 // ============================================================================
 
 function MainContent() {
+  const t = useT();
 
 
 
@@ -239,8 +242,8 @@ function MainContent() {
         <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground">
           <DatabaseLogo className="h-16 w-16 opacity-20" />
           <div className="text-center">
-            <p className="text-lg font-medium">没有打开的标签页</p>
-            <p className="mt-1 text-sm">按 Ctrl+N 创建新查询，或从左侧选择一个表</p>
+            <p className="text-lg font-medium">{t('dbManager.noOpenTabs')}</p>
+            <p className="mt-1 text-sm">{t('dbManager.noOpenTabsHint')}</p>
           </div>
         </div>
       );
@@ -251,7 +254,7 @@ function MainContent() {
         if (!activeTab.tableName || !activeConnection || !actualConnectionId) {
           return (
             <div className="flex h-full items-center justify-center text-muted-foreground">
-              <p>选择一个表来浏览数据</p>
+              <p>{t('dbManager.selectTableToBrowse')}</p>
             </div>
           );
         }
@@ -270,7 +273,7 @@ function MainContent() {
         if (!activeTab.tableName) {
           return (
             <div className="flex h-full items-center justify-center text-muted-foreground">
-              <p>选择一个表来查看结构</p>
+              <p>{t('dbManager.selectTableToViewStructure')}</p>
             </div>
           );
         }
@@ -320,32 +323,32 @@ function MainContent() {
       {showAddFavorite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
           <div className="animate-fade-in bg-card border border-border rounded-xl shadow-xl w-[420px] p-5">
-            <h3 className="text-base font-semibold mb-4">添加到收藏夹</h3>
+            <h3 className="text-base font-semibold mb-4">{t('favorites.addToFavorites')}</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">名称</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">{t('favorites.nameLabel')}</label>
                 <input
                   type="text"
                   value={favoriteName}
                   onChange={(e) => setFavoriteName(e.target.value)}
-                  placeholder="输入收藏名称"
+                  placeholder={t('favorites.nameInputPlaceholder')}
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">SQL</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">{t('favorites.sqlLabel')}</label>
                 <pre className="text-xs font-mono bg-muted/50 p-3 rounded-lg max-h-32 overflow-auto scrollbar-thin text-foreground/80">
-                  {activeTab?.content || "无内容"}
+                  {activeTab?.content || t('favorites.noContent')}
                 </pre>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-5">
               <Button variant="outline" size="sm" onClick={() => setShowAddFavorite(false)} className="cursor-pointer">
-                取消
+                {t('favorites.cancelButton')}
               </Button>
               <Button size="sm" onClick={handleSaveFavorite} disabled={!favoriteName.trim()} className="cursor-pointer">
-                保存
+                {t('favorites.saveButton')}
               </Button>
             </div>
           </div>
@@ -360,6 +363,7 @@ function MainContent() {
 // ============================================================================
 
 function AppContent() {
+  const t = useT();
 
   useAppState();
 
@@ -379,10 +383,10 @@ function AppContent() {
   const defaultSidebarWidth = React.useMemo(() => getSidebarWidth(), []);
 
   const deleteConnectionDialog = useConfirmDialog({
-    title: "删除连接",
-    message: "确定要删除此连接吗？此操作无法撤销。",
-    confirmLabel: "删除",
-    cancelLabel: "取消",
+    title: t('dbManager.deleteConnection'),
+    message: t('dbManager.confirmDeleteConnection'),
+    confirmLabel: t('dbManager.delete'),
+    cancelLabel: t('dbManager.cancel'),
     confirmVariant: "destructive",
   });
 
@@ -480,7 +484,7 @@ function AppContent() {
 
   return (
     <>
-      <LoadingOverlay isVisible={isInitializing} message="正在加载..." />
+      <LoadingOverlay isVisible={isInitializing} message={t('dbManager.loading')} />
       <AppLayout
         sidebar={sidebarContent}
         main={mainContent}

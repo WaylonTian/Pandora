@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import type { QueryResult, Value, ColumnInfo } from "../store/index";
 import { useActiveTab } from "../store/index";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -235,20 +236,22 @@ async function exportToJSON(result: QueryResult, defaultFilename: string = "expo
 // ============================================================================
 
 function LoadingState() {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-muted-foreground">
       <LoadingSpinner className="h-6 w-6" />
-      <p className="text-xs">执行查询中...</p>
+      <p className="text-xs">{t('queryResult.executingQuery')}</p>
     </div>
   );
 }
 
 function ErrorState({ error }: { error: string }) {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 p-4">
       <div className="flex items-center gap-2 text-destructive">
         <AlertIcon className="h-5 w-5" />
-        <span className="text-sm font-medium">查询错误</span>
+        <span className="text-sm font-medium">{t('queryResult.queryError')}</span>
       </div>
       <div className="max-w-full rounded-lg border border-destructive/20 bg-destructive/5 p-4">
         <pre className="whitespace-pre-wrap break-words text-xs font-mono text-destructive">{error}</pre>
@@ -258,11 +261,12 @@ function ErrorState({ error }: { error: string }) {
 }
 
 function EmptyState() {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
       <EmptyIcon className="h-10 w-10 opacity-20" />
-      <p className="text-sm">暂无结果</p>
-      <p className="text-xs opacity-60">执行查询以查看结果</p>
+      <p className="text-sm">{t('queryResult.noResults')}</p>
+      <p className="text-xs opacity-60">{t('queryResult.executeQueryToSeeResults')}</p>
     </div>
   );
 }

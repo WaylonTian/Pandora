@@ -8,6 +8,7 @@ import {
   type ConnectionConfig,
   type DatabaseType,
 } from "../store/index";
+import { useT } from '@/i18n';
 
 /**
  * Connection Dialog Component
@@ -378,6 +379,7 @@ export function ConnectionDialog({
   editConnection,
   className,
 }: ConnectionDialogProps) {
+  const t = useT();
   // Form state
   const [form, setForm] = React.useState<FormState>(INITIAL_FORM_STATE);
   const [errors, setErrors] = React.useState<FormErrors>({});
@@ -538,7 +540,7 @@ export function ConnectionDialog({
             type="button"
             className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
             onClick={onClose}
-            aria-label="关闭对话框"
+            aria-label={t('connectionDialog.closeDialog')}
           >
             <CloseIcon />
           </button>
@@ -694,7 +696,7 @@ export function ConnectionDialog({
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} className="cursor-pointer">
-              取消
+              {t('dbManager.cancel')}
             </Button>
             <Button
               type="button"

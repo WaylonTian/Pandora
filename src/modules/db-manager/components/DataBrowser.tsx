@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { tauriCommands, type Value, type ColumnInfo } from "../store/index";
+import { useT } from '@/i18n';
 
 /**
  * DataBrowser Component
@@ -547,10 +548,11 @@ function buildUpdateSql(
  * Loading state component
  */
 function LoadingState() {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 text-muted-foreground">
       <LoadingSpinner className="h-6 w-6" />
-      <p className="text-xs">加载数据中...</p>
+      <p className="text-xs">{t('dataBrowser.loadingData')}</p>
     </div>
   );
 }
@@ -559,11 +561,12 @@ function LoadingState() {
  * Error state component
  */
 function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-3 p-4">
       <div className="flex items-center gap-2 text-destructive">
         <AlertIcon className="h-5 w-5" />
-        <span className="text-sm font-medium">加载数据出错</span>
+        <span className="text-sm font-medium">{t('dataBrowser.loadDataError')}</span>
       </div>
       <div className="max-w-full rounded-lg border border-destructive/20 bg-destructive/5 p-4">
         <pre className="whitespace-pre-wrap break-words text-xs font-mono text-destructive">
@@ -572,7 +575,7 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
       </div>
       <Button variant="outline" size="sm" onClick={onRetry} className="cursor-pointer">
         <RefreshIcon className="mr-2 h-3.5 w-3.5" />
-        重试
+        {t('dataBrowser.retry')}
       </Button>
     </div>
   );
@@ -582,11 +585,12 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
  * Empty state component (no data)
  */
 function EmptyState({ tableName }: { tableName: string }) {
+  const t = useT();
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
       <EmptyIcon className="h-10 w-10 opacity-20" />
-      <p className="text-sm">表 "{tableName}" 中没有数据</p>
-      <p className="text-xs opacity-60">表为空或没有匹配筛选条件的行</p>
+      <p className="text-sm">{t('dataBrowser.noDataInTable', { tableName })}</p>
+      <p className="text-xs opacity-60">{t('dataBrowser.tableEmptyOrNoMatch')}</p>
     </div>
   );
 }
@@ -621,6 +625,7 @@ function Toolbar({
   onDiscardChanges,
   isSaving,
 }: ToolbarProps) {
+  const t = useT();
   // Handle Enter key to apply filter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -632,7 +637,7 @@ function Toolbar({
     <div className="flex items-center gap-2 border-b border-border bg-card/50 px-3 py-1.5">
       {/* Table name */}
       <div className="flex items-center gap-1.5 text-xs">
-        <span className="text-muted-foreground">表:</span>
+        <span className="text-muted-foreground">{t('dataBrowser.table')}</span>
         <span className="font-medium">{tableName}</span>
       </div>
 
@@ -643,7 +648,7 @@ function Toolbar({
         <FilterIcon className="h-3.5 w-3.5 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="WHERE 条件 (例: id > 10 AND status = 'active')"
+          placeholder={t('dataBrowser.whereCondition')}
           value={filterValue}
           onChange={(e) => onFilterChange(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -655,16 +660,16 @@ function Toolbar({
           size="sm"
           onClick={onApplyFilter}
           disabled={isLoading || isSaving}
-          title="应用筛选"
+          title={t('dataBrowser.applyFilter')}
           className="h-7 text-xs cursor-pointer"
         >
-          应用
+          {t('dataBrowser.apply')}
         </Button>
         <button
           onClick={onClearFilter}
           disabled={isLoading || isSaving || !filterValue}
           className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-50 cursor-pointer transition-colors"
-          title="清除筛选"
+          title={t('dataBrowser.clearFilter')}
         >
           <ClearIcon className="h-3.5 w-3.5" />
         </button>
@@ -677,14 +682,14 @@ function Toolbar({
         <>
           <div className="flex items-center gap-1.5">
             <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-medium text-warning">
-              {pendingChangesCount} 个待保存更改
+              {t('dataBrowser.pendingChanges', { count: pendingChangesCount })}
             </span>
             <Button
               variant="default"
               size="sm"
               onClick={onSaveChanges}
               disabled={isSaving}
-              title="保存所有更改"
+              title={t('dataBrowser.saveAllChanges')}
               className="h-7 text-xs bg-success hover:bg-success/90 cursor-pointer"
             >
               {isSaving ? (
@@ -692,18 +697,18 @@ function Toolbar({
               ) : (
                 <SaveIcon className="mr-1.5 h-3.5 w-3.5" />
               )}
-              保存
+              {t('dbManager.save')}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={onDiscardChanges}
               disabled={isSaving}
-              title="放弃所有更改"
+              title={t('dataBrowser.discardAllChanges')}
               className="h-7 text-xs cursor-pointer"
             >
               <DiscardIcon className="mr-1.5 h-3.5 w-3.5" />
-              放弃
+              {t('dataBrowser.discardAllChanges')}
             </Button>
           </div>
           <div className="h-4 w-px bg-border" />
@@ -715,7 +720,7 @@ function Toolbar({
         onClick={onRefresh}
         disabled={isLoading || isSaving}
         className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-50 cursor-pointer transition-colors"
-        title="刷新数据"
+        title={t('dataBrowser.refreshData')}
       >
         <RefreshIcon className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
       </button>
@@ -739,6 +744,7 @@ function PaginationControls({
   onPageSizeChange,
   isLoading,
 }: PaginationControlsProps) {
+  const t = useT();
   const { currentPage, pageSize, totalRows } = pagination;
   const totalPages = calculateTotalPages(totalRows, pageSize);
   
@@ -754,7 +760,7 @@ function PaginationControls({
       {/* Left side: Row count info */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>
-          显示 {startRow}-{endRow} / 共 {totalRows} 行
+          {t('dataBrowser.showing')} {startRow}-{endRow} / {t('dataBrowser.total')} {totalRows} 行
         </span>
       </div>
 
@@ -764,20 +770,20 @@ function PaginationControls({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!canGoPrevious || isLoading}
           className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-30 cursor-pointer transition-colors"
-          title="上一页"
+          title={t('dataBrowser.previousPage')}
         >
           <ChevronLeftIcon className="h-3.5 w-3.5" />
         </button>
         
         <span className="min-w-[80px] text-center text-xs text-muted-foreground">
-          第 {currentPage} / {totalPages} 页
+          {t('dataBrowser.page')} {currentPage} {t('dataBrowser.of')} {totalPages} 页
         </span>
         
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!canGoNext || isLoading}
           className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-30 cursor-pointer transition-colors"
-          title="下一页"
+          title={t('dataBrowser.nextPage')}
         >
           <ChevronRightIcon className="h-3.5 w-3.5" />
         </button>
@@ -785,7 +791,7 @@ function PaginationControls({
 
       {/* Right side: Page size selector */}
       <div className="flex items-center gap-1.5 text-xs">
-        <span className="text-muted-foreground">每页:</span>
+        <span className="text-muted-foreground">{t('dataBrowser.perPage')}</span>
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -813,6 +819,7 @@ interface TableHeaderCellProps {
 }
 
 function TableHeaderCell({ column, sortState, onSort }: TableHeaderCellProps) {
+  const t = useT();
   const isSorted = sortState.column === column.name;
   const sortDirection = isSorted ? sortState.direction : null;
 
@@ -823,7 +830,7 @@ function TableHeaderCell({ column, sortState, onSort }: TableHeaderCellProps) {
         isSorted && "bg-accent/30"
       )}
       onClick={() => onSort(column.name)}
-      title={`${column.name} (${column.data_type}) - 点击排序`}
+      title={`${column.name} (${column.data_type}) - ${t('dataBrowser.clickToSort')}`}
     >
       <div className="flex items-center gap-2">
         <div className="flex flex-col">
@@ -872,6 +879,7 @@ function TableDataCell({
   onEditConfirm,
   onEditCancel,
 }: TableDataCellProps) {
+  const t = useT();
   const isNull = value === null;
   const displayValue = formatValue(value);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -904,7 +912,7 @@ function TableDataCell({
         isModified && !isEditing && "bg-warning/15",
         "cursor-pointer"
       )}
-      title={isEditing ? undefined : `双击编辑: ${displayValue}`}
+      title={isEditing ? undefined : t('dataBrowser.doubleClickToEdit', { value: displayValue })}
       onDoubleClick={isEditing ? undefined : onDoubleClick}
     >
       {isEditing ? (

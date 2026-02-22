@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import type { QueryResult, Value } from "../store/index";
 
 /**
@@ -163,6 +164,7 @@ interface DiffStatsProps {
 }
 
 function DiffStats({ diff }: DiffStatsProps) {
+  const t = useT();
   const stats = React.useMemo(() => {
     return diff.reduce(
       (acc, d) => {
@@ -177,18 +179,18 @@ function DiffStats({ diff }: DiffStatsProps) {
     <div className="flex items-center gap-3 text-xs">
       <div className="flex items-center gap-1 text-success">
         <PlusIcon className="h-3.5 w-3.5" />
-        <span>{stats.added} 新增</span>
+        <span>{t('queryDiff.addedRows', { count: stats.added })}</span>
       </div>
       <div className="flex items-center gap-1 text-destructive">
         <MinusIcon className="h-3.5 w-3.5" />
-        <span>{stats.removed} 删除</span>
+        <span>{t('queryDiff.removedRows', { count: stats.removed })}</span>
       </div>
       <div className="flex items-center gap-1 text-warning">
         <EditIcon className="h-3.5 w-3.5" />
-        <span>{stats.modified} 修改</span>
+        <span>{t('queryDiff.modifiedRows', { count: stats.modified })}</span>
       </div>
       <div className="text-muted-foreground">
-        {stats.unchanged} 未变
+        {t('queryDiff.unchangedRows', { count: stats.unchanged })}
       </div>
     </div>
   );
@@ -263,10 +265,11 @@ function DiffRowView({ diffRow }: DiffRowViewProps) {
 export function QueryDiff({
   result1,
   result2,
-  label1 = "查询 1",
-  label2 = "查询 2",
+  label1,
+  label2,
   className,
 }: QueryDiffProps) {
+  const t = useT();
   const [showUnchanged, setShowUnchanged] = React.useState(true);
 
   const diff = React.useMemo(() => computeDiff(result1, result2), [result1, result2]);
@@ -281,7 +284,7 @@ export function QueryDiff({
   if (!result1 && !result2) {
     return (
       <div className={cn("flex items-center justify-center h-full text-muted-foreground", className)}>
-        <p>请选择两个查询结果进行对比</p>
+        <p>{t('queryDiff.selectTwoQueries')}</p>
       </div>
     );
   }
@@ -291,7 +294,7 @@ export function QueryDiff({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/50">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold">查询结果对比</h3>
+          <h3 className="text-sm font-semibold">{t('queryDiff.queryResultComparison')}</h3>
           <DiffStats diff={diff} />
         </div>
         <div className="flex items-center gap-2">
@@ -302,7 +305,7 @@ export function QueryDiff({
               onChange={(e) => setShowUnchanged(e.target.checked)}
               className="h-4 w-4 rounded border-input"
             />
-            显示未变行
+            {t('queryDiff.showUnchangedRows')}
           </label>
         </div>
       </div>
@@ -311,14 +314,14 @@ export function QueryDiff({
       <div className="flex items-center gap-4 px-4 py-1.5 bg-muted/50 text-xs">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded bg-destructive/50" />
-          <span>{label1}</span>
-          <span className="text-muted-foreground">({result1?.rows.length || 0} 行)</span>
+          <span>{label1 || t('queryDiff.query1Label')}</span>
+          <span className="text-muted-foreground">{t('queryDiff.rowsCount', { count: result1?.rows.length || 0 })}</span>
         </div>
         <span className="text-muted-foreground">vs</span>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded bg-success/50" />
-          <span>{label2}</span>
-          <span className="text-muted-foreground">({result2?.rows.length || 0} 行)</span>
+          <span>{label2 || t('queryDiff.query2Label')}</span>
+          <span className="text-muted-foreground">{t('queryDiff.rowsCount', { count: result2?.rows.length || 0 })}</span>
         </div>
       </div>
 

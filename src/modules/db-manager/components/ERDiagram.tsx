@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useT } from '@/i18n';
 import type { TableInfo, ForeignKeyInfo } from "../store/index";
 
 /**
@@ -118,6 +119,7 @@ function TableCard({
   onMouseEnter,
   onMouseLeave,
 }: TableCardProps) {
+  const t = useT();
   const { table, position } = node;
   const [isDragging, setIsDragging] = React.useState(false);
   const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
@@ -205,7 +207,7 @@ function TableCard({
 
       {/* Footer with counts */}
       <div className="px-2.5 py-1 bg-muted/50 text-[10px] text-muted-foreground rounded-b-md flex gap-2">
-        <span>{table.columns.length} 列</span>
+        <span>{t('erDiagram.columnsCount', { count: table.columns.length })}</span>
         {pkColumns.length > 0 && <span>{pkColumns.length} PK</span>}
         {table.foreign_keys.length > 0 && <span>{table.foreign_keys.length} FK</span>}
       </div>
@@ -261,6 +263,7 @@ function RelationLine({ from, to, fk, isHighlighted }: RelationLineProps) {
 // ============================================================================
 
 export function ERDiagram({ tables, className }: ERDiagramProps) {
+  const t = useT();
   const [nodes, setNodes] = React.useState<TableNode[]>(() =>
     calculateLayout(tables)
   );
@@ -325,7 +328,7 @@ export function ERDiagram({ tables, className }: ERDiagramProps) {
   if (tables.length === 0) {
     return (
       <div className={cn("flex items-center justify-center h-full text-muted-foreground", className)}>
-        <p>暂无表数据，请先加载数据库结构</p>
+        <p>{t('erDiagram.noTableData')}</p>
       </div>
     );
   }
@@ -335,9 +338,9 @@ export function ERDiagram({ tables, className }: ERDiagramProps) {
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-1.5 border-b border-border bg-card/50">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold">实体关系图</span>
+          <span className="text-xs font-semibold">{t('erDiagram.entityRelationshipDiagram')}</span>
           <span className="text-[10px] text-muted-foreground">
-            ({tables.length} 个表, {relations.length} 个关系)
+            {t('erDiagram.tablesAndRelations', { tableCount: tables.length, relationCount: relations.length })}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -364,7 +367,7 @@ export function ERDiagram({ tables, className }: ERDiagramProps) {
             onClick={() => setNodes(calculateLayout(tables))}
             className="h-7 text-xs cursor-pointer"
           >
-            重置布局
+            {t('erDiagram.resetLayoutButton')}
           </Button>
         </div>
       </div>
@@ -422,15 +425,15 @@ export function ERDiagram({ tables, className }: ERDiagramProps) {
       <div className="flex items-center gap-4 px-4 py-1.5 border-t border-border text-[10px] text-muted-foreground">
         <div className="flex items-center gap-1">
           <KeyIcon className="h-3 w-3 text-warning" />
-          <span>主键</span>
+          <span>{t('erDiagram.primaryKeyLegend')}</span>
         </div>
         <div className="flex items-center gap-1">
           <LinkIcon className="h-3 w-3 text-primary" />
-          <span>外键</span>
+          <span>{t('erDiagram.foreignKeyLegend')}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-0.5 border-t border-dashed border-border" />
-          <span>关系</span>
+          <span>{t('erDiagram.relationshipLegend')}</span>
         </div>
       </div>
     </div>

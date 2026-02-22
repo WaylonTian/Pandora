@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { tauriCommands, FavoriteItem, FavoriteType, useAppStore } from "../store/index";
@@ -91,6 +92,7 @@ interface FavoriteItemRowProps {
 }
 
 function FavoriteItemRow({ item, onOpen, onDelete }: FavoriteItemRowProps) {
+  const t = useT();
   const isTable = item.favorite_type === 'Table';
   
   return (
@@ -115,14 +117,14 @@ function FavoriteItemRow({ item, onOpen, onDelete }: FavoriteItemRowProps) {
         <button
           onClick={onOpen}
           className="p-1 rounded-md hover:bg-primary/15 text-primary cursor-pointer transition-colors"
-          title={isTable ? "打开表" : "执行查询"}
+          title={isTable ? t('favorites.openTableTooltip') : t('favorites.executeQueryTooltip')}
         >
           <PlayIcon className="h-3 w-3" />
         </button>
         <button
           onClick={onDelete}
           className="p-1 rounded-md hover:bg-destructive/15 text-destructive cursor-pointer transition-colors"
-          title="删除收藏"
+          title={t('favorites.deleteFavoriteTooltip')}
         >
           <TrashIcon className="h-3 w-3" />
         </button>
@@ -143,6 +145,7 @@ interface AddFavoriteDialogProps {
 }
 
 function AddFavoriteDialog({ isOpen, onClose, onSave, defaultSql }: AddFavoriteDialogProps) {
+  const t = useT();
   const [name, setName] = React.useState("");
   const [sql, setSql] = React.useState(defaultSql || "");
   
@@ -165,36 +168,36 @@ function AddFavoriteDialog({ isOpen, onClose, onSave, defaultSql }: AddFavoriteD
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-background border border-border rounded-lg shadow-lg w-96 p-4">
-        <h3 className="text-lg font-semibold mb-4">添加到收藏夹</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('favorites.addToFavorites')}</h3>
         
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium mb-1 block">名称</label>
+            <label className="text-sm font-medium mb-1 block">{t('favorites.nameLabel')}</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="输入收藏名称"
+              placeholder={t('favorites.nameInputPlaceholder')}
               autoFocus
             />
           </div>
           
           <div>
-            <label className="text-sm font-medium mb-1 block">SQL</label>
+            <label className="text-sm font-medium mb-1 block">{t('favorites.sqlLabel')}</label>
             <textarea
               value={sql}
               onChange={(e) => setSql(e.target.value)}
               className="w-full h-24 px-3 py-2 text-sm border border-border rounded-md bg-background resize-none"
-              placeholder="输入 SQL 语句"
+              placeholder={t('favorites.sqlInputPlaceholder')}
             />
           </div>
         </div>
         
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" size="sm" onClick={onClose}>
-            取消
+            {t('favorites.cancelButton')}
           </Button>
           <Button size="sm" onClick={handleSave} disabled={!name.trim()}>
-            保存
+            {t('favorites.saveButton')}
           </Button>
         </div>
       </div>
@@ -213,6 +216,7 @@ interface FavoritesProps {
 }
 
 export function Favorites({ className, onOpenTable, onExecuteSql }: FavoritesProps) {
+  const t = useT();
   const [favorites, setFavorites] = React.useState<FavoriteItem[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showAddDialog, setShowAddDialog] = React.useState(false);
@@ -302,7 +306,7 @@ export function Favorites({ className, onOpenTable, onExecuteSql }: FavoritesPro
           size="sm"
           onClick={() => setShowAddDialog(true)}
           disabled={!activeConnectionId}
-          title="添加收藏"
+          title={t('favorites.addToFavorites')}
         >
           <PlusIcon className="h-4 w-4" />
         </Button>
@@ -317,7 +321,7 @@ export function Favorites({ className, onOpenTable, onExecuteSql }: FavoritesPro
             filter === 'all' ? "bg-primary text-primary-foreground" : "hover:bg-muted"
           )}
         >
-          全部
+          {t('favorites.allFilter')}
         </button>
         <button
           onClick={() => setFilter('table')}
@@ -326,7 +330,7 @@ export function Favorites({ className, onOpenTable, onExecuteSql }: FavoritesPro
             filter === 'table' ? "bg-primary text-primary-foreground" : "hover:bg-muted"
           )}
         >
-          表
+          {t('favorites.tableFilter')}
         </button>
         <button
           onClick={() => setFilter('query')}
@@ -335,7 +339,7 @@ export function Favorites({ className, onOpenTable, onExecuteSql }: FavoritesPro
             filter === 'query' ? "bg-primary text-primary-foreground" : "hover:bg-muted"
           )}
         >
-          查询
+          {t('favorites.queryFilter')}
         </button>
       </div>
       
@@ -343,12 +347,12 @@ export function Favorites({ className, onOpenTable, onExecuteSql }: FavoritesPro
       <div className="flex-1 overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center h-20 text-muted-foreground text-sm">
-            加载中...
+            {t('favorites.loadingMessage')}
           </div>
         ) : filteredFavorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-20 text-muted-foreground text-sm">
             <StarIcon className="h-8 w-8 mb-2 opacity-30" />
-            <span>暂无收藏</span>
+            <span>{t('favorites.noFavoritesMessage')}</span>
           </div>
         ) : (
           <div className="p-1">
@@ -356,7 +360,7 @@ export function Favorites({ className, onOpenTable, onExecuteSql }: FavoritesPro
             {currentConnectionFavorites.length > 0 && (
               <div className="mb-2">
                 <div className="px-2 py-1 text-xs text-muted-foreground font-medium">
-                  当前连接
+                  {t('favorites.currentConnectionGroup')}
                 </div>
                 {currentConnectionFavorites.map((item) => (
                   <FavoriteItemRow
@@ -373,7 +377,7 @@ export function Favorites({ className, onOpenTable, onExecuteSql }: FavoritesPro
             {otherFavorites.length > 0 && (
               <div>
                 <div className="px-2 py-1 text-xs text-muted-foreground font-medium">
-                  其他连接
+                  {t('favorites.otherConnectionsGroup')}
                 </div>
                 {otherFavorites.map((item) => (
                   <FavoriteItemRow

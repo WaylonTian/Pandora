@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { useT } from '@/i18n';
 import { useAppStore, type QueryTab } from "../store";
 
 export interface TabBarProps {
@@ -88,6 +89,7 @@ interface ContextMenuProps {
 }
 
 function ContextMenu({ x, y, tabId, onClose, onCloseTab, onCloseOthers, onCloseAll, onCloseRight }: ContextMenuProps) {
+  const t = useT();
   const menuRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -99,10 +101,10 @@ function ContextMenu({ x, y, tabId, onClose, onCloseTab, onCloseOthers, onCloseA
   }, [onClose]);
 
   const items = [
-    { label: "关闭", action: () => onCloseTab(tabId) },
-    { label: "关闭其他", action: () => onCloseOthers(tabId) },
-    { label: "关闭右侧", action: () => onCloseRight(tabId) },
-    { label: "关闭全部", action: () => onCloseAll() },
+    { label: t('tabBar.closeTab'), action: () => onCloseTab(tabId) },
+    { label: t('tabBar.closeOthers'), action: () => onCloseOthers(tabId) },
+    { label: t('tabBar.closeRight'), action: () => onCloseRight(tabId) },
+    { label: t('tabBar.closeAll'), action: () => onCloseAll() },
   ];
 
   return (
@@ -136,6 +138,7 @@ interface TabListDropdownProps {
 }
 
 function TabListDropdown({ tabs, activeTabId, onSelect, onClose }: TabListDropdownProps) {
+  const t = useT();
   const [isOpen, setIsOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
 
@@ -154,7 +157,7 @@ function TabListDropdown({ tabs, activeTabId, onSelect, onClose }: TabListDropdo
         type="button"
         className="flex h-9 w-8 flex-shrink-0 items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground cursor-pointer transition-colors"
         onClick={() => setIsOpen(!isOpen)}
-        title={`${tabs.length} 个标签页`}
+        title={t('tabBar.tabsCount', { count: tabs.length })}
       >
         <ChevronDownIcon className="h-3.5 w-3.5" />
         <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">
@@ -186,7 +189,7 @@ function TabListDropdown({ tabs, activeTabId, onSelect, onClose }: TabListDropdo
               <button
                 className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/15 hover:text-destructive cursor-pointer transition-all"
                 onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
-                aria-label={`关闭 ${tab.title}`}
+                aria-label={t('tabBar.closeTabAriaLabel', { title: tab.title })}
               >
                 <CloseIcon className="h-2.5 w-2.5" />
               </button>
@@ -211,6 +214,7 @@ interface TabItemProps {
 }
 
 function TabItem({ tab, isActive, onSelect, onClose, onContextMenu }: TabItemProps) {
+  const t = useT();
   const tabIcon = tab.type === "query" ? (
     <QueryIcon className="h-3.5 w-3.5 flex-shrink-0" />
   ) : (
@@ -259,7 +263,7 @@ function TabItem({ tab, isActive, onSelect, onClose, onContextMenu }: TabItemPro
           "hover:bg-destructive/15 hover:text-destructive hover:opacity-100 cursor-pointer"
         )}
         onClick={onClose}
-        aria-label={`关闭 ${tab.title}`}
+        aria-label={t('tabBar.closeTabAriaLabel', { title: tab.title })}
         tabIndex={-1}
       >
         <CloseIcon className="h-3 w-3" />
@@ -273,6 +277,7 @@ function TabItem({ tab, isActive, onSelect, onClose, onContextMenu }: TabItemPro
 // ============================================================================
 
 export function TabBar({ className }: TabBarProps) {
+  const t = useT();
   const tabs = useAppStore((state) => state.tabs);
   const activeTabId = useAppStore((state) => state.activeTabId);
   const addQueryTab = useAppStore((state) => state.addQueryTab);
@@ -380,7 +385,7 @@ export function TabBar({ className }: TabBarProps) {
     <div
       className={cn("flex h-9 w-full items-stretch bg-card/50", className)}
       role="tablist"
-      aria-label="查询标签页"
+      aria-label={t('tabBar.queryTabs')}
       onKeyDown={handleKeyDown}
     >
       {canScrollLeft && (
@@ -388,7 +393,7 @@ export function TabBar({ className }: TabBarProps) {
           type="button"
           className="flex-shrink-0 flex h-9 w-6 items-center justify-center hover:bg-muted/50 cursor-pointer"
           onClick={scrollLeft}
-          aria-label="向左滚动"
+          aria-label={t('tabBar.scrollLeft')}
         >
           <ChevronLeftIcon className="h-3.5 w-3.5" />
         </button>
@@ -415,7 +420,7 @@ export function TabBar({ className }: TabBarProps) {
           type="button"
           className="flex-shrink-0 flex h-9 w-6 items-center justify-center hover:bg-muted/50 cursor-pointer"
           onClick={scrollRight}
-          aria-label="向右滚动"
+          aria-label={t('tabBar.scrollRight')}
         >
           <ChevronRightIcon className="h-3.5 w-3.5" />
         </button>
@@ -451,13 +456,14 @@ export function TabBar({ className }: TabBarProps) {
 }
 
 function NewTabButton({ onClick }: { onClick: () => void }) {
+  const t = useT();
   return (
     <button
       type="button"
       className="flex h-9 w-9 flex-shrink-0 items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground cursor-pointer transition-colors"
       onClick={onClick}
-      aria-label="新建标签页"
-      title="新建标签页 (Ctrl+N)"
+      aria-label={t('tabBar.newTab')}
+      title={t('tabBar.newTabShortcut')}
     >
       <PlusIcon className="h-4 w-4" />
     </button>

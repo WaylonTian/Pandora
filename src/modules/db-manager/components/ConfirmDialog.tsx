@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useT } from '@/i18n';
 
 /**
  * Confirm Dialog Component
@@ -171,6 +172,7 @@ export function ConfirmDialog({
   isLoading = false,
   className,
 }: ConfirmDialogProps) {
+  const t = useT();
   // Dialog ref for focus management
   const dialogRef = React.useRef<HTMLDivElement>(null);
   const cancelButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -260,7 +262,7 @@ export function ConfirmDialog({
             className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-colors"
             onClick={onClose}
             disabled={isLoading}
-            aria-label="关闭对话框"
+            aria-label={t('confirmDialog.closeDialog')}
           >
             <CloseIcon />
           </button>
@@ -296,7 +298,7 @@ export function ConfirmDialog({
             {isLoading ? (
               <>
                 <LoadingSpinner className="mr-2 h-4 w-4" />
-                处理中...
+                {t('confirmDialog.processing')}
               </>
             ) : (
               confirmLabel

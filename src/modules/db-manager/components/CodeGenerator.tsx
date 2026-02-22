@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { TableInfo } from "../store/index";
+import { useT } from '@/i18n';
 
 /**
  * CodeGenerator Component
@@ -335,6 +336,7 @@ const languageLabels: Record<Language, string> = {
 // ============================================================================
 
 export function CodeGenerator({ table, className }: CodeGeneratorProps) {
+  const t = useT();
   const [language, setLanguage] = React.useState<Language>("typescript");
   const [copied, setCopied] = React.useState(false);
 
@@ -354,7 +356,7 @@ export function CodeGenerator({ table, className }: CodeGeneratorProps) {
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/50">
         <div className="flex items-center gap-2">
           <CodeIcon className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">代码生成</h3>
+          <h3 className="text-sm font-semibold">{t('codeGenerator.title')}</h3>
           <span className="text-xs text-muted-foreground">- {table.name}</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -384,12 +386,12 @@ export function CodeGenerator({ table, className }: CodeGeneratorProps) {
             {copied ? (
               <>
                 <CheckIcon className="h-3.5 w-3.5 mr-1 text-success" />
-                已复制
+                {t('codeGenerator.copied')}
               </>
             ) : (
               <>
                 <CopyIcon className="h-3.5 w-3.5 mr-1" />
-                复制
+                {t('codeGenerator.copy')}
               </>
             )}
           </Button>
@@ -401,7 +403,7 @@ export function CodeGenerator({ table, className }: CodeGeneratorProps) {
 
       {/* Info */}
       <div className="px-4 py-1.5 border-t border-border text-[10px] text-muted-foreground">
-        生成的代码基于表 "{table.name}" 的 {table.columns.length} 个字段
+        {t('codeGenerator.generatedInfo', { tableName: table.name, columnCount: table.columns.length })}
       </div>
     </div>
   );
