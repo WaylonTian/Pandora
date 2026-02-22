@@ -61,7 +61,7 @@ fn save_registry(plugins: &[InstalledPlugin]) -> Result<(), String> {
     fs::write(path, json).map_err(|e| e.to_string())
 }
 
-pub fn install_plugin(upxs_path: &Path, name: &str, version: &str, description: &str) -> Result<InstalledPlugin, String> {
+pub fn install_plugin(pkg_path: &Path, name: &str, version: &str, description: &str) -> Result<InstalledPlugin, String> {
     let id = slug_from_name(name);
     let dest = plugins_dir().join(&id);
 
@@ -69,7 +69,30 @@ pub fn install_plugin(upxs_path: &Path, name: &str, version: &str, description: 
         fs::remove_dir_all(&dest).map_err(|e| e.to_string())?;
     }
 
-    super::asar::extract_asar(upxs_path, &dest)?;
+    // Try asar first, then zip, then copy directory
+    if pkg_path.is_dir() {
+        copy_dir_recursive(pkg_path, &dest)?;
+    } else {
+        let bytes = fs::read(pkg_path).map_err(|e| e.to_string())?;
+        if bytes.len() < 16 {
+            return Err("Package file too small".into());
+        }
+        // Check for ZIP magic (PK\x03\x04)
+        if bytes[0] == 0x50 && bytes[1] == 0x4B && bytes[2] == 0x03 && bytes[3] == 0x04 {
+            extract_zip(pkg_path, &dest)?;
+        } else {
+            // Try asar format
+            match super::asar::extract_asar(pkg_path, &dest) {
+                Ok(()) => {},
+                Err(e) => {
+                    fs::remove_dir_all(&dest).ok();
+                    return Err(format!(
+                        "Unsupported package format. Only .asar and .zip are supported (not encrypted .upxs). Error: {e}"
+                    ));
+                }
+            }
+        }
+    }
 
     let manifest_path = dest.join("plugin.json");
     if !manifest_path.exists() {
@@ -98,6 +121,39 @@ pub fn install_plugin(upxs_path: &Path, name: &str, version: &str, description: 
     save_registry(&registry)?;
 
     Ok(plugin)
+}
+
+fn extract_zip(zip_path: &Path, dest: &Path) -> Result<(), String> {
+    let file = fs::File::open(zip_path).map_err(|e| e.to_string())?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
+        let out_path = dest.join(entry.mangled_name());
+        if entry.is_dir() {
+            fs::create_dir_all(&out_path).map_err(|e| e.to_string())?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            let mut out_file = fs::File::create(&out_path).map_err(|e| e.to_string())?;
+            std::io::copy(&mut entry, &mut out_file).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), String> {
+    fs::create_dir_all(dest).map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(src).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let target = dest.join(entry.file_name());
+        if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
+            copy_dir_recursive(&entry.path(), &target)?;
+        } else {
+            fs::copy(entry.path(), &target).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
 }
 
 pub fn uninstall_plugin(id: &str) -> Result<(), String> {

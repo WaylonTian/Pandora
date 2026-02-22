@@ -135,9 +135,8 @@ fn parse_next_data_detail(html: &str, name: &str) -> Result<MarketPluginDetail, 
     let mut plugin_id = String::new();
 
     if let Some(data) = &data {
-        // pageProps.plugin or pageProps.detail
-        let plugin = data.pointer("/props/pageProps/plugin")
-            .or_else(|| data.pointer("/props/pageProps/detail"));
+        // pageProps.detail.detailInfos
+        let plugin = data.pointer("/props/pageProps/detail/detailInfos");
 
         if let Some(p) = plugin {
             version = p.get("version").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -147,13 +146,17 @@ fn parse_next_data_detail(html: &str, name: &str) -> Result<MarketPluginDetail, 
         }
     }
 
-    // Build download URL: https://res.u-tools.cn/plugins/upload/{plugin_id}/{plugin_id}_latest.upxs
-    // or try to find .upxs link in HTML
+    // Build download URL from detail data
     if !plugin_id.is_empty() {
-        download_url = Some(format!(
-            "https://res.u-tools.cn/plugins/upload/{}/{}_latest.upxs",
-            plugin_id, plugin_id
-        ));
+        // The JSON has download_url like "/hash.upxs", full URL is https://res.u-tools.cn/plugins/{hash}.upxs
+        if let Some(data) = &data {
+            if let Some(dl) = data.pointer("/props/pageProps/detail/detailInfos/download_url")
+                .and_then(|v| v.as_str())
+            {
+                let hash = dl.trim_start_matches('/');
+                download_url = Some(format!("https://res.u-tools.cn/plugins/{}", hash));
+            }
+        }
     }
 
     // Fallback: scan for .upxs URL in HTML
