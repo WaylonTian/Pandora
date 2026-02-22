@@ -207,6 +207,7 @@ pub fn run() {
             plugin::commands::marketplace_search,
             plugin::commands::marketplace_topic,
             plugin::commands::marketplace_detail,
+            plugin::commands::plugin_read_file,
             plugin::node_bridge::node_fs_read_file,
             plugin::node_bridge::node_fs_write_file,
             plugin::node_bridge::node_fs_mkdir,

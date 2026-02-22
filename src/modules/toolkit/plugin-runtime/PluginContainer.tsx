@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { createPluginBridge, sendPluginEvent } from "./bridge";
 import { generateShimScript } from "./utools-shim";
 import type { InstalledPlugin } from "./types";
@@ -8,10 +9,65 @@ interface Props {
   featureCode?: string;
 }
 
+async function readPluginFile(pluginId: string, path: string): Promise<string> {
+  const bytes: number[] = await invoke("plugin_read_file", { pluginId, path });
+  return new TextDecoder().decode(new Uint8Array(bytes));
+}
+
+async function buildSrcdoc(plugin: InstalledPlugin): Promise<string> {
+  const shim = generateShimScript(plugin.id);
+  const mainFile = plugin.manifest.main || "index.html";
+  const html = await readPluginFile(plugin.id, mainFile);
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+
+  // Inline all <script src="..."> tags
+  const scripts = doc.querySelectorAll("script[src]");
+  for (const el of scripts) {
+    const src = el.getAttribute("src");
+    if (src && !src.startsWith("http")) {
+      try {
+        const code = await readPluginFile(plugin.id, src);
+        const inline = doc.createElement("script");
+        inline.textContent = code;
+        el.replaceWith(inline);
+      } catch { /* skip missing files */ }
+    }
+  }
+
+  // Inline all <link rel="stylesheet" href="...">
+  const links = doc.querySelectorAll('link[rel="stylesheet"]');
+  for (const el of links) {
+    const href = el.getAttribute("href");
+    if (href && !href.startsWith("http")) {
+      try {
+        const css = await readPluginFile(plugin.id, href);
+        const style = doc.createElement("style");
+        style.textContent = css;
+        el.replaceWith(style);
+      } catch { /* skip */ }
+    }
+  }
+
+  // Inject shim as first script in head
+  const shimEl = doc.createElement("script");
+  shimEl.textContent = shim;
+  doc.head.insertBefore(shimEl, doc.head.firstChild);
+
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+}
+
 export function PluginContainer({ plugin, featureCode }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState<number | undefined>();
+  const [srcdoc, setSrcdoc] = useState<string>("");
+  const [error, setError] = useState<string>("");
+
   useEffect(() => {
+    buildSrcdoc(plugin).then(setSrcdoc).catch((e) => setError(String(e)));
+  }, [plugin.id]);
+
+  useEffect(() => {
+    if (!srcdoc) return;
     const cleanup = createPluginBridge({
       pluginId: plugin.id,
       onReady: () => {
@@ -23,29 +79,13 @@ export function PluginContainer({ plugin, featureCode }: Props) {
           }, plugin.id);
         }
       },
-      onResize: setHeight,
+      onResize: () => {},
     });
     return cleanup;
-  }, [plugin.id, featureCode]);
+  }, [plugin.id, srcdoc, featureCode]);
 
-  const shimScript = generateShimScript(plugin.id);
-  const mainFile = plugin.manifest.main || "index.html";
-  const pluginBaseUrl = `asset://localhost/plugins/${plugin.id}/`;
-
-  const srcdoc = `<!DOCTYPE html>
-<html><head><base href="${pluginBaseUrl}"><script>${shimScript}<\/script></head>
-<body><script>
-fetch("${pluginBaseUrl}${mainFile}").then(r=>r.text()).then(html=>{
-  const doc=new DOMParser().parseFromString(html,'text/html');
-  doc.querySelectorAll('link[rel="stylesheet"],style').forEach(el=>document.head.appendChild(el.cloneNode(true)));
-  document.body.innerHTML=doc.body.innerHTML;
-  doc.querySelectorAll('script').forEach(el=>{
-    const s=document.createElement('script');
-    if(el.src)s.src=el.src;else s.textContent=el.textContent;
-    document.body.appendChild(s);
-  });
-});
-<\/script></body></html>`;
+  if (error) return <div className="p-4 text-red-500">Failed to load plugin: {error}</div>;
+  if (!srcdoc) return <div className="p-4 text-muted-foreground">Loading plugin...</div>;
 
   return (
     <iframe
@@ -53,7 +93,7 @@ fetch("${pluginBaseUrl}${mainFile}").then(r=>r.text()).then(html=>{
       srcDoc={srcdoc}
       sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
       className="w-full border-0"
-      style={{ height: height ? `${height}px` : "100%", minHeight: "200px" }}
+      style={{ height: "100%", minHeight: "200px" }}
       title={plugin.name}
     />
   );

@@ -33,7 +33,7 @@ pub struct InstalledPlugin {
     pub installed_at: String,
 }
 
-fn plugins_dir() -> PathBuf {
+pub fn plugins_dir() -> PathBuf {
     let base = dirs::data_dir().unwrap_or_else(|| PathBuf::from("."));
     base.join("pandora").join("plugins")
 }

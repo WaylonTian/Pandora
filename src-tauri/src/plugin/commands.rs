@@ -84,3 +84,13 @@ pub async fn marketplace_topic(topic_id: u32) -> Result<Vec<marketplace::MarketP
 pub async fn marketplace_detail(name: String) -> Result<marketplace::MarketPluginDetail, String> {
     marketplace::get_plugin_detail(&name).await
 }
+
+#[tauri::command]
+pub fn plugin_read_file(plugin_id: String, path: String) -> Result<Vec<u8>, String> {
+    let file_path = manager::plugins_dir().join(&plugin_id).join(&path);
+    // Prevent path traversal
+    if path.contains("..") {
+        return Err("Invalid path".into());
+    }
+    std::fs::read(&file_path).map_err(|e| format!("Failed to read {path}: {e}"))
+}
