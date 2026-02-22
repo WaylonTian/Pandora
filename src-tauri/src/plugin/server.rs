@@ -31,8 +31,9 @@ fn handle(mut stream: std::net::TcpStream, plugins_dir: &PathBuf) {
     };
     let req = String::from_utf8_lossy(&buf[..n]);
     let path = req.split_whitespace().nth(1).unwrap_or("/");
+    let (path_part, query) = path.split_once('?').unwrap_or((path, ""));
     // path: /plugin-id/file.js
-    let decoded = urlencoding::decode(path).unwrap_or_default();
+    let decoded = urlencoding::decode(path_part).unwrap_or_default();
     let decoded = decoded.trim_start_matches('/');
 
     if decoded.contains("..") {
@@ -42,7 +43,6 @@ fn handle(mut stream: std::net::TcpStream, plugins_dir: &PathBuf) {
 
     // Handle raw file access: /__raw__?path=/absolute/path
     if decoded.starts_with("__raw__") {
-        let query = path.split('?').nth(1).unwrap_or("");
         let file_path = query.strip_prefix("path=")
             .map(|p| urlencoding::decode(p).unwrap_or_default().into_owned())
             .unwrap_or_default();
@@ -81,12 +81,35 @@ fn handle(mut stream: std::net::TcpStream, plugins_dir: &PathBuf) {
 
     match std::fs::read(&file_path) {
         Ok(data) => {
+            // Inject shim into HTML when __inject__ query param is present
+            let body = if query.contains("__inject__") && mime == "text/html; charset=utf-8" {
+                let html = String::from_utf8_lossy(&data);
+                // Extract plugin_id from path (first segment)
+                let plugin_id = decoded.split('/').next().unwrap_or("");
+                let shim_path = plugins_dir.join(plugin_id).join("__shim__.js");
+                let preload_tag = std::fs::read_to_string(plugins_dir.join(plugin_id).join("plugin.json")).ok()
+                    .and_then(|m| serde_json::from_str::<serde_json::Value>(&m).ok())
+                    .and_then(|v| v.get("preload").and_then(|p| p.as_str()).map(|p| format!("<script src=\"{}\"></script>", p)))
+                    .unwrap_or_default();
+                let shim_tag = if shim_path.exists() {
+                    format!("<script src=\"__shim__.js\"></script>")
+                } else { String::new() };
+                let inject = format!("{}{}", shim_tag, preload_tag);
+                let injected = if html.contains("<head>") {
+                    html.replacen("<head>", &format!("<head>{}", inject), 1)
+                } else {
+                    format!("{}{}", inject, html)
+                };
+                injected.into_bytes()
+            } else {
+                data
+            };
             let header = format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nAccess-Control-Allow-Origin: *\r\n\r\n",
-                mime, data.len()
+                mime, body.len()
             );
             let _ = stream.write_all(header.as_bytes());
-            let _ = stream.write_all(&data);
+            let _ = stream.write_all(&body);
         }
         Err(_) => {
             let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");

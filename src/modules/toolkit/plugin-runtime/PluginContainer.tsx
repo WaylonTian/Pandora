@@ -15,7 +15,6 @@ export function PluginContainer({ plugin, featureCode }: Props) {
 
   useEffect(() => {
     (async () => {
-      // Write shim JS to plugin dir
       const port: number = await invoke("plugin_server_port");
       // Pre-fetch paths for sync getPath API
       const pathNames = ["home", "desktop", "downloads", "documents", "temp", "appData"];
@@ -27,32 +26,10 @@ export function PluginContainer({ plugin, featureCode }: Props) {
       const shim = pathsScript + generateShimScript(plugin.id, port);
       await invoke("plugin_write_shim", { pluginId: plugin.id, content: shim });
 
-      // Get local server port
       const base = `http://127.0.0.1:${port}/${encodeURIComponent(plugin.id)}`;
       const mainFile = plugin.manifest.main || "index.html";
-
-      // Fetch the HTML, inject shim + preload, create blob URL
-      const resp = await fetch(`${base}/${mainFile}`);
-      let html = await resp.text();
-
-      const shimTag = `<script src="${base}/__shim__.js"></script>`;
-      const preloadTag = plugin.manifest.preload
-        ? `<script src="${base}/${plugin.manifest.preload}"></script>`
-        : "";
-      // Set base href so all relative paths resolve to the plugin server
-      const injection = `<base href="${base}/">${shimTag}${preloadTag}`;
-
-      if (html.includes("<head>")) {
-        html = html.replace("<head>", `<head>${injection}`);
-      } else if (html.includes("<HEAD>")) {
-        html = html.replace("<HEAD>", `<HEAD>${injection}`);
-      } else {
-        html = injection + html;
-      }
-
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      setSrc(url);
+      // Direct iframe src — server injects shim + preload into HTML
+      setSrc(`${base}/${mainFile}?__inject__=1`);
     })().catch((e) => console.error("Plugin load error:", e));
   }, [plugin.id]);
 
