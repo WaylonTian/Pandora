@@ -18,6 +18,16 @@ interface PluginStore {
   getDetail: (name: string) => Promise<MarketPluginDetail>;
 }
 
+// Frontend cache: avoid re-fetching same topic/search within TTL
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const cache = new Map<string, { data: MarketPlugin[]; at: number }>();
+
+function getCached(key: string): MarketPlugin[] | null {
+  const e = cache.get(key);
+  if (e && Date.now() - e.at < CACHE_TTL) return e.data;
+  return null;
+}
+
 export const usePluginStore = create<PluginStore>((set, get) => ({
   installed: [],
   marketPlugins: [],
@@ -36,7 +46,14 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
       await invoke("plugin_install_from_market", { name });
       await get().loadInstalled();
     } catch (e: any) {
-      set({ installError: `Failed to install ${name}: ${e.message || e}` });
+      const msg = e.message || String(e);
+      // If .upxs, remove from current list (backend already cached the blocklist)
+      if (msg.includes(".upxs")) {
+        set((s) => ({ marketPlugins: s.marketPlugins.filter((p) => p.name !== name) }));
+        // Also purge frontend cache so next load uses backend's filtered result
+        cache.clear();
+      }
+      set({ installError: `${name}: ${msg}` });
     } finally {
       set((s) => {
         const next = new Set(s.installing);
@@ -62,9 +79,14 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
   },
 
   searchMarket: async (query) => {
+    const key = `search:${query}`;
+    const cached = getCached(key);
+    if (cached) { set({ marketPlugins: cached }); return; }
+
     set({ marketLoading: true });
     try {
       const marketPlugins = await invoke<MarketPlugin[]>("marketplace_search", { query });
+      cache.set(key, { data: marketPlugins, at: Date.now() });
       set({ marketPlugins });
     } finally {
       set({ marketLoading: false });
@@ -72,9 +94,14 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
   },
 
   loadTopic: async (topicId) => {
+    const key = `topic:${topicId}`;
+    const cached = getCached(key);
+    if (cached) { set({ marketPlugins: cached }); return; }
+
     set({ marketLoading: true });
     try {
       const marketPlugins = await invoke<MarketPlugin[]>("marketplace_topic", { topicId });
+      cache.set(key, { data: marketPlugins, at: Date.now() });
       set({ marketPlugins });
     } finally {
       set({ marketLoading: false });

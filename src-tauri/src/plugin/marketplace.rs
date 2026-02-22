@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketPlugin {
@@ -21,18 +24,71 @@ pub struct MarketPluginDetail {
     pub detail_html: String,
 }
 
+struct CacheEntry<T> {
+    data: T,
+    at: Instant,
+}
+
+static CACHE: std::sync::LazyLock<Mutex<MarketCache>> =
+    std::sync::LazyLock::new(|| Mutex::new(MarketCache::default()));
+
+const CACHE_TTL: Duration = Duration::from_secs(300); // 5 minutes
+
+#[derive(Default)]
+struct MarketCache {
+    topics: HashMap<u32, CacheEntry<Vec<MarketPlugin>>>,
+    searches: HashMap<String, CacheEntry<Vec<MarketPlugin>>>,
+    /// Plugin names known to be .upxs (encrypted, unsupported)
+    upxs_names: HashSet<String>,
+}
+
+fn filter_upxs(plugins: Vec<MarketPlugin>, blocked: &HashSet<String>) -> Vec<MarketPlugin> {
+    if blocked.is_empty() { return plugins; }
+    plugins.into_iter().filter(|p| !blocked.contains(&p.name)).collect()
+}
+
+/// Mark a plugin name as .upxs (will be hidden from future listings)
+pub fn mark_upxs(name: &str) {
+    if let Ok(mut c) = CACHE.lock() { c.upxs_names.insert(name.to_string()); }
+}
+
 pub async fn search_plugins(query: &str) -> Result<Vec<MarketPlugin>, String> {
+    let key = query.to_string();
+    if let Ok(c) = CACHE.lock() {
+        if let Some(e) = c.searches.get(&key) {
+            if e.at.elapsed() < CACHE_TTL {
+                return Ok(filter_upxs(e.data.clone(), &c.upxs_names));
+            }
+        }
+    }
     let url = format!("https://www.u-tools.cn/plugins/search/?q={}", urlencoding::encode(query));
     let html = reqwest::get(&url).await.map_err(|e| e.to_string())?
         .text().await.map_err(|e| e.to_string())?;
-    parse_next_data_list(&html)
+    let plugins = parse_next_data_list(&html)?;
+    let blocked = if let Ok(mut c) = CACHE.lock() {
+        c.searches.insert(key, CacheEntry { data: plugins.clone(), at: Instant::now() });
+        c.upxs_names.clone()
+    } else { HashSet::new() };
+    Ok(filter_upxs(plugins, &blocked))
 }
 
 pub async fn list_topic(topic_id: u32) -> Result<Vec<MarketPlugin>, String> {
+    if let Ok(c) = CACHE.lock() {
+        if let Some(e) = c.topics.get(&topic_id) {
+            if e.at.elapsed() < CACHE_TTL {
+                return Ok(filter_upxs(e.data.clone(), &c.upxs_names));
+            }
+        }
+    }
     let url = format!("https://www.u-tools.cn/plugins/topic/{}/", topic_id);
     let html = reqwest::get(&url).await.map_err(|e| e.to_string())?
         .text().await.map_err(|e| e.to_string())?;
-    parse_next_data_list(&html)
+    let plugins = parse_next_data_list(&html)?;
+    let blocked = if let Ok(mut c) = CACHE.lock() {
+        c.topics.insert(topic_id, CacheEntry { data: plugins.clone(), at: Instant::now() });
+        c.upxs_names.clone()
+    } else { HashSet::new() };
+    Ok(filter_upxs(plugins, &blocked))
 }
 
 pub async fn get_plugin_detail(name: &str) -> Result<MarketPluginDetail, String> {
@@ -159,12 +215,15 @@ fn parse_next_data_detail(html: &str, name: &str) -> Result<MarketPluginDetail, 
         }
     }
 
-    // Fallback: scan for .upxs URL in HTML
+    // Fallback: scan for download URL in HTML (.upxs or .upx)
     if download_url.is_none() {
         if let Some(pos) = html.find("res.u-tools.cn/plugins/") {
             let start = html[..pos].rfind("https://").unwrap_or(pos);
-            if let Some(end_offset) = html[start..].find(".upxs") {
-                download_url = Some(html[start..start + end_offset + 5].to_string());
+            let rest = &html[start..];
+            if let Some(end_offset) = rest.find(".upxs") {
+                download_url = Some(rest[..end_offset + 5].to_string());
+            } else if let Some(end_offset) = rest.find(".upx") {
+                download_url = Some(rest[..end_offset + 4].to_string());
             }
         }
     }
