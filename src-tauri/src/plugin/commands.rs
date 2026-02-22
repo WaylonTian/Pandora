@@ -192,3 +192,122 @@ pub fn plugin_screen_capture() -> Result<String, String> {
         Err("Screenshot cancelled or failed".into())
     }
 }
+
+#[tauri::command]
+pub fn plugin_show_save_dialog(options: serde_json::Value) -> Result<Option<String>, String> {
+    let filters = options.get("filters").and_then(|f| f.as_array());
+    let ext_filter = if let Some(filters) = filters {
+        filters.iter()
+            .filter_map(|f| f.get("extensions").and_then(|e| e.as_array()))
+            .flatten()
+            .filter_map(|e| e.as_str())
+            .map(|e| format!("*.{}", e))
+            .collect::<Vec<_>>()
+            .join(";")
+    } else {
+        "*.*".to_string()
+    };
+
+    let ps = format!(
+        "Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.SaveFileDialog; $d.Filter = 'Files|{}'; if ($d.ShowDialog() -eq 'OK') {{ $d.FileName }}",
+        ext_filter
+    );
+    let output = std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", &ps])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if path.is_empty() { Ok(None) } else { Ok(Some(path)) }
+}
+
+#[tauri::command]
+pub fn plugin_shell_trash_item(path: String) -> Result<(), String> {
+    let ps = format!(
+        "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('{}', 'OnlyErrorDialogs', 'SendToRecycleBin')",
+        path.replace('\'', "''")
+    );
+    std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", &ps])
+        .output()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn plugin_shell_beep() -> Result<(), String> {
+    std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", "[Console]::Beep()"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn plugin_get_native_id() -> String {
+    "pandora-native-id".to_string()
+}
+
+#[tauri::command]
+pub fn plugin_get_app_name() -> String {
+    "Pandora".to_string()
+}
+
+#[tauri::command]
+pub fn plugin_is_dev() -> bool {
+    cfg!(debug_assertions)
+}
+
+#[tauri::command]
+pub fn plugin_get_file_icon(path: String) -> Result<String, String> {
+    let ps = format!(
+        "Add-Type -AssemblyName System.Drawing; $icon = [System.Drawing.Icon]::ExtractAssociatedIcon('{}'); $ms = New-Object System.IO.MemoryStream; $icon.ToBitmap().Save($ms, [System.Drawing.Imaging.ImageFormat]::Png); [Convert]::ToBase64String($ms.ToArray())",
+        path.replace('\'', "''")
+    );
+    let output = std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", &ps])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let b64 = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if b64.is_empty() { Err("Failed to extract icon".into()) } else { Ok(format!("data:image/png;base64,{}", b64)) }
+}
+
+#[tauri::command]
+pub fn plugin_get_copyed_files() -> Result<Vec<String>, String> {
+    let ps = "Add-Type -AssemblyName System.Windows.Forms; $files = [System.Windows.Forms.Clipboard]::GetFileDropList(); $files | ForEach-Object { $_ }";
+    let output = std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", ps])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let files = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    Ok(files)
+}
+
+#[tauri::command]
+pub fn plugin_paste_file(path: String) -> Result<(), String> {
+    let ps = format!(
+        "Add-Type -AssemblyName System.Windows.Forms; $col = New-Object System.Collections.Specialized.StringCollection; $col.Add('{}'); [System.Windows.Forms.Clipboard]::SetFileDropList($col); [System.Windows.Forms.SendKeys]::SendWait('^v')",
+        path.replace('\'', "''")
+    );
+    std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", &ps])
+        .output()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn plugin_paste_image(base64: String) -> Result<(), String> {
+    let ps = format!(
+        "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $bytes = [Convert]::FromBase64String('{}'); $ms = New-Object System.IO.MemoryStream(,$bytes); $img = [System.Drawing.Image]::FromStream($ms); [System.Windows.Forms.Clipboard]::SetImage($img); [System.Windows.Forms.SendKeys]::SendWait('^v')",
+        base64
+    );
+    std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-Command", &ps])
+        .output()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}

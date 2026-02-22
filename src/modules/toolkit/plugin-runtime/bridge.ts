@@ -78,6 +78,22 @@ async function routeCall(pluginId: string, method: string, args: any[]): Promise
     case "node.os.homedir": return invoke("node_os_homedir");
     case "node.os.tmpdir": return invoke("node_os_tmpdir");
     case "node.child_process.exec": return invoke("node_exec", { cmd: args[0] });
+    case "showSaveDialog": return invoke("plugin_show_save_dialog", { options: args[0] || {} });
+    case "shellTrashItem": return invoke("plugin_shell_trash_item", { path: args[0] });
+    case "shellBeep": return invoke("plugin_shell_beep");
+    case "getNativeId": return invoke("plugin_get_native_id");
+    case "getAppName": return invoke("plugin_get_app_name");
+    case "isDev": return invoke("plugin_is_dev");
+    case "getFileIcon": return invoke("plugin_get_file_icon", { path: args[0] });
+    case "getCopyedFiles": return invoke("plugin_get_copyed_files");
+    case "hideMainWindowPasteFile": return invoke("plugin_paste_file", { path: args[0] });
+    case "hideMainWindowPasteImage": return invoke("plugin_paste_image", { base64: args[0] });
+    case "outPlugin": return null;
+    case "findInPage": { const iframe = document.querySelector('iframe'); (iframe?.contentWindow as any)?.find?.(args[0]); return null; }
+    case "stopFindInPage": { const iframe2 = document.querySelector('iframe'); iframe2?.contentWindow?.getSelection?.()?.removeAllRanges?.(); return null; }
+    case "subInputFocus": return null;
+    case "subInputBlur": return null;
+    case "subInputSelect": return null;
     default:
       console.warn(`[plugin-bridge] Unhandled: ${method}`);
       return null;
