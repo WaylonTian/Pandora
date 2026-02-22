@@ -4,7 +4,7 @@ mod script;
 mod system;
 mod storage;
 
-use storage::{AppDatabase, Collection, ApiRequest, Environment, Variable, HistoryItem};
+use storage::{AppDatabase, Collection, ApiRequest, Environment, Variable, HistoryItem, Cookie};
 use db::commands::DbState;
 use std::sync::Mutex;
 use std::collections::HashMap;
@@ -100,6 +100,27 @@ fn clear_history(state: State<AppState>) -> Result<(), String> {
     state.db.lock().unwrap().clear_history().map_err(|e| e.to_string())
 }
 
+// Cookie commands
+#[tauri::command]
+fn get_cookies(state: State<AppState>, domain: Option<String>) -> Result<Vec<Cookie>, String> {
+    state.db.lock().unwrap().get_cookies(domain.as_deref()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn set_cookie(state: State<AppState>, cookie: Cookie) -> Result<(), String> {
+    state.db.lock().unwrap().set_cookie(&cookie).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_cookie(state: State<AppState>, id: i64) -> Result<(), String> {
+    state.db.lock().unwrap().delete_cookie(id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn clear_domain_cookies(state: State<AppState>, domain: String) -> Result<(), String> {
+    state.db.lock().unwrap().clear_domain_cookies(&domain).map_err(|e| e.to_string())
+}
+
 // HTTP command
 #[tauri::command]
 async fn send_http_request(
@@ -169,6 +190,7 @@ pub fn run() {
             get_environments, create_environment, set_active_environment, delete_environment,
             get_variables, save_variable, delete_variable,
             get_history, clear_history,
+            get_cookies, set_cookie, delete_cookie, clear_domain_cookies,
             send_http_request,
             run_script, list_runtimes,
             get_local_ips, get_public_ip, read_hosts_file, write_hosts_file,
