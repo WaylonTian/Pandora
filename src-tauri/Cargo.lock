@@ -3221,6 +3221,7 @@ dependencies = [
  "byteorder",
  "chrono",
  "dirs 5.0.1",
+ "flate2",
  "hex",
  "log",
  "mysql_async",

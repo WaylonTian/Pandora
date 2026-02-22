@@ -77,17 +77,26 @@ pub fn install_plugin(pkg_path: &Path, name: &str, version: &str, description: &
         if bytes.len() < 16 {
             return Err("Package file too small".into());
         }
-        // Check for ZIP magic (PK\x03\x04)
-        if bytes[0] == 0x50 && bytes[1] == 0x4B && bytes[2] == 0x03 && bytes[3] == 0x04 {
+        // Gzip magic (1f 8b) — .upx files are gzip'd asar
+        if bytes[0] == 0x1f && bytes[1] == 0x8b {
+            let decompressed = decompress_gzip(&bytes)?;
+            let tmp_asar = pkg_path.with_extension("asar.tmp");
+            fs::write(&tmp_asar, &decompressed).map_err(|e| e.to_string())?;
+            let result = super::asar::extract_asar(&tmp_asar, &dest);
+            fs::remove_file(&tmp_asar).ok();
+            result?;
+        }
+        // ZIP magic (PK\x03\x04)
+        else if bytes[0] == 0x50 && bytes[1] == 0x4B && bytes[2] == 0x03 && bytes[3] == 0x04 {
             extract_zip(pkg_path, &dest)?;
         } else {
-            // Try asar format
+            // Try asar format directly
             match super::asar::extract_asar(pkg_path, &dest) {
                 Ok(()) => {},
                 Err(e) => {
                     fs::remove_dir_all(&dest).ok();
                     return Err(format!(
-                        "Unsupported package format. Only .asar and .zip are supported (not encrypted .upxs). Error: {e}"
+                        "Unsupported package format. Only .asar, .upx (gzip'd asar), and .zip are supported (not encrypted .upxs). Error: {e}"
                     ));
                 }
             }
@@ -121,6 +130,14 @@ pub fn install_plugin(pkg_path: &Path, name: &str, version: &str, description: &
     save_registry(&registry)?;
 
     Ok(plugin)
+}
+
+fn decompress_gzip(data: &[u8]) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    let mut decoder = flate2::read::GzDecoder::new(data);
+    let mut out = Vec::new();
+    decoder.read_to_end(&mut out).map_err(|e| format!("Gzip decompression failed: {e}"))?;
+    Ok(out)
 }
 
 fn extract_zip(zip_path: &Path, dest: &Path) -> Result<(), String> {
