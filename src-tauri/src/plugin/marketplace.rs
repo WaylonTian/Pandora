@@ -32,7 +32,7 @@ struct CacheEntry<T> {
 static CACHE: std::sync::LazyLock<Mutex<MarketCache>> =
     std::sync::LazyLock::new(|| Mutex::new(MarketCache::default()));
 
-const CACHE_TTL: Duration = Duration::from_secs(300); // 5 minutes
+const CACHE_TTL: Duration = Duration::from_secs(86400); // 1 day
 
 #[derive(Default)]
 struct MarketCache {

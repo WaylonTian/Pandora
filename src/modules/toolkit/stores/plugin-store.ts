@@ -19,7 +19,7 @@ interface PluginStore {
 }
 
 // Frontend cache: avoid re-fetching same topic/search within TTL
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 1 day
 const cache = new Map<string, { data: MarketPlugin[]; at: number }>();
 
 function getCached(key: string): MarketPlugin[] | null {
