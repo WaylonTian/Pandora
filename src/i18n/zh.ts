@@ -684,6 +684,24 @@ export const zh: Record<string, string> = {
 
   // === Toolkit ===
   "toolkit.selectTool": "选择工具",
+  "toolkit.search": "搜索工具...",
+  "toolkit.plugins": "已安装插件",
+  "toolkit.managedPlugins": "管理插件",
+  "toolkit.marketplace.title": "插件市场",
+  "toolkit.marketplace.search": "搜索",
+  "toolkit.marketplace.searchPlaceholder": "搜索插件...",
+  "toolkit.marketplace.install": "安装",
+  "toolkit.marketplace.installing": "安装中...",
+  "toolkit.marketplace.installed": "已安装",
+  "toolkit.marketplace.topic.popular": "最受欢迎",
+  "toolkit.marketplace.topic.developer": "程序员必备",
+  "toolkit.marketplace.topic.productivity": "高效办公",
+  "toolkit.marketplace.topic.ai": "AI",
+  "toolkit.marketplace.topic.media": "图像视频",
+  "toolkit.marketplace.topic.system": "系统工具",
+  "toolkit.installed.empty": "暂无已安装插件，去插件市场看看吧",
+  "toolkit.installed.enabled": "启用",
+  "toolkit.installed.uninstall": "卸载",
   "toolkit.cryptoTool.md5NotSupportedOption": "MD5 (不支持)",
 
   // === Data Masking Examples ===
