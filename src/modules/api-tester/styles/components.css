@@ -415,11 +415,11 @@
   color: var(--text-muted);
 }
 
-.json-key { color: #7dd3fc; }
-.json-string { color: #86efac; }
-.json-number { color: #fde68a; }
-.json-boolean { color: #c4b5fd; }
-.json-null { color: #c4b5fd; }
+.json-key { color: var(--json-key); }
+.json-string { color: var(--json-string); }
+.json-number { color: var(--json-number); }
+.json-boolean { color: var(--json-boolean); }
+.json-null { color: var(--json-boolean); }
 .json-bracket { color: var(--text-muted); }
 .json-comma { color: var(--text-muted); }
 .json-preview { color: var(--text-muted); cursor: pointer; font-style: italic; }

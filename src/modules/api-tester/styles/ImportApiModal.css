@@ -85,7 +85,7 @@
   background: rgba(248, 81, 73, 0.1);
   border: 1px solid rgba(248, 81, 73, 0.3);
   border-radius: var(--radius-sm);
-  color: #f85149;
+  color: var(--status-fail);
   font-size: 12px;
 }
 
@@ -169,11 +169,11 @@
   font-weight: 600;
 }
 
-.preview-request .method.get { background: rgba(46, 160, 67, 0.2); color: #2ea043; }
-.preview-request .method.post { background: rgba(210, 153, 34, 0.2); color: #d29922; }
-.preview-request .method.put { background: rgba(56, 139, 253, 0.2); color: #388bfd; }
-.preview-request .method.delete { background: rgba(248, 81, 73, 0.2); color: #f85149; }
-.preview-request .method.patch { background: rgba(163, 113, 247, 0.2); color: #a371f7; }
+.preview-request .method.get { background: rgba(46, 160, 67, 0.2); color: var(--status-pass); }
+.preview-request .method.post { background: rgba(210, 153, 34, 0.2); color: var(--status-warn); }
+.preview-request .method.put { background: rgba(56, 139, 253, 0.2); color: var(--status-info); }
+.preview-request .method.delete { background: rgba(248, 81, 73, 0.2); color: var(--status-fail); }
+.preview-request .method.patch { background: rgba(163, 113, 247, 0.2); color: var(--json-boolean); }
 
 .preview-request .path {
   color: var(--text-secondary);

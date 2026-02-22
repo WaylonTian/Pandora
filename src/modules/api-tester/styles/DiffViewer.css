@@ -74,8 +74,8 @@
   border-bottom: 1px solid var(--border);
 }
 
-.stat-added { color: #2ea043; }
-.stat-removed { color: #f85149; }
+.stat-added { color: var(--status-pass); }
+.stat-removed { color: var(--status-fail); }
 
 .diff-content {
   flex: 1;
@@ -115,8 +115,8 @@
   color: var(--text-muted);
 }
 
-.diff-line.added .line-prefix { color: #2ea043; }
-.diff-line.removed .line-prefix { color: #f85149; }
+.diff-line.added .line-prefix { color: var(--status-pass); }
+.diff-line.removed .line-prefix { color: var(--status-fail); }
 
 .line-content {
   flex: 1;
@@ -155,4 +155,4 @@
   font-size: 16px;
   padding: 0 4px;
 }
-.snapshot-delete:hover { color: #f85149; }
+.snapshot-delete:hover { color: var(--status-fail); }

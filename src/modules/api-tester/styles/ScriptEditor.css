@@ -81,8 +81,8 @@
 .test-result.fail { background: rgba(248, 81, 73, 0.1); }
 
 .test-icon { font-weight: bold; }
-.test-result.pass .test-icon { color: #2ea043; }
-.test-result.fail .test-icon { color: #f85149; }
+.test-result.pass .test-icon { color: var(--status-pass); }
+.test-result.fail .test-icon { color: var(--status-fail); }
 
 .test-name { flex: 1; }
-.test-error { color: #f85149; font-size: 11px; }
+.test-error { color: var(--status-fail); font-size: 11px; }
