@@ -17,7 +17,14 @@ export function PluginContainer({ plugin, featureCode }: Props) {
     (async () => {
       // Write shim JS to plugin dir
       const port: number = await invoke("plugin_server_port");
-      const shim = generateShimScript(plugin.id, port);
+      // Pre-fetch paths for sync getPath API
+      const pathNames = ["home", "desktop", "downloads", "documents", "temp", "appData"];
+      const paths: Record<string, string> = {};
+      for (const n of pathNames) {
+        try { paths[n] = await invoke("plugin_get_path", { name: n }) as string; } catch {}
+      }
+      const pathsScript = `window.__utoolsPaths = ${JSON.stringify(paths)};\n`;
+      const shim = pathsScript + generateShimScript(plugin.id, port);
       await invoke("plugin_write_shim", { pluginId: plugin.id, content: shim });
 
       // Get local server port

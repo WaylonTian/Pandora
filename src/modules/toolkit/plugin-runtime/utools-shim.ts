@@ -115,7 +115,10 @@ export function generateShimScript(pluginId: string, serverPort?: number): strin
     shellShowItemInFolder: (path) => callHost('shellShowItemInFolder', [path]),
 
     showNotification: (text) => callHost('showNotification', [text]),
-    getPath: (name) => callHost('getPath', [name]),
+    getPath: (name) => {
+      const paths = window.__utoolsPaths || {};
+      return paths[name] || '';
+    },
     getUser: () => ({ avatar: '', nickname: 'Pandora User', type: 'member' }),
     isDarkColors: () => document.documentElement.classList.contains('dark'),
     getAppVersion: () => '0.1.0',
