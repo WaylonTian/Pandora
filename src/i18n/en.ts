@@ -695,6 +695,11 @@ export const en: Record<string, string> = {
   "toolkit.installed.empty": "No plugins installed. Browse the marketplace to get started.",
   "toolkit.installed.enabled": "Enabled",
   "toolkit.installed.uninstall": "Uninstall",
+  "toolkit.regexTool.title": "Regex Tester",
+  "toolkit.regexTool.inputPlaceholder": "Enter test string...",
+  "toolkit.jwtTool.title": "JWT Decoder",
+  "toolkit.colorTool.title": "Color Converter",
+  "toolkit.baseConverterTool.title": "Base Converter",
   "toolkit.cryptoTool.md5NotSupportedOption": "MD5 (Not Supported)",
 
   // === Data Masking Examples ===

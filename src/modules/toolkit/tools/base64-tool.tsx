@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useT } from '@/i18n';
+import { CopyButton } from '../components/CopyButton';
 
 export function Base64Tool() {
   const t = useT();
@@ -39,12 +40,15 @@ export function Base64Tool() {
         onChange={e => setInput(e.target.value)}
         placeholder={t("toolkit.base64Tool.inputPlaceholder")}
       />
-      <textarea
-        className="w-full h-32 p-2 border rounded bg-background text-foreground font-mono text-sm resize-y"
-        value={output}
-        readOnly
-        placeholder={t("toolkit.base64Tool.outputPlaceholder")}
-      />
+      <div className="relative">
+        <textarea
+          className="w-full h-32 p-2 border rounded bg-background text-foreground font-mono text-sm resize-y"
+          value={output}
+          readOnly
+          placeholder={t("toolkit.base64Tool.outputPlaceholder")}
+        />
+        {output && <div className="absolute top-2 right-2"><CopyButton text={output} /></div>}
+      </div>
     </div>
   );
 }

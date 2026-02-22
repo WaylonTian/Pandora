@@ -702,6 +702,11 @@ export const zh: Record<string, string> = {
   "toolkit.installed.empty": "暂无已安装插件，去插件市场看看吧",
   "toolkit.installed.enabled": "启用",
   "toolkit.installed.uninstall": "卸载",
+  "toolkit.regexTool.title": "正则测试",
+  "toolkit.regexTool.inputPlaceholder": "输入测试文本...",
+  "toolkit.jwtTool.title": "JWT 解码",
+  "toolkit.colorTool.title": "颜色转换",
+  "toolkit.baseConverterTool.title": "进制转换",
   "toolkit.cryptoTool.md5NotSupportedOption": "MD5 (不支持)",
 
   // === Data Masking Examples ===
