@@ -94,7 +94,7 @@ fn handle(mut stream: std::net::TcpStream, plugins_dir: &PathBuf) {
                 let shim_tag = if shim_path.exists() {
                     format!("<script src=\"__shim__.js\"></script>")
                 } else { String::new() };
-                let inject = format!("<script>window.onerror=function(m,u,l){{document.title='ERR:'+m+' L'+l}}</script>{}{}", shim_tag, preload_tag);
+                let inject = format!("{}{}", shim_tag, preload_tag);
                 let injected = if html.contains("<head>") {
                     html.replacen("<head>", &format!("<head>{}", inject), 1)
                 } else {
