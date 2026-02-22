@@ -23,6 +23,7 @@ import { Icons } from './components/Icons';
 import { generateCurl } from './utils/codegen';
 import { executeScript, ScriptContext, TestResult } from './utils/scripting';
 import { ParsedCollection } from './utils/openapi';
+import { resolveTemplate, resolveHeaders } from './utils/template';
 import './styles/api-tester.css';
 import './styles/components.css';
 
@@ -239,12 +240,21 @@ export function ApiTester() {
       body = formData.filter(f => f.enabled && f.key).map(f => `${encodeURIComponent(f.key)}=${encodeURIComponent(f.value)}`).join('&');
     }
 
+    // Resolve {{variable}} templates
+    const envVars = store.variables.reduce((acc, v) => {
+      if (v.enabled) acc[v.key] = v.value;
+      return acc;
+    }, {} as Record<string, string>);
+    finalUrl = resolveTemplate(finalUrl, envVars);
+    body = resolveTemplate(body, envVars);
+    const resolvedHeaders = resolveHeaders(headersObj, envVars);
+
     // Use store to send request
     store.setActiveRequest({
       name: activeTab.name,
       method: activeTab.method,
       url: finalUrl,
-      headers: JSON.stringify(headersObj),
+      headers: JSON.stringify(resolvedHeaders),
       body,
       body_type: bodyType,
     });
@@ -453,8 +463,17 @@ export function ApiTester() {
               <select className="method-select" value={activeTab.method} onChange={e => updateTab({ method: e.target.value })}>
                 {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <input className="url-input" placeholder={t('apiTester.enterUrl')} value={activeTab.url}
-                onChange={e => updateTab({ url: e.target.value })} onKeyDown={e => e.key === 'Enter' && handleSend()} />
+              <div className="url-input-wrapper">
+                <div className="url-highlight" aria-hidden="true">
+                  {(activeTab.url || '').split(/(\{\{\w+\}\})/g).map((part, i) =>
+                    part.match(/^\{\{\w+\}\}$/)
+                      ? <span key={i} className="url-var">{part}</span>
+                      : <span key={i} className="url-text">{part}</span>
+                  )}
+                </div>
+                <input className="url-input" placeholder={t('apiTester.enterUrl')} value={activeTab.url}
+                  onChange={e => updateTab({ url: e.target.value })} onKeyDown={e => e.key === 'Enter' && handleSend()} />
+              </div>
               <button className="send-btn" onClick={handleSend} disabled={store.loading}>{store.loading ? t('apiTester.sending') : t('apiTester.send')}</button>
               <button className="icon-btn" onClick={handleSaveRequest} title={t('apiTester.save')}>{Icons.save}</button>
             </div>

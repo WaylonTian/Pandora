@@ -258,6 +258,32 @@
   transition: var(--transition-fast);
 }
 
+.url-input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.url-input-wrapper .url-input {
+  width: 100%;
+  position: relative;
+  background: var(--bg-tertiary);
+  caret-color: var(--text-primary);
+}
+
+.url-highlight {
+  position: absolute;
+  inset: 0;
+  padding: 9px 14px;
+  pointer-events: none;
+  white-space: pre;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+.url-highlight .url-text { visibility: hidden; }
+.url-highlight .url-var { color: #f97316; font-weight: 600; }
+
 .url-input:focus {
   outline: none;
   border-color: var(--gm-accent);
