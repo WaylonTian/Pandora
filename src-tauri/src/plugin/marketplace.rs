@@ -30,7 +30,11 @@ struct CacheEntry<T> {
 }
 
 static CACHE: std::sync::LazyLock<Mutex<MarketCache>> =
-    std::sync::LazyLock::new(|| Mutex::new(MarketCache::default()));
+    std::sync::LazyLock::new(|| Mutex::new(MarketCache {
+        topics: HashMap::new(),
+        searches: HashMap::new(),
+        upxs_names: load_blocklist(),
+    }));
 
 const CACHE_TTL: Duration = Duration::from_secs(86400); // 1 day
 
@@ -42,14 +46,35 @@ struct MarketCache {
     upxs_names: HashSet<String>,
 }
 
+fn blocklist_path() -> std::path::PathBuf {
+    super::manager::plugins_dir().join("upxs_blocklist.json")
+}
+
+fn load_blocklist() -> HashSet<String> {
+    std::fs::read_to_string(blocklist_path()).ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default()
+}
+
+fn save_blocklist(names: &HashSet<String>) {
+    let dir = super::manager::plugins_dir();
+    std::fs::create_dir_all(&dir).ok();
+    if let Ok(json) = serde_json::to_string(names) {
+        std::fs::write(blocklist_path(), json).ok();
+    }
+}
+
 fn filter_upxs(plugins: Vec<MarketPlugin>, blocked: &HashSet<String>) -> Vec<MarketPlugin> {
     if blocked.is_empty() { return plugins; }
     plugins.into_iter().filter(|p| !blocked.contains(&p.name)).collect()
 }
 
-/// Mark a plugin name as .upxs (will be hidden from future listings)
+/// Mark a plugin name as .upxs (will be hidden from future listings, persisted to disk)
 pub fn mark_upxs(name: &str) {
-    if let Ok(mut c) = CACHE.lock() { c.upxs_names.insert(name.to_string()); }
+    if let Ok(mut c) = CACHE.lock() {
+        c.upxs_names.insert(name.to_string());
+        save_blocklist(&c.upxs_names);
+    }
 }
 
 pub async fn search_plugins(query: &str) -> Result<Vec<MarketPlugin>, String> {
