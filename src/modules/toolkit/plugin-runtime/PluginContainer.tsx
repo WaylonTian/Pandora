@@ -18,14 +18,17 @@ export function PluginContainer({ plugin, featureCode }: Props) {
     // Set up bridge FIRST, before iframe starts loading
     const cleanup = createPluginBridge({
       pluginId: plugin.id,
+      iframeRef,
       onReady: () => {
-        if (iframeRef.current) {
-          sendPluginEvent(iframeRef.current, "pluginEnter", {
-            code: featureCode || plugin.manifest.features[0]?.code || "",
-            type: "text",
-            payload: "",
-          }, plugin.id);
-        }
+        setTimeout(() => {
+          if (iframeRef.current) {
+            sendPluginEvent(iframeRef.current, "pluginEnter", {
+              code: featureCode || plugin.manifest.features[0]?.code || "",
+              type: "text",
+              payload: "",
+            }, plugin.id);
+          }
+        }, 50);
       },
       onResize: () => {},
     });

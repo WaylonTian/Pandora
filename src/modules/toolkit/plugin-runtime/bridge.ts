@@ -2,11 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 
 interface BridgeOptions {
   pluginId: string;
+  iframeRef: React.RefObject<HTMLIFrameElement | null>;
   onReady?: () => void;
   onResize?: (height: number) => void;
 }
 
-export function createPluginBridge({ pluginId, onReady, onResize }: BridgeOptions) {
+export function createPluginBridge({ pluginId, iframeRef, onReady, onResize }: BridgeOptions) {
   const handler = async (e: MessageEvent) => {
     const msg = e.data;
     if (!msg || msg.pluginId !== pluginId) return;
@@ -18,9 +19,9 @@ export function createPluginBridge({ pluginId, onReady, onResize }: BridgeOption
       const { id, method, args } = msg;
       try {
         const result = await routeCall(pluginId, method, args);
-        (e.source as WindowProxy)?.postMessage({ type: "utools-response", id, result }, { targetOrigin: "*" });
+        iframeRef.current?.contentWindow?.postMessage({ type: "utools-response", id, result }, "*");
       } catch (err: any) {
-        (e.source as WindowProxy)?.postMessage({ type: "utools-response", id, error: err.message || String(err) }, { targetOrigin: "*" });
+        iframeRef.current?.contentWindow?.postMessage({ type: "utools-response", id, error: err.message || String(err) }, "*");
       }
     }
   };
