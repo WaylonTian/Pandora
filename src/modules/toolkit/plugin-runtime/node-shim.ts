@@ -142,37 +142,50 @@ export function generateNodeShimScript(pluginId: string, serverPort?: number): s
   };
 
   window.process = { platform: modules.os.platform(), env: {}, versions: { node: '16.0.0' }, once: () => {} };
-  window.Buffer = window.Buffer || {
-    from: (d, e) => {
-      if (typeof d === 'string' && e === 'base64') {
-        const bin = atob(d);
-        const arr = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-        arr.toString = function(enc) {
-          if (enc === 'hex') return Array.from(this).map(b => b.toString(16).padStart(2,'0')).join('');
-          return new TextDecoder().decode(this);
-        };
-        return arr;
-      }
-      if (d instanceof ArrayBuffer || d instanceof Uint8Array) {
-        const arr = d instanceof Uint8Array ? d : new Uint8Array(d);
-        arr.toString = function(enc) {
-          if (enc === 'hex') return Array.from(this).map(b => b.toString(16).padStart(2,'0')).join('');
-          if (enc === 'base64') {
-            let b = ''; const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-            for (let i = 0; i < this.length; i += 3) {
-              const a0 = this[i], a1 = this[i+1] || 0, a2 = this[i+2] || 0;
-              b += c[a0>>2] + c[((a0&3)<<4)|(a1>>4)] + (i+1<this.length ? c[((a1&15)<<2)|(a2>>6)] : '=') + (i+2<this.length ? c[a2&63] : '=');
-            }
-            return b;
+  window.Buffer = window.Buffer || function BufferShim(d, e) {
+    if (!(this instanceof BufferShim)) return BufferShim.from(d, e);
+    const arr = BufferShim.from(d, e);
+    Object.setPrototypeOf(arr, BufferShim.prototype);
+    return arr;
+  };
+  window.Buffer.from = (d, e) => {
+    if (typeof d === 'string' && e === 'base64') {
+      const bin = atob(d);
+      const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      arr.toString = function(enc) {
+        if (enc === 'hex') return Array.from(this).map(b => b.toString(16).padStart(2,'0')).join('');
+        return new TextDecoder().decode(this);
+      };
+      return arr;
+    }
+    if (d instanceof ArrayBuffer || d instanceof Uint8Array) {
+      const arr = d instanceof Uint8Array ? d : new Uint8Array(d);
+      arr.toString = function(enc) {
+        if (enc === 'hex') return Array.from(this).map(b => b.toString(16).padStart(2,'0')).join('');
+        if (enc === 'base64') {
+          let b = ''; const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+          for (let i = 0; i < this.length; i += 3) {
+            const a0 = this[i], a1 = this[i+1] || 0, a2 = this[i+2] || 0;
+            b += c[a0>>2] + c[((a0&3)<<4)|(a1>>4)] + (i+1<this.length ? c[((a1&15)<<2)|(a2>>6)] : '=') + (i+2<this.length ? c[a2&63] : '=');
           }
-          return new TextDecoder().decode(this);
-        };
-        return arr;
-      }
-      return d;
-    },
-    isBuffer: (o) => o instanceof Uint8Array,
+          return b;
+        }
+        return new TextDecoder().decode(this);
+      };
+      return arr;
+    }
+    if (typeof d === 'number') return new Uint8Array(d);
+    return d;
+  };
+  window.Buffer.isBuffer = (o) => o instanceof Uint8Array;
+  window.Buffer.alloc = (n) => new Uint8Array(n);
+  window.Buffer.concat = (list) => {
+    const total = list.reduce((s, b) => s + b.length, 0);
+    const result = new Uint8Array(total);
+    let offset = 0;
+    for (const b of list) { result.set(b, offset); offset += b.length; }
+    return result;
   };
 })();
 `;

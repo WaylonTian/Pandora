@@ -3,8 +3,9 @@
 
 import { generateNodeShimScript } from "./node-shim";
 
-export function generateShimScript(pluginId: string, serverPort?: number): string {
+export function generateShimScript(pluginId: string, serverPort?: number, features?: any[]): string {
   const nodeShim = generateNodeShimScript(pluginId, serverPort);
+  const featuresJson = JSON.stringify(features || []);
   const utoolsShim = `
 (function() {
   let _callId = 0;
@@ -12,6 +13,7 @@ export function generateShimScript(pluginId: string, serverPort?: number): strin
   window._utoolsCallId = 0;
   window._utoolsPending = _pending;
   const _listeners = { pluginEnter: [], pluginOut: [], dbPull: [] };
+  const _features = ${featuresJson};
 
   function callHost(method, args) {
     return new Promise((resolve, reject) => {
@@ -152,9 +154,9 @@ export function generateShimScript(pluginId: string, serverPort?: number): strin
       }
       return { goto: (...a) => { const c = chain(); return c.goto(...a); } };
     })(),
-    getFeatures: () => callHost('getFeatures'),
-    setFeature: (feature) => callHost('setFeature', [feature]),
-    removeFeature: (code) => callHost('removeFeature', [code]),
+    getFeatures: () => _features,
+    setFeature: (feature) => { const i = _features.findIndex(f => f.code === feature.code); if (i >= 0) _features[i] = feature; else _features.push(feature); },
+    removeFeature: (code) => { const i = _features.findIndex(f => f.code === code); if (i >= 0) _features.splice(i, 1); },
     simulateKeyboardTap: (key, ...mods) => callHost('simulateKeyboardTap', [key, ...mods]),
     simulateMouseMove: (x, y) => callHost('simulateMouseMove', [x, y]),
     simulateMouseClick: (x, y) => callHost('simulateMouseClick', [x, y]),

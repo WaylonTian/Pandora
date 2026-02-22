@@ -39,7 +39,7 @@ export function PluginContainer({ plugin, featureCode }: Props) {
         try { paths[n] = await invoke("plugin_get_path", { name: n }) as string; } catch {}
       }
       const pathsScript = `window.__utoolsPaths = ${JSON.stringify(paths)};\n`;
-      const shim = pathsScript + generateShimScript(plugin.id, port);
+      const shim = pathsScript + generateShimScript(plugin.id, port, plugin.manifest.features);
       await invoke("plugin_write_shim", { pluginId: plugin.id, content: shim });
 
       const base = `http://127.0.0.1:${port}/${encodeURIComponent(plugin.id)}`;
