@@ -3,6 +3,7 @@ mod db;
 mod script;
 mod system;
 mod storage;
+mod plugin;
 
 use storage::{AppDatabase, Collection, ApiRequest, Environment, Variable, HistoryItem, Cookie};
 use db::commands::DbState;
@@ -246,6 +247,9 @@ fn write_hosts_file(content: String) -> Result<(), String> {
 pub fn run() {
     let db = AppDatabase::new().expect("Failed to initialize database");
 
+    // Start local HTTP server for plugin files
+    plugin::server::start_server(plugin::manager::plugins_dir());
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -286,7 +290,72 @@ pub fn run() {
             db::commands::delete_favorite,
             db::commands::explain_query,
             db::commands::batch_import,
-            db::commands::get_table_stats
+            db::commands::get_table_stats,
+            plugin::commands::plugin_list,
+            plugin::commands::plugin_get,
+            plugin::commands::plugin_uninstall,
+            plugin::commands::plugin_toggle,
+            plugin::commands::plugin_install_from_market,
+            plugin::commands::plugin_install_from_file,
+            plugin::commands::plugin_db_put,
+            plugin::commands::plugin_db_get,
+            plugin::commands::plugin_db_remove,
+            plugin::commands::plugin_db_all,
+            plugin::commands::plugin_db_put_attachment,
+            plugin::commands::plugin_db_get_attachment,
+            plugin::commands::marketplace_search,
+            plugin::commands::marketplace_topic,
+            plugin::commands::marketplace_detail,
+            plugin::commands::plugin_read_file,
+            plugin::commands::plugin_write_shim,
+            plugin::commands::plugin_server_port,
+            plugin::commands::plugin_get_path,
+            plugin::commands::plugin_shell_show_item,
+            plugin::commands::plugin_show_open_dialog,
+            plugin::commands::plugin_screen_capture,
+            plugin::commands::plugin_show_save_dialog,
+            plugin::commands::plugin_shell_trash_item,
+            plugin::commands::plugin_shell_beep,
+            plugin::commands::plugin_get_native_id,
+            plugin::commands::plugin_get_app_name,
+            plugin::commands::plugin_is_dev,
+            plugin::commands::plugin_get_file_icon,
+            plugin::commands::plugin_get_copyed_files,
+            plugin::commands::plugin_paste_file,
+            plugin::commands::plugin_paste_image,
+            plugin::commands::plugin_simulate_keyboard_tap,
+            plugin::commands::plugin_simulate_mouse_move,
+            plugin::commands::plugin_simulate_mouse_click,
+            plugin::commands::plugin_simulate_mouse_double_click,
+            plugin::commands::plugin_simulate_mouse_right_click,
+            plugin::commands::plugin_get_primary_display,
+            plugin::commands::plugin_get_all_displays,
+            plugin::commands::plugin_get_cursor_screen_point,
+            plugin::commands::plugin_screen_color_pick,
+            plugin::commands::plugin_get_display_nearest_point,
+            plugin::commands::plugin_screen_to_dip_point,
+            plugin::commands::plugin_dip_to_screen_point,
+            plugin::commands::sharp_metadata,
+            plugin::commands::sharp_resize,
+            plugin::commands::sharp_rotate,
+            plugin::commands::sharp_flip,
+            plugin::commands::sharp_crop,
+            plugin::commands::sharp_blur,
+            plugin::commands::sharp_grayscale,
+            plugin::commands::sharp_to_format,
+            plugin::commands::sharp_to_base64,
+            plugin::commands::ffmpeg_is_available,
+            plugin::commands::ffmpeg_run,
+            plugin::commands::ffmpeg_probe,
+            plugin::commands::ubrowser_run,
+            plugin::node_bridge::node_fs_read_file,
+            plugin::node_bridge::node_fs_write_file,
+            plugin::node_bridge::node_fs_mkdir,
+            plugin::node_bridge::node_fs_readdir,
+            plugin::node_bridge::node_fs_unlink,
+            plugin::node_bridge::node_os_homedir,
+            plugin::node_bridge::node_os_tmpdir,
+            plugin::node_bridge::node_exec,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

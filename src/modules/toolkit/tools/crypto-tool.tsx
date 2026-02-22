@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useT } from '@/i18n';
+import { CopyButton } from '../components/CopyButton';
 
 export function CryptoTool() {
   const t = useT();
@@ -55,12 +56,15 @@ export function CryptoTool() {
         onChange={e => setInput(e.target.value)}
         placeholder={t("toolkit.cryptoTool.inputPlaceholder")}
       />
-      <textarea
-        className="w-full h-20 p-2 border rounded bg-background text-foreground font-mono text-sm resize-y"
-        value={output}
-        readOnly
-        placeholder={t("toolkit.cryptoTool.outputPlaceholder")}
-      />
+      <div className="relative">
+        <textarea
+          className="w-full h-20 p-2 border rounded bg-background text-foreground font-mono text-sm resize-y"
+          value={output}
+          readOnly
+          placeholder={t("toolkit.cryptoTool.outputPlaceholder")}
+        />
+        {output && <div className="absolute top-2 right-2"><CopyButton text={output} /></div>}
+      </div>
     </div>
   );
 }

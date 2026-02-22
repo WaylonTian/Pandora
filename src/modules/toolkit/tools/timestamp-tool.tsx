@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useT } from '@/i18n';
+import { CopyButton } from '../components/CopyButton';
 
 export function TimestampTool() {
   const t = useT();
@@ -54,8 +55,9 @@ export function TimestampTool() {
         onChange={e => setInput(e.target.value)}
         placeholder={t("toolkit.timestampTool.inputPlaceholder")}
       />
-      <div className="p-2 border rounded bg-muted font-mono text-sm min-h-[2.5rem]">
+      <div className="relative p-2 border rounded bg-muted font-mono text-sm min-h-[2.5rem]">
         {output || t("toolkit.timestampTool.outputPlaceholder")}
+        {output && <div className="absolute top-2 right-2"><CopyButton text={output} /></div>}
       </div>
     </div>
   );

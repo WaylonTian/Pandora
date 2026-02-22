@@ -30,3 +30,12 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 async-trait = "0.1"
 hex = "0.4"
 log = "0.4"
+byteorder = "1"
+urlencoding = "2"
+zip = "2"
+flate2 = "1"
+base64 = "0.22"
+image = "0.25"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser", "windef", "wingdi", "winbase", "shellapi", "dwmapi", "hidpi"] }

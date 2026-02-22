@@ -1,5 +1,11 @@
 # AGENTS
 
+## Build & Run Rules
+
+- **Compile and run Tauri/Rust**: Always use Windows (PowerShell/cmd via `powershell.exe` or `cmd.exe`). The WSL environment lacks GTK/WebKit system libraries required for Tauri builds.
+- **UI testing (Playwright)**: Use WSL.
+- The project lives at `D:\workspace\pandora` on Windows, accessible as `/mnt/d/workspace/pandora` from WSL.
+
 <skills_system priority="1">
 
 ## Available Skills
