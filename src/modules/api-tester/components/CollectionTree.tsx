@@ -19,8 +19,6 @@ function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, togg
   collapsedSet: Set<number>;
   toggleCollapse: (id: number) => void;
 }) {
-  const t = useT();
-  const store = useStore();
   const isCollapsed = node.collection.id ? collapsedSet.has(node.collection.id) : false;
 
   return (
@@ -28,10 +26,7 @@ function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, togg
       <div className="tree-item collection-item"
         style={{ paddingLeft: 10 + node.depth * 16 }}
         onContextMenu={e => node.collection.id && onContextMenu(e, 'collection', node.collection.id)}
-        onDoubleClick={() => {
-          const n = prompt(t('apiTester.renamePrompt'), node.collection.name);
-          if (n && node.collection.id) store.renameCollection(node.collection.id, n);
-        }}>
+        onDoubleClick={() => node.collection.id && toggleCollapse(node.collection.id)}>
         <span className={`collapse-icon ${isCollapsed ? 'collapsed' : ''}`}
           onClick={() => node.collection.id && toggleCollapse(node.collection.id)}>▶</span>
         {Icons.folder}
@@ -64,7 +59,7 @@ export function CollectionTree({ onOpenRequest, onContextMenu }: Props) {
   const t = useT();
   const store = useStore();
   const [collapsedSet, setCollapsedSet] = useState<Set<number>>(new Set());
-  const [newName, setNewName] = useState('');
+  const [search, setSearch] = useState('');
 
   const tree = buildCollectionTree(store.collections, store.requests);
   const orphanRequests = store.requests.filter(r => !r.collection_id);
@@ -77,23 +72,44 @@ export function CollectionTree({ onOpenRequest, onContextMenu }: Props) {
     });
   };
 
+  const matchesSearch = (name: string) => !search || name.toLowerCase().includes(search.toLowerCase());
+
+  const filterTree = (nodes: CollectionTreeNode[]): CollectionTreeNode[] => {
+    if (!search) return nodes;
+    return nodes.map(node => {
+      const filteredChildren = filterTree(node.children);
+      const filteredRequests = node.requests.filter(r => matchesSearch(r.name) || matchesSearch(r.url));
+      if (filteredChildren.length || filteredRequests.length || matchesSearch(node.collection.name)) {
+        return { ...node, children: filteredChildren, requests: filteredRequests.length || matchesSearch(node.collection.name) ? (filteredRequests.length ? filteredRequests : node.requests) : filteredRequests };
+      }
+      return null;
+    }).filter(Boolean) as CollectionTreeNode[];
+  };
+
+  const filteredTree = filterTree(tree);
+  const filteredOrphans = orphanRequests.filter(r => matchesSearch(r.name) || matchesSearch(r.url));
+
+  const handleAddCollection = () => {
+    const name = prompt(t('apiTester.newCollection'));
+    if (name?.trim()) store.createCollection(name.trim());
+  };
+
   return (
     <>
       <div className="sidebar-header">
         <span className="sidebar-title">{t('apiTester.collections')}</span>
+        <button className="icon-btn" onClick={handleAddCollection} title={t('apiTester.newCollection')}>+</button>
       </div>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-        <input className="kv-input" placeholder={t('apiTester.newCollection')} value={newName}
-          onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) { store.createCollection(newName.trim()); setNewName(''); } }} />
-        <button className="icon-btn" onClick={() => { if (newName.trim()) { store.createCollection(newName.trim()); setNewName(''); } }}>+</button>
+      <div style={{ marginBottom: 8 }}>
+        <input className="kv-input" placeholder={t('apiTester.searchPlaceholder')} value={search}
+          onChange={e => setSearch(e.target.value)} />
       </div>
-      {tree.map(node => (
+      {filteredTree.map(node => (
         <CollectionNode key={node.collection.id} node={node}
           onOpenRequest={onOpenRequest} onContextMenu={onContextMenu}
           collapsedSet={collapsedSet} toggleCollapse={toggleCollapse} />
       ))}
-      {orphanRequests.map(req => (
+      {filteredOrphans.map(req => (
         <div key={req.id} className="tree-item" onClick={() => onOpenRequest(req)}
           onContextMenu={e => req.id && onContextMenu(e, 'request', req.id)}>
           <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>

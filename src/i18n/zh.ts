@@ -451,6 +451,7 @@ export const zh: Record<string, string> = {
   "apiTester.collections": "集合",
   "apiTester.history": "历史",
   "apiTester.newCollection": "新建集合...",
+  "apiTester.searchPlaceholder": "搜索请求...",
   "apiTester.new": "+ 新建",
   "apiTester.clear": "清除",
 

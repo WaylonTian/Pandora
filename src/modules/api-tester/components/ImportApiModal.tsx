@@ -18,7 +18,7 @@ export function ImportApiModal({ onClose, onImport }: Props) {
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<ParsedCollection | null>(null);
-  const [importMode, setImportMode] = useState<ImportMode>('paste');
+  const [importMode, setImportMode] = useState<ImportMode>('url');
   const [swaggerUrl, setSwaggerUrl] = useState('');
   const [fetching, setFetching] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -102,16 +102,31 @@ export function ImportApiModal({ onClose, onImport }: Props) {
           </div>
 
           <div className="import-mode-tabs">
+            <button className={`import-mode-tab ${importMode === 'url' ? 'active' : ''}`} onClick={() => setImportMode('url')}>
+              {t('importApiModal.tabUrl')}
+            </button>
             <button className={`import-mode-tab ${importMode === 'paste' ? 'active' : ''}`} onClick={() => setImportMode('paste')}>
               {t('importApiModal.tabPaste')}
             </button>
             <button className={`import-mode-tab ${importMode === 'file' ? 'active' : ''}`} onClick={() => setImportMode('file')}>
               {t('importApiModal.tabFile')}
             </button>
-            <button className={`import-mode-tab ${importMode === 'url' ? 'active' : ''}`} onClick={() => setImportMode('url')}>
-              {t('importApiModal.tabUrl')}
-            </button>
           </div>
+
+          {importMode === 'url' && (
+            <div className="url-import">
+              <input
+                className="url-input"
+                placeholder="http://dev-centralapi.yamibuy.tech/so/v2/api-docs"
+                value={swaggerUrl}
+                onChange={e => setSwaggerUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleFetchUrl()}
+              />
+              <button className="parse-btn" onClick={handleFetchUrl} disabled={fetching || !swaggerUrl}>
+                {fetching ? t('importApiModal.fetching') : t('importApiModal.fetchAndParse')}
+              </button>
+            </div>
+          )}
 
           {importMode === 'paste' && (
             <>
@@ -133,21 +148,6 @@ export function ImportApiModal({ onClose, onImport }: Props) {
             <div className="import-actions">
               <input type="file" ref={fileRef} accept=".json,.yaml,.yml" onChange={handleFile} style={{ display: 'none' }} />
               <button onClick={() => fileRef.current?.click()}>{t('importApiModal.chooseFile')}</button>
-            </div>
-          )}
-
-          {importMode === 'url' && (
-            <div className="url-import">
-              <input
-                className="url-input"
-                placeholder="https://petstore.swagger.io/v2/swagger.json"
-                value={swaggerUrl}
-                onChange={e => setSwaggerUrl(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleFetchUrl()}
-              />
-              <button className="parse-btn" onClick={handleFetchUrl} disabled={fetching || !swaggerUrl}>
-                {fetching ? t('importApiModal.fetching') : t('importApiModal.fetchAndParse')}
-              </button>
             </div>
           )}
 

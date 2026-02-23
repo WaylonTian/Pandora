@@ -399,10 +399,17 @@ export function ApiTester() {
     for (const folder of collection.folders) {
       const folderId = await store.createCollection(folder.name, colId);
       for (const req of folder.requests) {
+        // Build URL with query params
+        let url = req.path;
+        const queryParams = req.params.filter(p => p.enabled && p.key);
+        if (queryParams.length > 0) {
+          const qs = queryParams.map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&');
+          url += (url.includes('?') ? '&' : '?') + qs;
+        }
         await store.saveRequest({
           name: req.name,
           method: req.method,
-          url: req.path,
+          url,
           headers: JSON.stringify(Object.fromEntries(req.headers.filter(h => h.enabled).map(h => [h.key, h.value]))),
           body: req.body,
           body_type: req.bodyType,

@@ -444,6 +444,7 @@ export const en: Record<string, string> = {
   "apiTester.collections": "Collections",
   "apiTester.history": "History",
   "apiTester.newCollection": "New collection...",
+  "apiTester.searchPlaceholder": "Search requests...",
   "apiTester.new": "+ New",
   "apiTester.clear": "Clear",
 
