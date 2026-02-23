@@ -28,6 +28,7 @@ export const zh: Record<string, string> = {
   "importApiModal.fetching": "获取中...",
   "importApiModal.fetchAndParse": "获取并解析",
   "importApiModal.importing": "导入中...",
+  "importApiModal.duplicateCollection": "集合「{name}」已存在，请先删除后再导入",
   "collectionRunner.collection": "集合:",
   "collectionRunner.iterations": "迭代:",
   "collectionRunner.delay": "延迟 (ms):",

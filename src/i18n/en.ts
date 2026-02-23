@@ -28,6 +28,7 @@ export const en: Record<string, string> = {
   "importApiModal.fetching": "Fetching...",
   "importApiModal.fetchAndParse": "Fetch & Parse",
   "importApiModal.importing": "Importing...",
+  "importApiModal.duplicateCollection": "Collection \"{name}\" already exists. Please delete it first.",
   "collectionRunner.collection": "Collection:",
   "collectionRunner.iterations": "Iterations:",
   "collectionRunner.delay": "Delay (ms):",

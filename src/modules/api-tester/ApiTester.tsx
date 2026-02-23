@@ -93,7 +93,8 @@ export function ApiTester() {
   const autoSave = (requestId: number, data: any) => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = window.setTimeout(() => {
-      store.saveRequest({ id: requestId, ...data });
+      const existing = store.requests.find(r => r.id === requestId);
+      store.saveRequest({ id: requestId, collection_id: existing?.collection_id, ...data });
     }, 500);
   };
 
@@ -332,8 +333,10 @@ export function ApiTester() {
 
   const handleSaveRequest = async () => {
     if (!activeTab) return;
+    const existing = activeTab.requestId ? store.requests.find(r => r.id === activeTab.requestId) : undefined;
     const req: Request = {
       id: activeTab.requestId,
+      collection_id: existing?.collection_id,
       name: activeTab.name,
       method: activeTab.method,
       url: activeTab.url,
@@ -383,6 +386,13 @@ export function ApiTester() {
   };
 
   const handleImportApi = async (collection: ParsedCollection) => {
+    // Check for duplicate: skip if collection with same name already exists at root
+    const existing = store.collections.find(c => c.name === collection.name && !c.parent_id);
+    if (existing) {
+      alert(t('importApiModal.duplicateCollection', { name: collection.name }));
+      return;
+    }
+
     const colId = await store.createCollection(collection.name);
 
     // Create sub-collections per folder (tag)
