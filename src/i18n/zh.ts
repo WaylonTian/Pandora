@@ -573,6 +573,9 @@ export const zh: Record<string, string> = {
   "envManager.selectEnv": "选择一个环境来编辑变量",
   "envManager.orCreateNew": "或创建新环境",
   "envManager.done": "完成",
+  "envManager.filterVariables": "筛选变量",
+  "envManager.initialValue": "初始值",
+  "envManager.currentValue": "当前值",
 
   // === API Tester - WebSocket Panel ===
   "wsPanel.disconnect": "断开",

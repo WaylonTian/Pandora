@@ -12,6 +12,10 @@ function getMethodClass(method: string) {
   return `method-${method.toLowerCase()}`;
 }
 
+function DotMenu({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
+  return <button className="tree-dot-menu" onClick={e => { e.stopPropagation(); onClick(e); }}>⋯</button>;
+}
+
 function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, toggleCollapse }: {
   node: CollectionTreeNode;
   onOpenRequest: (req: Request) => void;
@@ -32,6 +36,7 @@ function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, togg
         {Icons.folder}
         <span className="name">{node.collection.name}</span>
         <span className="collection-count">{node.requests.length}</span>
+        {node.collection.id && <DotMenu onClick={e => onContextMenu(e, 'collection', node.collection.id!)} />}
       </div>
       {!isCollapsed && (
         <>
@@ -47,6 +52,7 @@ function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, togg
               onContextMenu={e => req.id && onContextMenu(e, 'request', req.id)}>
               <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>
               <span className="name">{req.name}</span>
+              {req.id && <DotMenu onClick={e => onContextMenu(e, 'request', req.id!)} />}
             </div>
           ))}
         </>
@@ -114,6 +120,7 @@ export function CollectionTree({ onOpenRequest, onContextMenu }: Props) {
           onContextMenu={e => req.id && onContextMenu(e, 'request', req.id)}>
           <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>
           <span className="name">{req.name}</span>
+          {req.id && <DotMenu onClick={e => onContextMenu(e, 'request', req.id!)} />}
         </div>
       ))}
     </>

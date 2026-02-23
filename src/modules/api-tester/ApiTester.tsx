@@ -12,6 +12,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { ImportCurlModal } from './components/ImportCurlModal';
 import { WebSocketPanel } from './components/WebSocketPanel';
 import { EnvironmentManager } from './components/EnvironmentManager';
+import { EnvironmentEditor } from './components/EnvironmentEditor';
 import { JsonTreeView } from './components/JsonTreeView';
 import { ScriptEditor } from './components/ScriptEditor';
 import { DiffViewer } from './components/DiffViewer';
@@ -534,30 +535,26 @@ export function ApiTester() {
     </div>
   );
 
+  // Get breadcrumb path for active request
+  const getBreadcrumb = () => {
+    if (!activeTab?.requestId) return null;
+    const req = store.requests.find(r => r.id === activeTab.requestId);
+    if (!req?.collection_id) return null;
+    const col = store.collections.find(c => c.id === req.collection_id);
+    return col ? col.name : null;
+  };
+
+  // Green dot indicators
+  const hasParams = params.some(p => p.key);
+  const hasHeaders = headers.some(h => h.key);
+  const hasBody = bodyType !== 'none';
+  const hasAuth = authType !== 'none';
+  const hasScripts = !!(preScript || testScript);
+  const headerCount = headers.filter(h => h.enabled && h.key).length;
+
   const mainContent = (
     <div className="main-content">
-        {/* Toolbar */}
-        <div className="toolbar">
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <button className="icon-btn" onClick={() => setShowImportCurl(true)} title={t('apiTester.importCurl')}>{Icons.import}</button>
-            <button className="icon-btn" onClick={() => setShowImportApi(true)} title={t('apiTester.importOpenApi')}>{Icons.folder}</button>
-            <button className="icon-btn" onClick={copyCurl} title={t('apiTester.copyAsCurl')}>{Icons.export}</button>
-            <button className="icon-btn" onClick={() => setShowCodeGen(true)} title={t('apiTester.generateCode')}>{Icons.code}</button>
-            <button className="icon-btn" onClick={() => setShowTools(true)} title={t('apiTester.tools')}>{Icons.tools}</button>
-            <button className="icon-btn" onClick={() => setShowWebSocket(!showWebSocket)} title={t('apiTester.webSocket')}>{Icons.websocket}</button>
-            <button className="icon-btn" onClick={() => setShowRunner(true)} title={t('apiTester.collectionRunner')}>{Icons.play}</button>
-          </div>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <select className="env-select" value={store.activeEnvId ?? ''} onChange={e => e.target.value && store.setActiveEnvironment(Number(e.target.value))}>
-              <option value="">{t('apiTester.noEnvironment')}</option>
-              {store.environments.map(env => <option key={env.id} value={env.id}>{env.name}</option>)}
-            </select>
-            <button className="icon-btn" onClick={() => setShowEnvManager(true)} title={t('apiTester.manageEnvironments')}>{Icons.env}</button>
-            <button className="icon-btn" onClick={() => setShowSettings(true)} title={t('apiTester.settings')}>{Icons.settings}</button>
-          </div>
-        </div>
-
-        {/* Tabs Bar */}
+        {/* Tabs Bar — at very top */}
         <div className="tabs-bar-wrapper">
           <button className="tabs-scroll-btn" onClick={() => { const el = document.querySelector('.tabs-bar'); if (el) el.scrollBy({ left: -150, behavior: 'smooth' }); }}>‹</button>
           <div className="tabs-bar">
@@ -577,7 +574,31 @@ export function ApiTester() {
           <WebSocketPanel />
         ) : activeTab ? (
           <>
-            {/* Request Bar */}
+            {/* Breadcrumb + Toolbar */}
+            <div className="breadcrumb-bar">
+              <div className="breadcrumb-left">
+                {getBreadcrumb() && <span className="breadcrumb-path">{getBreadcrumb()} / {activeTab.name}</span>}
+              </div>
+              <div className="breadcrumb-right">
+                <button className="icon-btn" onClick={() => setShowImportCurl(true)} title={t('apiTester.importCurl')}>{Icons.import}</button>
+                <button className="icon-btn" onClick={() => setShowImportApi(true)} title={t('apiTester.importOpenApi')}>{Icons.folder}</button>
+                <button className="icon-btn" onClick={copyCurl} title={t('apiTester.copyAsCurl')}>{Icons.export}</button>
+                <button className="icon-btn" onClick={() => setShowCodeGen(true)} title={t('apiTester.generateCode')}>{Icons.code}</button>
+                <button className="icon-btn" onClick={() => setShowTools(true)} title={t('apiTester.tools')}>{Icons.tools}</button>
+                <button className="icon-btn" onClick={() => setShowWebSocket(!showWebSocket)} title={t('apiTester.webSocket')}>{Icons.websocket}</button>
+                <button className="icon-btn" onClick={() => setShowRunner(true)} title={t('apiTester.collectionRunner')}>{Icons.play}</button>
+                <span className="breadcrumb-divider" />
+                <select className="env-select" value={store.activeEnvId ?? ''} onChange={e => e.target.value && store.setActiveEnvironment(Number(e.target.value))}>
+                  <option value="">{t('apiTester.noEnvironment')}</option>
+                  {store.environments.map(env => <option key={env.id} value={env.id}>{env.name}</option>)}
+                </select>
+                <button className="icon-btn" onClick={() => setShowEnvManager(true)} title={t('apiTester.manageEnvironments')}>{Icons.env}</button>
+                <button className="icon-btn" onClick={handleSaveRequest} title={t('apiTester.save')}>{Icons.save}</button>
+                <button className="icon-btn" onClick={() => setShowSettings(true)} title={t('apiTester.settings')}>{Icons.settings}</button>
+              </div>
+            </div>
+
+            {/* Method + URL + Send */}
             <div className="request-bar">
               <select className="method-select" value={activeTab.method} onChange={e => updateTab({ method: e.target.value })}>
                 {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
@@ -593,20 +614,30 @@ export function ApiTester() {
                 <input className="url-input" placeholder={t('apiTester.enterUrl')} value={activeTab.url}
                   onChange={e => updateTab({ url: e.target.value })} onKeyDown={e => e.key === 'Enter' && handleSend()} />
               </div>
-              <button className="send-btn" onClick={handleSend} disabled={store.loading}>{store.loading ? t('apiTester.sending') : t('apiTester.send')}</button>
-              <button className="icon-btn" onClick={handleSaveRequest} title={t('apiTester.save')}>{Icons.save}</button>
-              <button className="icon-btn" onClick={() => setShowCookieManager(true)} title="Cookies">🍪</button>
+              <button className="send-btn-primary" onClick={handleSend} disabled={store.loading}>{store.loading ? t('apiTester.sending') : t('apiTester.send')}</button>
             </div>
 
+            {/* Request config tabs with green dots */}
             <ResizableSplit
               top={
                 <div className="request-panel">
                 <div className="tabs">
-                  <button className={`tab ${requestTab === 'params' ? 'active' : ''}`} onClick={() => setRequestTab('params')}>{t('apiTester.params')}</button>
-                  <button className={`tab ${requestTab === 'headers' ? 'active' : ''}`} onClick={() => setRequestTab('headers')}>{t('apiTester.headers')}</button>
-                  <button className={`tab ${requestTab === 'body' ? 'active' : ''}`} onClick={() => setRequestTab('body')}>{t('apiTester.body')}</button>
-                  <button className={`tab ${requestTab === 'auth' ? 'active' : ''}`} onClick={() => setRequestTab('auth')}>{t('apiTester.auth')}</button>
-                  <button className={`tab ${requestTab === 'scripts' ? 'active' : ''}`} onClick={() => setRequestTab('scripts')}>{t('apiTester.scripts')}</button>
+                  <button className={`tab ${requestTab === 'params' ? 'active' : ''}`} onClick={() => setRequestTab('params')}>
+                    {t('apiTester.params')}{hasParams && <span className="tab-dot" />}
+                  </button>
+                  <button className={`tab ${requestTab === 'auth' ? 'active' : ''}`} onClick={() => setRequestTab('auth')}>
+                    {t('apiTester.auth')}{hasAuth && <span className="tab-dot" />}
+                  </button>
+                  <button className={`tab ${requestTab === 'headers' ? 'active' : ''}`} onClick={() => setRequestTab('headers')}>
+                    {t('apiTester.headers')}{headerCount > 0 && ` (${headerCount})`}{hasHeaders && <span className="tab-dot" />}
+                  </button>
+                  <button className={`tab ${requestTab === 'body' ? 'active' : ''}`} onClick={() => setRequestTab('body')}>
+                    {t('apiTester.body')}{hasBody && <span className="tab-dot" />}
+                  </button>
+                  <button className={`tab ${requestTab === 'scripts' ? 'active' : ''}`} onClick={() => setRequestTab('scripts')}>
+                    {t('apiTester.scripts')}{hasScripts && <span className="tab-dot" />}
+                  </button>
+                  <button className="icon-btn" onClick={() => setShowCookieManager(true)} style={{ marginLeft: 'auto', fontSize: 11 }}>Cookies</button>
                 </div>
                 <div className="panel-content">
                   {requestTab === 'params' && (
@@ -657,27 +688,29 @@ export function ApiTester() {
               <div className="response-panel">
                 {store.response ? (
                   <>
-                    <div className="response-status">
-                      <span className={`status-code ${store.response.status >= 200 && store.response.status < 400 ? 'success' : 'error'}`}>{store.response.status || 'Error'}</span>
-                      <span className="status-info">{store.response.time}ms</span>
-                      <span className="status-info">{(store.response.size / 1024).toFixed(2)} KB</span>
-                      <button className="icon-btn" onClick={() => navigator.clipboard.writeText(store.response?.body || '')} title={t('apiTester.copy2')}>{Icons.copy}</button>
-                    </div>
-                    <div className="tabs">
+                    <div className="tabs response-tabs-row">
                       <button className={`tab ${responseTab === 'body' ? 'active' : ''}`} onClick={() => setResponseTab('body')}>{t('apiTester.body')}</button>
                       <button className={`tab ${responseTab === 'headers' ? 'active' : ''}`} onClick={() => setResponseTab('headers')}>{t('apiTester.headers')}</button>
                       <button className={`tab ${responseTab === 'cookies' ? 'active' : ''}`} onClick={() => setResponseTab('cookies')}>{t('apiTester.cookies')}</button>
                       <button className={`tab ${responseTab === 'timing' ? 'active' : ''}`} onClick={() => setResponseTab('timing')}>{t('apiTester.timing')}</button>
                       <button className={`tab ${responseTab === 'diff' ? 'active' : ''}`} onClick={() => setResponseTab('diff')}>{t('apiTester.diff')}</button>
-                      {responseTab === 'body' && (
+                      <div className="response-status-inline">
+                        <span className={`status-code ${store.response.status >= 200 && store.response.status < 300 ? 'success' : store.response.status >= 300 && store.response.status < 400 ? 'redirect' : 'error'}`}>{store.response.status || 'Error'}</span>
+                        <span className="status-info">{store.response.time}ms</span>
+                        <span className="status-info">{(store.response.size / 1024).toFixed(2)} KB</span>
+                        <button className="icon-btn" onClick={() => navigator.clipboard.writeText(store.response?.body || '')} title={t('apiTester.copy2')}>{Icons.copy}</button>
+                      </div>
+                    </div>
+                    {responseTab === 'body' && (
+                      <div className="response-view-row">
                         <div className="response-view-toggle">
                           <button className={`view-btn ${responseView === 'pretty' ? 'active' : ''}`} onClick={() => setResponseView('pretty')}>{t('apiTester.pretty')}</button>
                           <button className={`view-btn ${responseView === 'raw' ? 'active' : ''}`} onClick={() => setResponseView('raw')}>{t('apiTester.raw')}</button>
                           <button className={`view-btn ${responseView === 'tree' ? 'active' : ''}`} onClick={() => setResponseView('tree')}>{t('apiTester.tree')}</button>
                         </div>
-                      )}
-                      <input className="search-input" placeholder={t('apiTester.search')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ marginLeft: 'auto' }} />
-                    </div>
+                        <input className="search-input" placeholder={t('apiTester.search')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                      </div>
+                    )}
                     {responseTab === 'body' ? (
                       responseView === 'tree' ? (
                         <div className="panel-content"><JsonTreeView data={store.response.body} /></div>
@@ -782,7 +815,7 @@ export function ApiTester() {
       {showRunner && <CollectionRunner collections={store.collections} onClose={() => setShowRunner(false)} environment={store.variables.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {})} />}
       {showCookieManager && <CookieManager onClose={() => setShowCookieManager(false)} />}
 
-      <ResizableLayout sidebar={sidebarContent} main={mainContent} className="app" />
+      <ResizableLayout sidebar={sidebarContent} main={sidebarTab === 'environments' && selectedEnvId !== null ? <EnvironmentEditor envId={selectedEnvId} /> : mainContent} className="app" />
     </>
   );
 }

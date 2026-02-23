@@ -566,6 +566,9 @@ export const en: Record<string, string> = {
   "envManager.selectEnv": "Select an environment to edit variables",
   "envManager.orCreateNew": "Or create a new environment",
   "envManager.done": "Done",
+  "envManager.filterVariables": "Filter variables",
+  "envManager.initialValue": "Initial value",
+  "envManager.currentValue": "Current value",
 
   // === API Tester - WebSocket Panel ===
   "wsPanel.disconnect": "Disconnect",
