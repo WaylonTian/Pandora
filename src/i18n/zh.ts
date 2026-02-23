@@ -449,6 +449,7 @@ export const zh: Record<string, string> = {
 
   // === API Tester - Sidebar ===
   "apiTester.collections": "集合",
+  "apiTester.environments": "环境",
   "apiTester.history": "历史",
   "apiTester.newCollection": "新建集合...",
   "apiTester.searchPlaceholder": "搜索请求...",
@@ -524,6 +525,7 @@ export const zh: Record<string, string> = {
 
   // === API Tester - KeyValue Editor ===
   "kvEditor.bulkEdit": "批量编辑",
+  "kvEditor.keyValueEdit": "键值编辑",
   "kvEditor.key": "键",
   "kvEditor.value": "值",
   "kvEditor.description": "描述",

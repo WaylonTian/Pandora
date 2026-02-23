@@ -442,6 +442,7 @@ export const en: Record<string, string> = {
 
   // === API Tester - Sidebar ===
   "apiTester.collections": "Collections",
+  "apiTester.environments": "Environments",
   "apiTester.history": "History",
   "apiTester.newCollection": "New collection...",
   "apiTester.searchPlaceholder": "Search requests...",
@@ -517,6 +518,7 @@ export const en: Record<string, string> = {
 
   // === API Tester - KeyValue Editor ===
   "kvEditor.bulkEdit": "Bulk Edit",
+  "kvEditor.keyValueEdit": "Key-Value Edit",
   "kvEditor.key": "Key",
   "kvEditor.value": "Value",
   "kvEditor.description": "Description",

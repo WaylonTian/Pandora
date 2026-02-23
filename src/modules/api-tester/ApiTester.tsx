@@ -43,14 +43,16 @@ const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 
 interface KVItem { key: string; value: string; description?: string; enabled: boolean; }
 interface FormDataItem { key: string; value: string; type: 'text' | 'file'; enabled: boolean; }
-type BodyType = 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw' | 'binary';
+type BodyType = 'none' | 'form-data' | 'x-www-form-urlencoded' | 'raw' | 'binary' | 'graphql';
+type RawType = 'json' | 'text' | 'javascript' | 'html' | 'xml';
 
 export function ApiTester() {
   const t = useT();
   const store = useStore();
   const tabs = useTabsStore();
   
-  const [sidebarTab, setSidebarTab] = useState<'collections' | 'history'>('collections');
+  const [sidebarTab, setSidebarTab] = useState<'collections' | 'environments' | 'history'>('collections');
+  const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
   const [requestTab, setRequestTab] = useState<'params' | 'headers' | 'body' | 'auth' | 'scripts'>('params');
   const [responseTab, setResponseTab] = useState<'body' | 'headers' | 'cookies' | 'timing' | 'diff'>('body');
   const [responseView, setResponseView] = useState<'pretty' | 'raw' | 'tree'>('pretty');
@@ -76,6 +78,7 @@ export function ApiTester() {
   const [bodyType, setBodyType] = useState<BodyType>('none');
   const [bodyContent, setBodyContent] = useState('');
   const [formData, setFormData] = useState<FormDataItem[]>([]);
+  const [rawType, setRawType] = useState<RawType>('json');
   
   // Script & Test state
   const [preScript, setPreScript] = useState('');
@@ -242,9 +245,12 @@ export function ApiTester() {
       finalHeaders = finalHeaders.filter(h => h.key.toLowerCase() !== 'authorization');
       finalHeaders.push({ key: 'Authorization', value: `Bearer ${authData.token}`, enabled: true });
     }
-    if (bodyType === 'json') {
+    if (bodyType === 'raw') {
+      const contentTypeMap: Record<string, string> = {
+        json: 'application/json', text: 'text/plain', javascript: 'application/javascript', html: 'text/html', xml: 'application/xml',
+      };
       finalHeaders = finalHeaders.filter(h => h.key.toLowerCase() !== 'content-type');
-      finalHeaders.push({ key: 'Content-Type', value: 'application/json', enabled: true });
+      finalHeaders.push({ key: 'Content-Type', value: contentTypeMap[rawType] || 'text/plain', enabled: true });
     }
 
     const headersObj: Record<string, string> = {};
@@ -473,12 +479,43 @@ export function ApiTester() {
     <div className="sidebar-inner">
         <div className="sidebar-tabs">
           <button className={`sidebar-tab ${sidebarTab === 'collections' ? 'active' : ''}`} onClick={() => setSidebarTab('collections')}>{t('apiTester.collections')}</button>
+          <button className={`sidebar-tab ${sidebarTab === 'environments' ? 'active' : ''}`} onClick={() => setSidebarTab('environments')}>{t('apiTester.environments')}</button>
           <button className={`sidebar-tab ${sidebarTab === 'history' ? 'active' : ''}`} onClick={() => setSidebarTab('history')}>{t('apiTester.history')}</button>
         </div>
         <div className="sidebar-content">
-          {sidebarTab === 'collections' ? (
+          {sidebarTab === 'collections' && (
             <CollectionTree onOpenRequest={openRequestInTab} onContextMenu={handleContextMenu} />
-          ) : (
+          )}
+          {sidebarTab === 'environments' && (
+            <>
+              <div className="sidebar-header">
+                <span className="sidebar-title">{t('apiTester.environments')}</span>
+                <button className="icon-btn" onClick={() => {
+                  const name = prompt(t('envManager.newEnvironment'));
+                  if (name?.trim()) store.createEnvironment(name.trim());
+                }}>+</button>
+              </div>
+              <div className="env-sidebar-list">
+                <div
+                  className={`env-sidebar-item ${selectedEnvId === 0 ? 'active' : ''}`}
+                  onClick={() => setSelectedEnvId(0)}
+                >
+                  <span className="env-sidebar-name">Globals</span>
+                </div>
+                {store.environments.map(env => (
+                  <div
+                    key={env.id}
+                    className={`env-sidebar-item ${selectedEnvId === env.id ? 'active' : ''}`}
+                    onClick={() => { if (env.id) { setSelectedEnvId(env.id); store.setActiveEnvironment(env.id); } }}
+                  >
+                    <span className="env-sidebar-name">{env.name}</span>
+                    {env.is_active && <span className="env-active-dot">●</span>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {sidebarTab === 'history' && (
             <>
               <div className="sidebar-header">
                 <span className="sidebar-title">{t('apiTester.history')}</span>
@@ -581,7 +618,7 @@ export function ApiTester() {
                     </div>
                   )}
                   {requestTab === 'headers' && <KeyValueEditor items={headers} onChange={updateHeadersInRequest} placeholder={{ key: 'Header', value: 'Value' }} />}
-                  {requestTab === 'body' && <BodyEditor bodyType={bodyType} body={bodyContent} formData={formData} onBodyTypeChange={setBodyType} onBodyChange={setBodyContent} onFormDataChange={setFormData} />}
+                  {requestTab === 'body' && <BodyEditor bodyType={bodyType} body={bodyContent} formData={formData} onBodyTypeChange={setBodyType} onBodyChange={setBodyContent} onFormDataChange={setFormData} rawType={rawType} onRawTypeChange={setRawType} />}
                   {requestTab === 'auth' && (
                     <div className="auth-panel">
                       <div className="section-title">{t('apiTester.authorizationType')}</div>
