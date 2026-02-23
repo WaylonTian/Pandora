@@ -30,6 +30,8 @@ export default function App() {
     if (saved) {
       try {
         event.api.fromJSON(saved as Parameters<typeof event.api.fromJSON>[0]);
+        // Ensure no groups are accidentally locked from stale layout data
+        event.api.groups.forEach(g => { g.locked = false; });
         event.api.onDidLayoutChange(() => saveLayout(event.api.toJSON()));
         return;
       } catch { /* fallback */ }
