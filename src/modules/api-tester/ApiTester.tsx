@@ -56,6 +56,8 @@ export function ApiTester() {
   const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
   const [addingEnv, setAddingEnv] = useState(false);
   const [newEnvName, setNewEnvName] = useState('');
+  const [addingCol, setAddingCol] = useState(false);
+  const [newColName, setNewColName] = useState('');
   const [requestTab, setRequestTab] = useState<'params' | 'headers' | 'body' | 'auth' | 'scripts'>('params');
   const [responseTab, setResponseTab] = useState<'body' | 'headers' | 'cookies' | 'timing' | 'diff'>('body');
   const [responseView, setResponseView] = useState<'pretty' | 'raw' | 'tree'>('pretty');
@@ -487,7 +489,21 @@ export function ApiTester() {
         </div>
         <div className="sidebar-content">
           {sidebarTab === 'collections' && (
-            <CollectionTree onOpenRequest={openRequestInTab} onContextMenu={handleContextMenu} />
+            <>
+              <div className="sidebar-header">
+                <span className="sidebar-title">{t('apiTester.collections')}</span>
+                <button className="icon-btn" onClick={() => setAddingCol(true)} title={t('apiTester.newCollection')}>+</button>
+              </div>
+              {addingCol && (
+                <div style={{ padding: '4px 8px', marginBottom: 4 }}>
+                  <input className="kv-input inline-create-input" autoFocus placeholder={t('apiTester.newCollection')} value={newColName}
+                    onChange={e => setNewColName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && newColName.trim()) { store.createCollection(newColName.trim()); setNewColName(''); setAddingCol(false); } if (e.key === 'Escape') { setNewColName(''); setAddingCol(false); } }}
+                    onBlur={() => { if (newColName.trim()) store.createCollection(newColName.trim()); setNewColName(''); setAddingCol(false); }} />
+                </div>
+              )}
+              <CollectionTree onOpenRequest={openRequestInTab} onContextMenu={handleContextMenu} />
+            </>
           )}
           {sidebarTab === 'environments' && (
             <>
