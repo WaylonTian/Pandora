@@ -14,6 +14,7 @@ export interface ParsedEndpoint {
 
 export interface ParsedCollection {
   name: string;
+  baseUrl: string;
   folders: { name: string; requests: ParsedEndpoint[] }[];
 }
 
@@ -82,7 +83,7 @@ export function parseOpenAPI(content: string): ParsedCollection {
         const endpoint: ParsedEndpoint = {
           name: operation.summary || operation.operationId || `${method.toUpperCase()} ${path}`,
           method: method.toUpperCase(),
-          path: baseUrl + path,
+          path: '{{baseUrl}}' + path,
           description: operation.description,
           params: [],
           headers: [{ key: 'Content-Type', value: 'application/json', enabled: true }],
@@ -127,8 +128,12 @@ export function parseOpenAPI(content: string): ParsedCollection {
     }
   }
 
+  // Normalize: strip trailing slash from baseUrl to avoid double slashes
+  baseUrl = baseUrl.replace(/\/+$/, '');
+
   return {
     name: title,
+    baseUrl,
     folders: Array.from(folders.entries()).map(([name, requests]) => ({ name, requests })),
   };
 }
@@ -172,5 +177,5 @@ export function parsePostmanCollection(content: string): ParsedCollection {
     }
   }
 
-  return { name, folders };
+  return { name, baseUrl: '', folders };
 }

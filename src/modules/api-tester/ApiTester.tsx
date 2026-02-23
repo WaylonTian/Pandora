@@ -384,7 +384,10 @@ export function ApiTester() {
 
   const handleImportApi = async (collection: ParsedCollection) => {
     const colId = await store.createCollection(collection.name);
+
+    // Create sub-collections per folder (tag)
     for (const folder of collection.folders) {
+      const folderId = await store.createCollection(folder.name, colId);
       for (const req of folder.requests) {
         await store.saveRequest({
           name: req.name,
@@ -393,10 +396,20 @@ export function ApiTester() {
           headers: JSON.stringify(Object.fromEntries(req.headers.filter(h => h.enabled).map(h => [h.key, h.value]))),
           body: req.body,
           body_type: req.bodyType,
-          collection_id: colId,
+          collection_id: folderId,
         });
       }
     }
+
+    // Auto-create environment with baseUrl variable
+    if (collection.baseUrl) {
+      const envId = await safeInvoke<number>('create_environment', { name: collection.name });
+      if (envId) {
+        await safeInvoke('save_variable', { variable: { environment_id: envId, key: 'baseUrl', value: collection.baseUrl, enabled: true } });
+        await store.loadEnvironments();
+      }
+    }
+
     setShowImportApi(false);
   };
 

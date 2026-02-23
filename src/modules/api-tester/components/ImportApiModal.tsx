@@ -8,7 +8,7 @@ const isTauri = !!(window as any).__TAURI_INTERNALS__;
 
 interface Props {
   onClose: () => void;
-  onImport: (collection: ParsedCollection) => void;
+  onImport: (collection: ParsedCollection) => void | Promise<void>;
 }
 
 type ImportMode = 'paste' | 'file' | 'url';
@@ -21,6 +21,7 @@ export function ImportApiModal({ onClose, onImport }: Props) {
   const [importMode, setImportMode] = useState<ImportMode>('paste');
   const [swaggerUrl, setSwaggerUrl] = useState('');
   const [fetching, setFetching] = useState(false);
+  const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleParse = (text?: string) => {
@@ -102,13 +103,13 @@ export function ImportApiModal({ onClose, onImport }: Props) {
 
           <div className="import-mode-tabs">
             <button className={`import-mode-tab ${importMode === 'paste' ? 'active' : ''}`} onClick={() => setImportMode('paste')}>
-              {t('importApiModal.pasteJson')}
+              {t('importApiModal.tabPaste')}
             </button>
             <button className={`import-mode-tab ${importMode === 'file' ? 'active' : ''}`} onClick={() => setImportMode('file')}>
-              {t('importApiModal.uploadFile')}
+              {t('importApiModal.tabFile')}
             </button>
             <button className={`import-mode-tab ${importMode === 'url' ? 'active' : ''}`} onClick={() => setImportMode('url')}>
-              {t('importApiModal.fromUrl')}
+              {t('importApiModal.tabUrl')}
             </button>
           </div>
 
@@ -184,10 +185,14 @@ export function ImportApiModal({ onClose, onImport }: Props) {
           <button className="cancel-btn" onClick={onClose}>{t('importApiModal.cancel')}</button>
           <button
             className="import-btn"
-            onClick={() => preview && onImport(preview)}
-            disabled={!preview}
+            onClick={async () => {
+              if (!preview) return;
+              setImporting(true);
+              try { await onImport(preview); } catch {} finally { setImporting(false); }
+            }}
+            disabled={!preview || importing}
           >
-            {totalRequests > 0 ? t('importApiModal.importWithCount', { count: totalRequests }) : t('importApiModal.import')}
+            {importing ? t('importApiModal.importing') : totalRequests > 0 ? t('importApiModal.importWithCount', { count: totalRequests }) : t('importApiModal.import')}
           </button>
         </div>
       </div>
