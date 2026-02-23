@@ -95,17 +95,29 @@ export function CollectionTree({ onOpenRequest, onContextMenu }: Props) {
   const filteredTree = filterTree(tree);
   const filteredOrphans = orphanRequests.filter(r => matchesSearch(r.name) || matchesSearch(r.url));
 
-  const handleAddCollection = () => {
-    const name = prompt(t('apiTester.newCollection'));
-    if (name?.trim()) store.createCollection(name.trim());
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+
+  const confirmAdd = () => {
+    if (newName.trim()) store.createCollection(newName.trim());
+    setNewName('');
+    setAdding(false);
   };
 
   return (
     <>
       <div className="sidebar-header">
         <span className="sidebar-title">{t('apiTester.collections')}</span>
-        <button className="icon-btn" onClick={handleAddCollection} title={t('apiTester.newCollection')}>+</button>
+        <button className="icon-btn" onClick={() => setAdding(true)} title={t('apiTester.newCollection')}>+</button>
       </div>
+      {adding && (
+        <div style={{ padding: '4px 8px', marginBottom: 4 }}>
+          <input className="kv-input inline-create-input" autoFocus placeholder={t('apiTester.newCollection')} value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') confirmAdd(); if (e.key === 'Escape') { setAdding(false); setNewName(''); } }}
+            onBlur={confirmAdd} />
+        </div>
+      )}
       <div style={{ marginBottom: 8 }}>
         <input className="kv-input" placeholder={t('apiTester.searchPlaceholder')} value={search}
           onChange={e => setSearch(e.target.value)} />

@@ -54,6 +54,8 @@ export function ApiTester() {
   
   const [sidebarTab, setSidebarTab] = useState<'collections' | 'environments' | 'history'>('collections');
   const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
+  const [addingEnv, setAddingEnv] = useState(false);
+  const [newEnvName, setNewEnvName] = useState('');
   const [requestTab, setRequestTab] = useState<'params' | 'headers' | 'body' | 'auth' | 'scripts'>('params');
   const [responseTab, setResponseTab] = useState<'body' | 'headers' | 'cookies' | 'timing' | 'diff'>('body');
   const [responseView, setResponseView] = useState<'pretty' | 'raw' | 'tree'>('pretty');
@@ -491,11 +493,19 @@ export function ApiTester() {
             <>
               <div className="sidebar-header">
                 <span className="sidebar-title">{t('apiTester.environments')}</span>
-                <button className="icon-btn" onClick={() => {
-                  const name = prompt(t('envManager.newEnvironment'));
-                  if (name?.trim()) store.createEnvironment(name.trim());
-                }}>+</button>
+                <button className="icon-btn" onClick={() => setAddingEnv(true)}>+</button>
               </div>
+              {addingEnv && (
+                <div style={{ padding: '4px 8px', marginBottom: 4 }}>
+                  <input className="kv-input inline-create-input" autoFocus placeholder={t('envManager.newEnvironment')} value={newEnvName}
+                    onChange={e => setNewEnvName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newEnvName.trim()) { store.createEnvironment(newEnvName.trim()); setNewEnvName(''); setAddingEnv(false); }
+                      if (e.key === 'Escape') { setAddingEnv(false); setNewEnvName(''); }
+                    }}
+                    onBlur={() => { if (newEnvName.trim()) store.createEnvironment(newEnvName.trim()); setNewEnvName(''); setAddingEnv(false); }} />
+                </div>
+              )}
               <div className="env-sidebar-list">
                 <div
                   className={`env-sidebar-item ${selectedEnvId === 0 ? 'active' : ''}`}
