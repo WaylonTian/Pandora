@@ -35,32 +35,34 @@ export function parseOpenAPI(content: string): ParsedCollection {
     baseUrl = host ? `${scheme}://${host}${basePath}` : basePath;
   }
 
-  // $ref resolver
-  function resolveRef(obj: any): any {
+  // $ref resolver with circular reference protection
+  function resolveRef(obj: any, seen = new Set<string>()): any {
     if (!obj || typeof obj !== 'object') return obj;
     if (obj.$ref) {
+      if (seen.has(obj.$ref)) return {};
+      seen.add(obj.$ref);
       const path = obj.$ref.replace('#/', '').split('/');
       let resolved = spec;
       for (const p of path) resolved = resolved?.[p];
-      return resolveRef(resolved);
+      return resolveRef(resolved, seen);
     }
-    if (Array.isArray(obj)) return obj.map(resolveRef);
+    if (Array.isArray(obj)) return obj.map(i => resolveRef(i, new Set(seen)));
     const result: any = {};
-    for (const [k, v] of Object.entries(obj)) result[k] = resolveRef(v);
+    for (const [k, v] of Object.entries(obj)) result[k] = resolveRef(v, new Set(seen));
     return result;
   }
 
   // Generate example from schema
-  function generateExample(schema: any): any {
-    if (!schema) return undefined;
+  function generateExample(schema: any, depth = 0): any {
+    if (!schema || depth > 5) return undefined;
     schema = resolveRef(schema);
     if (schema.example !== undefined) return schema.example;
     if (schema.type === 'object') {
       const obj: any = {};
-      for (const [k, v] of Object.entries(schema.properties || {})) obj[k] = generateExample(v as any);
+      for (const [k, v] of Object.entries(schema.properties || {})) obj[k] = generateExample(v as any, depth + 1);
       return obj;
     }
-    if (schema.type === 'array') return [generateExample(schema.items)];
+    if (schema.type === 'array') return [generateExample(schema.items, depth + 1)];
     if (schema.type === 'string') return schema.enum?.[0] || 'string';
     if (schema.type === 'integer' || schema.type === 'number') return 0;
     if (schema.type === 'boolean') return false;
