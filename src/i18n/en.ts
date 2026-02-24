@@ -445,12 +445,14 @@ export const en: Record<string, string> = {
   "apiTester.environments": "Environments",
   "apiTester.history": "History",
   "apiTester.newCollection": "New collection...",
+  "apiTester.newSubfolder": "New Subfolder",
   "apiTester.searchPlaceholder": "Search requests...",
   "apiTester.new": "+ New",
   "apiTester.clear": "Clear",
 
   // === API Tester - Toolbar ===
   "apiTester.importCurl": "Import cURL",
+  "apiTester.import": "Import",
   "apiTester.importOpenApi": "Import OpenAPI/Postman",
   "apiTester.copyAsCurl": "Copy as cURL",
   "apiTester.generateCode": "Generate Code",

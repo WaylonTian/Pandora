@@ -452,12 +452,14 @@ export const zh: Record<string, string> = {
   "apiTester.environments": "环境",
   "apiTester.history": "历史",
   "apiTester.newCollection": "新建集合...",
+  "apiTester.newSubfolder": "新建子目录",
   "apiTester.searchPlaceholder": "搜索请求...",
   "apiTester.new": "+ 新建",
   "apiTester.clear": "清除",
 
   // === API Tester - Toolbar ===
   "apiTester.importCurl": "导入 cURL",
+  "apiTester.import": "导入",
   "apiTester.importOpenApi": "导入 OpenAPI/Postman",
   "apiTester.copyAsCurl": "复制为 cURL",
   "apiTester.generateCode": "生成代码",

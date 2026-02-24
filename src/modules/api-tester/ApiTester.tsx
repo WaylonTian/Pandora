@@ -6,12 +6,8 @@ import { ResizableLayout } from '@/components/ResizableLayout';
 import { ResizableSplit } from '@/components/ResizableSplit';
 import { KeyValueEditor } from './components/KeyValueEditor';
 import { BodyEditor } from './components/BodyEditor';
-import { ToolsPanel } from './components/ToolsPanel';
 import { CodeGenModal } from './components/CodeGenModal';
-import { SettingsModal } from './components/SettingsModal';
-import { ImportCurlModal } from './components/ImportCurlModal';
 import { WebSocketPanel } from './components/WebSocketPanel';
-import { EnvironmentManager } from './components/EnvironmentManager';
 import { EnvironmentEditor } from './components/EnvironmentEditor';
 import { JsonTreeView } from './components/JsonTreeView';
 import { ScriptEditor } from './components/ScriptEditor';
@@ -22,7 +18,6 @@ import { CollectionRunner } from './components/CollectionRunner';
 import { CollectionTree } from './components/CollectionTree';
 import { CookieManager } from './components/CookieManager';
 import { Icons } from './components/Icons';
-import { generateCurl } from './utils/codegen';
 import { executeScript, ScriptContext, TestResult } from './utils/scripting';
 import { ParsedCollection } from './utils/openapi';
 import { resolveTemplate, resolveHeaders } from './utils/template';
@@ -56,6 +51,8 @@ export function ApiTester() {
   const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
   const [addingEnv, setAddingEnv] = useState(false);
   const [newEnvName, setNewEnvName] = useState('');
+  const [contextInput, setContextInput] = useState<{ type: 'subfolder' | 'rename'; parentId: number } | null>(null);
+  const [contextInputValue, setContextInputValue] = useState('');
   const [addingCol, setAddingCol] = useState(false);
   const [newColName, setNewColName] = useState('');
   const [requestTab, setRequestTab] = useState<'params' | 'headers' | 'body' | 'auth' | 'scripts'>('params');
@@ -66,13 +63,9 @@ export function ApiTester() {
   const [authType, setAuthType] = useState<'none' | 'basic' | 'bearer'>('none');
   const [authData, setAuthData] = useState({ username: '', password: '', token: '' });
 
-  const [showTools, setShowTools] = useState(false);
   const [showCodeGen, setShowCodeGen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showImportCurl, setShowImportCurl] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showWebSocket, setShowWebSocket] = useState(false);
-  const [showEnvManager, setShowEnvManager] = useState(false);
   const [showImportApi, setShowImportApi] = useState(false);
   const [showRunner, setShowRunner] = useState(false);
   const [showCookieManager, setShowCookieManager] = useState(false);
@@ -153,21 +146,16 @@ export function ApiTester() {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
           case 'Enter': e.preventDefault(); handleSend(); break;
-          case 's': e.preventDefault(); handleSaveRequest(); break;
           case 'n': e.preventDefault(); handleNewTab(); break;
           case 't': e.preventDefault(); handleNewTab(); break;
           case 'w': e.preventDefault(); activeTab && tabs.closeTab(activeTab.id); break;
           case 'l': e.preventDefault(); document.querySelector<HTMLInputElement>('.url-input')?.focus(); break;
-          case ',': e.preventDefault(); setShowSettings(true); break;
           case '/': e.preventDefault(); setShowShortcuts(true); break;
           case 'e': e.preventDefault(); break;
         }
       }
       if (e.key === 'Escape') {
-        setShowTools(false);
         setShowCodeGen(false);
-        setShowSettings(false);
-        setShowImportCurl(false);
         setShowShortcuts(false);
       }
     };
@@ -342,23 +330,6 @@ export function ApiTester() {
     }
   };
 
-  const handleSaveRequest = async () => {
-    if (!activeTab) return;
-    const existing = activeTab.requestId ? store.requests.find(r => r.id === activeTab.requestId) : undefined;
-    const req: Request = {
-      id: activeTab.requestId,
-      collection_id: existing?.collection_id,
-      name: activeTab.name,
-      method: activeTab.method,
-      url: activeTab.url,
-      headers: activeTab.headers,
-      body: bodyContent,
-      body_type: bodyType,
-    };
-    const id = await store.saveRequest(req);
-    updateTab({ requestId: id, isDirty: false });
-  };
-
   const handleContextMenu = (e: React.MouseEvent, type: 'collection' | 'request', id: number) => {
     e.preventDefault();
     e.stopPropagation();
@@ -386,14 +357,6 @@ export function ApiTester() {
       body: data.body,
       bodyType: data.body ? 'raw' : 'none',
     });
-  };
-
-  const copyCurl = () => {
-    if (!activeTab) return;
-    const headersObj: Record<string, string> = {};
-    headers.filter(h => h.enabled && h.key).forEach(h => headersObj[h.key] = h.value);
-    const curl = generateCurl(activeTab.method, activeTab.url, headersObj, bodyContent);
-    navigator.clipboard.writeText(curl);
   };
 
   const handleImportApi = async (collection: ParsedCollection) => {
@@ -597,7 +560,15 @@ export function ApiTester() {
         </div>
 
         {showWebSocket ? (
-          <WebSocketPanel />
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="breadcrumb-bar">
+              <div className="breadcrumb-left">
+                <button className="icon-btn" onClick={() => setShowWebSocket(false)} title="Back">←</button>
+                <span className="breadcrumb-path">WebSocket</span>
+              </div>
+            </div>
+            <WebSocketPanel />
+          </div>
         ) : activeTab ? (
           <>
             {/* Breadcrumb + Toolbar */}
@@ -606,21 +577,10 @@ export function ApiTester() {
                 {getBreadcrumb() && <span className="breadcrumb-path">{getBreadcrumb()} / {activeTab.name}</span>}
               </div>
               <div className="breadcrumb-right">
-                <button className="icon-btn" onClick={() => setShowImportCurl(true)} title={t('apiTester.importCurl')}>{Icons.import}</button>
-                <button className="icon-btn" onClick={() => setShowImportApi(true)} title={t('apiTester.importOpenApi')}>{Icons.folder}</button>
-                <button className="icon-btn" onClick={copyCurl} title={t('apiTester.copyAsCurl')}>{Icons.export}</button>
+                <button className="icon-btn" onClick={() => setShowImportApi(true)} title={t('apiTester.import')}>{Icons.import}</button>
                 <button className="icon-btn" onClick={() => setShowCodeGen(true)} title={t('apiTester.generateCode')}>{Icons.code}</button>
-                <button className="icon-btn" onClick={() => setShowTools(true)} title={t('apiTester.tools')}>{Icons.tools}</button>
                 <button className="icon-btn" onClick={() => setShowWebSocket(!showWebSocket)} title={t('apiTester.webSocket')}>{Icons.websocket}</button>
                 <button className="icon-btn" onClick={() => setShowRunner(true)} title={t('apiTester.collectionRunner')}>{Icons.play}</button>
-                <span className="breadcrumb-divider" />
-                <select className="env-select" value={store.activeEnvId ?? ''} onChange={e => e.target.value && store.setActiveEnvironment(Number(e.target.value))}>
-                  <option value="">{t('apiTester.noEnvironment')}</option>
-                  {store.environments.map(env => <option key={env.id} value={env.id}>{env.name}</option>)}
-                </select>
-                <button className="icon-btn" onClick={() => setShowEnvManager(true)} title={t('apiTester.manageEnvironments')}>{Icons.env}</button>
-                <button className="icon-btn" onClick={handleSaveRequest} title={t('apiTester.save')}>{Icons.save}</button>
-                <button className="icon-btn" onClick={() => setShowSettings(true)} title={t('apiTester.settings')}>{Icons.settings}</button>
               </div>
             </div>
 
@@ -787,8 +747,26 @@ export function ApiTester() {
           {contextMenu.type === 'collection' ? (
             <>
               <div className="context-item" onClick={() => { tabs.addTab({ name: t('apiTester.newRequest') }); setContextMenu(null); }}>{t('apiTester.newRequest')}</div>
-              {(() => { const depth = getCollectionDepth(contextMenu.id); return depth < 3 ? <div className="context-item" onClick={() => { const n = prompt(t('apiTester.newSubfolder')); if (n) store.createCollection(n, contextMenu.id); setContextMenu(null); }}>{t('apiTester.newSubfolder')}</div> : null; })()}
-              <div className="context-item" onClick={() => { const n = prompt(t('apiTester.renamePrompt')); if (n) store.renameCollection(contextMenu.id, n); setContextMenu(null); }}>{t('apiTester.rename')}</div>
+              {(() => { const depth = getCollectionDepth(contextMenu.id); return depth < 3 ? <div className="context-item" onClick={() => { setContextInput({ type: 'subfolder', parentId: contextMenu.id }); setContextInputValue(''); }}>{t('apiTester.newSubfolder')}</div> : null; })()}
+              <div className="context-item" onClick={() => { const col = store.collections.find(c => c.id === contextMenu.id); setContextInput({ type: 'rename', parentId: contextMenu.id }); setContextInputValue(col?.name || ''); }}>{t('apiTester.rename')}</div>
+              {contextInput && (
+                <div style={{ padding: '4px 8px' }}>
+                  <input className="kv-input inline-create-input" autoFocus value={contextInputValue}
+                    placeholder={contextInput.type === 'subfolder' ? t('apiTester.newSubfolder') : t('apiTester.rename')}
+                    onChange={e => setContextInputValue(e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    onKeyDown={e => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter' && contextInputValue.trim()) {
+                        if (contextInput.type === 'subfolder') store.createCollection(contextInputValue.trim(), contextInput.parentId);
+                        else store.renameCollection(contextInput.parentId, contextInputValue.trim());
+                        setContextInput(null); setContextMenu(null);
+                      }
+                      if (e.key === 'Escape') { setContextInput(null); setContextMenu(null); }
+                    }}
+                    onBlur={() => { setContextInput(null); }} />
+                </div>
+              )}
               <div className="context-item danger" onClick={() => { store.deleteCollection(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
             </>
           ) : (
@@ -807,8 +785,6 @@ export function ApiTester() {
           headers={Object.fromEntries(headers.filter(h => h.enabled && h.key).map(h => [h.key, h.value]))}
           body={bodyContent} onClose={() => setShowCodeGen(false)} />
       )}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-      {showImportCurl && <ImportCurlModal onImport={handleImportCurl} onClose={() => setShowImportCurl(false)} />}
       {showShortcuts && (
         <div className="modal-overlay" onClick={() => setShowShortcuts(false)}>
           <div className="modal shortcuts-modal" onClick={e => e.stopPropagation()}>
@@ -816,11 +792,9 @@ export function ApiTester() {
             <div className="modal-body">
               {[
                 ['Ctrl + Enter', t('apiTester.shortcut.sendRequest')],
-                ['Ctrl + S', t('apiTester.shortcut.saveRequest')],
                 ['Ctrl + N / T', t('apiTester.shortcut.newTab')],
                 ['Ctrl + W', t('apiTester.shortcut.closeTab')],
                 ['Ctrl + L', t('apiTester.shortcut.focusUrl')],
-                ['Ctrl + ,', t('apiTester.shortcut.settings')],
                 ['Ctrl + /', t('apiTester.shortcut.shortcuts')],
                 ['Esc', t('apiTester.shortcut.closeModal')],
               ].map(([key, desc]) => (
@@ -833,9 +807,7 @@ export function ApiTester() {
           </div>
         </div>
       )}
-      {showTools && <ToolsPanel onClose={() => setShowTools(false)} />}
-      {showEnvManager && <EnvironmentManager onClose={() => setShowEnvManager(false)} />}
-      {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} />}
+      {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} onImportCurl={handleImportCurl} />}
       {showRunner && <CollectionRunner collections={store.collections} onClose={() => setShowRunner(false)} environment={store.variables.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {})} />}
       {showCookieManager && <CookieManager onClose={() => setShowCookieManager(false)} />}
 

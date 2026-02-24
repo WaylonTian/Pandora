@@ -1,11 +1,13 @@
 .runner-modal {
   width: 700px;
+  max-width: 90vw;
   max-height: 85vh;
   background: var(--bg-primary);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .runner-modal .modal-header {
@@ -31,6 +33,7 @@
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .runner-config label {

@@ -16,6 +16,10 @@ function DotMenu({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
   return <button className="tree-dot-menu" onClick={e => { e.stopPropagation(); onClick(e); }}>⋯</button>;
 }
 
+function countAllRequests(node: CollectionTreeNode): number {
+  return node.requests.length + node.children.reduce((sum, c) => sum + countAllRequests(c), 0);
+}
+
 function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, toggleCollapse }: {
   node: CollectionTreeNode;
   onOpenRequest: (req: Request) => void;
@@ -35,7 +39,7 @@ function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, togg
           onClick={() => node.collection.id && toggleCollapse(node.collection.id)}>▶</span>
         {Icons.folder}
         <span className="name">{node.collection.name}</span>
-        <span className="collection-count">{node.requests.length}</span>
+        <span className="collection-count">{countAllRequests(node)}</span>
         {node.collection.id && <DotMenu onClick={e => onContextMenu(e, 'collection', node.collection.id!)} />}
       </div>
       {!isCollapsed && (
