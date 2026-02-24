@@ -3,7 +3,7 @@
   --bg-primary: hsl(var(--background));
   --bg-secondary: hsl(var(--card));
   --bg-tertiary: hsl(var(--muted));
-  --bg-hover: hsl(var(--primary));
+  --bg-hover: hsl(var(--muted) / 0.5);
   --bg-active: hsl(var(--primary) / 0.15);
   --border-color: hsl(var(--border));
   --border-hover: hsl(var(--ring));
@@ -65,6 +65,7 @@
    Sidebar
    ═══════════════════════════════════════════ */
 .sidebar-inner {
+  -webkit-tap-highlight-color: transparent;
   display: flex;
   flex-direction: column;
   height: 100%;
