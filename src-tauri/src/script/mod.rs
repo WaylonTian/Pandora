@@ -44,6 +44,8 @@ pub struct ScriptMeta {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ScriptConfig {
     pub last_args: Option<String>,
+    pub args_mode: Option<String>,
+    pub args_json: Option<String>,
     pub working_dir: Option<String>,
     pub env: HashMap<String, String>,
     pub runtime_override: Option<String>,
@@ -179,35 +181,74 @@ pub async fn execute_script(
     runtime: &str,
     script_path: &str,
     args: Vec<String>,
+    args_mode: Option<String>,
+    args_json: Option<String>,
     working_dir: Option<String>,
     env: HashMap<String, String>,
 ) -> Result<ScriptOutput, String> {
-    let (cmd, cmd_args) = resolve_runtime(runtime, script_path, &args)?;
+    let (final_args, stdin_data, temp_file) = build_args(args, args_mode, args_json)?;
+    let (cmd, cmd_args) = resolve_runtime(runtime, script_path, &final_args)?;
 
     let mut command = Command::new(&cmd);
     command.args(&cmd_args);
     command.envs(&env);
 
-    if let Some(dir) = working_dir {
+    let effective_dir = working_dir.or_else(|| {
+        std::path::Path::new(script_path).parent().map(|p| p.to_string_lossy().to_string())
+    });
+    if let Some(dir) = effective_dir {
         command.current_dir(dir);
     }
 
     command.stdout(std::process::Stdio::piped());
     command.stderr(std::process::Stdio::piped());
+    if stdin_data.is_some() {
+        command.stdin(std::process::Stdio::piped());
+    }
 
     let start = Instant::now();
-    let output = command
-        .output()
-        .await
-        .map_err(|e| format!("Failed to execute: {}", e))?;
-    let duration_ms = start.elapsed().as_millis() as u64;
 
-    Ok(ScriptOutput {
-        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
-        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-        exit_code: output.status.code(),
-        duration_ms,
-    })
+    if let Some(data) = stdin_data {
+        let mut child = command.spawn().map_err(|e| format!("Failed to execute: {}", e))?;
+        if let Some(mut stdin) = child.stdin.take() {
+            use tokio::io::AsyncWriteExt;
+            let _ = stdin.write_all(data.as_bytes()).await;
+            drop(stdin);
+        }
+        let output = child.wait_with_output().await.map_err(|e| format!("Failed to execute: {}", e))?;
+        let duration_ms = start.elapsed().as_millis() as u64;
+        if let Some(tmp) = temp_file { let _ = std::fs::remove_file(tmp); }
+        Ok(ScriptOutput {
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            exit_code: output.status.code(),
+            duration_ms,
+        })
+    } else {
+        let output = command.output().await.map_err(|e| format!("Failed to execute: {}", e))?;
+        let duration_ms = start.elapsed().as_millis() as u64;
+        if let Some(tmp) = temp_file { let _ = std::fs::remove_file(tmp); }
+        Ok(ScriptOutput {
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            exit_code: output.status.code(),
+            duration_ms,
+        })
+    }
+}
+
+fn build_args(
+    args: Vec<String>,
+    args_mode: Option<String>,
+    args_json: Option<String>,
+) -> Result<(Vec<String>, Option<String>, Option<std::path::PathBuf>), String> {
+    match args_mode.as_deref().unwrap_or("json") {
+        "json" => {
+            let json = args_json.unwrap_or_default();
+            Ok((args, if json.is_empty() { None } else { Some(json) }, None))
+        }
+        _ => Ok((args, None, None)),
+    }
 }
 
 pub async fn start_script(
@@ -216,25 +257,43 @@ pub async fn start_script(
     runtime: &str,
     script_path: &str,
     args: Vec<String>,
+    args_mode: Option<String>,
+    args_json: Option<String>,
     working_dir: Option<String>,
     env: HashMap<String, String>,
 ) -> Result<u32, String> {
-    let (cmd, cmd_args) = resolve_runtime(runtime, script_path, &args)?;
+    let (final_args, stdin_data, temp_file) = build_args(args, args_mode, args_json)?;
+    let (cmd, cmd_args) = resolve_runtime(runtime, script_path, &final_args)?;
 
     let mut command = Command::new(&cmd);
     command.args(&cmd_args);
     command.envs(&env);
 
-    if let Some(dir) = working_dir {
+    let effective_dir = working_dir.or_else(|| {
+        std::path::Path::new(script_path).parent().map(|p| p.to_string_lossy().to_string())
+    });
+    if let Some(dir) = &effective_dir {
         command.current_dir(dir);
     }
 
     command.stdout(std::process::Stdio::piped());
     command.stderr(std::process::Stdio::piped());
+    if stdin_data.is_some() {
+        command.stdin(std::process::Stdio::piped());
+    }
 
     let mut child = command
         .spawn()
         .map_err(|e| format!("Failed to spawn: {}", e))?;
+
+    // Write stdin data if in stdin mode
+    if let Some(data) = stdin_data {
+        if let Some(mut stdin) = child.stdin.take() {
+            use tokio::io::AsyncWriteExt;
+            let _ = stdin.write_all(data.as_bytes()).await;
+            drop(stdin);
+        }
+    }
 
     let pid = child.id().unwrap_or(0);
 
@@ -290,6 +349,10 @@ pub async fn start_script(
             "script-exit",
             serde_json::json!({"pid": pid, "exit_code": exit_code, "duration_ms": duration_ms}),
         );
+        // Clean up temp file if created for "file" args mode
+        if let Some(tmp) = temp_file {
+            let _ = std::fs::remove_file(tmp);
+        }
     });
 
     Ok(pid)

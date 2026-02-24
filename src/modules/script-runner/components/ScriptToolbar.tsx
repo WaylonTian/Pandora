@@ -1,39 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useScriptRunnerStore } from '../store';
 import { useT } from '@/i18n';
+import { ConfirmDialog } from './Dialogs';
 
 export function ScriptToolbar() {
   const t = useT();
   const store = useScriptRunnerStore();
-  const { activeFilePath, meta, scriptsDir, runningProcess, runtimes } = store;
+  const { activeFilePath, meta, scriptsDir, runningProcess } = store;
   const [showEnv, setShowEnv] = useState(false);
-  const [showRuntimePicker, setShowRuntimePicker] = useState(false);
-  const argsRef = useRef<HTMLInputElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (!activeFilePath) return null;
 
   const fileName = activeFilePath.replace(/\\/g, '/').split('/').pop() || '';
-  const ext = fileName.split('.').pop() || '';
   const relPath = activeFilePath.replace(/\\/g, '/').replace(scriptsDir.replace(/\\/g, '/'), '').replace(/^\//, '');
   const config = meta.scripts[relPath];
-  const runtime = config?.runtime_override || inferRuntime(ext);
-
-  const handleArgsBlur = () => {
-    if (argsRef.current) {
-      store.updateMeta(activeFilePath, { last_args: argsRef.current.value || null });
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      store.startScript();
-    }
-  };
-
-  const handleDelete = () => {
-    if (window.confirm(t('scriptRunner.confirmDelete'))) store.deleteFile(activeFilePath);
-  };
+  const scriptDir = activeFilePath.replace(/\\/g, '/').split('/').slice(0, -1).join('/');
+  const effectiveWorkDir = config?.working_dir || scriptDir;
 
   const handleChangeWorkDir = async () => {
     try {
@@ -44,38 +27,26 @@ export function ScriptToolbar() {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card text-sm flex-wrap" onKeyDown={handleKeyDown}>
-      <span className="font-medium truncate max-w-[140px]" title={fileName}>{fileName}</span>
-      <div className="relative">
-        <button onClick={() => setShowRuntimePicker(!showRuntimePicker)}
-          className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/50 hover:bg-muted cursor-pointer uppercase">
-          {runtime}
+    <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card text-sm">
+      <span className="font-medium truncate max-w-[200px]" title={fileName}>{fileName}</span>
+      <div className="flex-1" />
+
+      <div className="flex items-center gap-0.5">
+        <button onClick={handleChangeWorkDir} className="text-xs text-muted-foreground hover:text-foreground cursor-pointer truncate max-w-[120px]"
+          title={effectiveWorkDir}>
+          📂 {effectiveWorkDir.replace(/\\/g, '/').split('/').pop()}
         </button>
-        {showRuntimePicker && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setShowRuntimePicker(false)} />
-            <div className="absolute top-full left-0 mt-1 z-50 bg-card border border-border rounded shadow-lg py-1 min-w-[100px]">
-              {runtimes.filter(r => r.available).map(r => (
-                <button key={r.command} className="w-full px-3 py-1 text-left text-xs hover:bg-muted/50 cursor-pointer"
-                  onClick={() => { store.updateMeta(activeFilePath, { runtime_override: r.command }); setShowRuntimePicker(false); }}>
-                  {r.name}
-                </button>
-              ))}
-            </div>
-          </>
+        {config?.working_dir && (
+          <button onClick={() => store.updateMeta(activeFilePath, { working_dir: null })}
+            className="text-[10px] text-muted-foreground hover:text-destructive cursor-pointer" title={t('scriptRunner.resetWorkDir')}>✕</button>
         )}
       </div>
-      <input ref={argsRef} defaultValue={config?.last_args || ''} onBlur={handleArgsBlur}
-        className="flex-1 min-w-[120px] bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-        placeholder={t('scriptRunner.args')} />
-      <button onClick={handleChangeWorkDir} className="text-xs text-muted-foreground hover:text-foreground cursor-pointer truncate max-w-[100px]"
-        title={config?.working_dir || t('scriptRunner.workingDir')}>
-        📂 {config?.working_dir ? config.working_dir.split('/').pop() : t('scriptRunner.workingDir')}
-      </button>
+
       <button onClick={() => setShowEnv(!showEnv)}
         className="px-2 py-1 text-xs border border-border rounded hover:bg-muted/50 cursor-pointer">
         {t('scriptRunner.envVars')}
       </button>
+
       {runningProcess ? (
         <button onClick={() => store.stopScript()}
           className="px-3 py-1 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 cursor-pointer">
@@ -87,8 +58,15 @@ export function ScriptToolbar() {
           {t('scriptRunner.run')}
         </button>
       )}
-      <button onClick={handleDelete} className="text-destructive hover:bg-destructive/10 px-1.5 py-1 rounded text-xs cursor-pointer">🗑</button>
+
+      <button onClick={() => setShowDeleteConfirm(true)} className="text-destructive hover:bg-destructive/10 px-1.5 py-1 rounded text-xs cursor-pointer">🗑</button>
+
       {showEnv && <EnvVarsInline onClose={() => setShowEnv(false)} />}
+      {showDeleteConfirm && (
+        <ConfirmDialog message={t('scriptRunner.confirmDelete')}
+          onConfirm={() => { store.deleteFile(activeFilePath); setShowDeleteConfirm(false); }}
+          onCancel={() => setShowDeleteConfirm(false)} />
+      )}
     </div>
   );
 }
@@ -149,14 +127,4 @@ function EnvVarsInline({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   );
-}
-
-function inferRuntime(ext: string): string {
-  switch (ext) {
-    case 'js': case 'mjs': case 'cjs': return 'node';
-    case 'py': return 'python';
-    case 'sh': return 'bash';
-    case 'ps1': return 'powershell';
-    default: return 'node';
-  }
 }

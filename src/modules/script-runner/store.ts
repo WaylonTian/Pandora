@@ -12,6 +12,8 @@ export interface FileEntry {
 
 export interface ScriptConfig {
   last_args: string | null;
+  args_mode: string | null;       // "text" | "json"
+  args_json: string | null;
   working_dir: string | null;
   env: Record<string, string>;
   runtime_override: string | null;
@@ -96,7 +98,7 @@ function inferRuntime(ext: string | null): string {
     case 'py': return 'python';
     case 'sh': return 'bash';
     case 'ps1': return 'powershell';
-    default: return 'node';
+    default: return 'python';
   }
 }
 
@@ -233,7 +235,7 @@ export const useScriptRunnerStore = create<ScriptRunnerState>((set, get) => ({
   updateMeta: async (scriptPath: string, config: Partial<ScriptConfig>) => {
     const { meta, scriptsDir } = get();
     const key = getRelativePath(scriptPath, scriptsDir);
-    const existing = meta.scripts[key] || { last_args: null, working_dir: null, env: {}, runtime_override: null };
+    const existing = meta.scripts[key] || { last_args: null, args_mode: null, args_json: null, working_dir: null, env: {}, runtime_override: null };
     const updated = { ...meta, scripts: { ...meta.scripts, [key]: { ...existing, ...config } } };
     set({ meta: updated });
     try { await invoke('write_script_meta', { dir: scriptsDir, meta: updated }); } catch { /* ok */ }
@@ -258,7 +260,9 @@ export const useScriptRunnerStore = create<ScriptRunnerState>((set, get) => ({
     const config = meta.scripts[key];
     const ext = activeFilePath.split('.').pop() || '';
     const runtime = config?.runtime_override || inferRuntime(ext);
-    const args = config?.last_args ? config.last_args.split(/\s+/).filter(Boolean) : [];
+    const argsJson = config?.args_json || null;
+    const args: string[] = [];
+    const argsMode = 'json';
     const workingDir = config?.working_dir || null;
     const env = { ...meta.global_env, ...(config?.env || {}) };
 
@@ -266,7 +270,7 @@ export const useScriptRunnerStore = create<ScriptRunnerState>((set, get) => ({
 
     try {
       const pid = await invoke<number>('start_script', {
-        runtime, scriptPath: activeFilePath, args, workingDir, env,
+        runtime, scriptPath: activeFilePath, args, argsMode, argsJson, workingDir, env,
       });
       set(s => s.runningProcess ? { runningProcess: { ...s.runningProcess, pid } } : {});
     } catch (e) {

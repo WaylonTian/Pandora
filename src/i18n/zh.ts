@@ -722,6 +722,18 @@ export const zh: Record<string, string> = {
   "scriptRunner.template": "模板",
   "scriptRunner.fileName": "文件名",
   "scriptRunner.folderName": "文件夹名",
+  "scriptRunner.editJson": "编辑 JSON 参数",
+  "scriptRunner.presets": "参数预设",
+  "scriptRunner.noPresets": "暂无预设",
+  "scriptRunner.savePreset": "+ 保存当前为预设",
+  "scriptRunner.presetName": "预设名称",
+  "scriptRunner.resetWorkDir": "重置为脚本目录",
+  "scriptRunner.defaultDir": "默认",
+  "scriptRunner.dropFiles": "拖放文件到此处导入",
+  "scriptRunner.import": "导入文件",
+  "scriptRunner.targetDir": "目标目录",
+  "scriptRunner.preview": "预览",
+  "scriptRunner.create": "创建",
 
   // === Toolkit ===
   "toolkit.selectTool": "选择工具",

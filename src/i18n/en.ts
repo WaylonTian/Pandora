@@ -715,6 +715,18 @@ export const en: Record<string, string> = {
   "scriptRunner.template": "Template",
   "scriptRunner.fileName": "File name",
   "scriptRunner.folderName": "Folder name",
+  "scriptRunner.editJson": "Edit JSON Args",
+  "scriptRunner.presets": "Arg Presets",
+  "scriptRunner.noPresets": "No presets saved",
+  "scriptRunner.savePreset": "+ Save Current as Preset",
+  "scriptRunner.presetName": "Preset name",
+  "scriptRunner.resetWorkDir": "Reset to script directory",
+  "scriptRunner.defaultDir": "default",
+  "scriptRunner.dropFiles": "Drop files here to import",
+  "scriptRunner.import": "Import file",
+  "scriptRunner.targetDir": "Target directory",
+  "scriptRunner.preview": "Preview",
+  "scriptRunner.create": "Create",
 
   // === Toolkit ===
   "toolkit.selectTool": "Select a tool",

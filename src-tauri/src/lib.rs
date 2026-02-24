@@ -143,10 +143,12 @@ async fn run_script(
     runtime: String,
     script_path: String,
     args: Vec<String>,
+    args_mode: Option<String>,
+    args_json: Option<String>,
     working_dir: Option<String>,
     env: HashMap<String, String>,
 ) -> Result<script::ScriptOutput, String> {
-    script::execute_script(&runtime, &script_path, args, working_dir, env).await
+    script::execute_script(&runtime, &script_path, args, args_mode, args_json, working_dir, env).await
 }
 
 #[tauri::command]
@@ -211,10 +213,12 @@ async fn start_script(
     runtime: String,
     script_path: String,
     args: Vec<String>,
+    args_mode: Option<String>,
+    args_json: Option<String>,
     working_dir: Option<String>,
     env: HashMap<String, String>,
 ) -> Result<u32, String> {
-    script::start_script(app, state.processes.clone(), &runtime, &script_path, args, working_dir, env).await
+    script::start_script(app, state.processes.clone(), &runtime, &script_path, args, args_mode, args_json, working_dir, env).await
 }
 
 #[tauri::command]
