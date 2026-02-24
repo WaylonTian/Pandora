@@ -12,6 +12,14 @@ function getMethodClass(method: string) {
   return `method-${method.toLowerCase()}`;
 }
 
+function DotMenu({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
+  return <button className="tree-dot-menu" onClick={e => { e.stopPropagation(); onClick(e); }}>⋯</button>;
+}
+
+function countAllRequests(node: CollectionTreeNode): number {
+  return node.requests.length + node.children.reduce((sum, c) => sum + countAllRequests(c), 0);
+}
+
 function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, toggleCollapse }: {
   node: CollectionTreeNode;
   onOpenRequest: (req: Request) => void;
@@ -31,7 +39,8 @@ function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, togg
           onClick={() => node.collection.id && toggleCollapse(node.collection.id)}>▶</span>
         {Icons.folder}
         <span className="name">{node.collection.name}</span>
-        <span className="collection-count">{node.requests.length}</span>
+        <span className="collection-count">{countAllRequests(node)}</span>
+        {node.collection.id && <DotMenu onClick={e => onContextMenu(e, 'collection', node.collection.id!)} />}
       </div>
       {!isCollapsed && (
         <>
@@ -47,6 +56,7 @@ function CollectionNode({ node, onOpenRequest, onContextMenu, collapsedSet, togg
               onContextMenu={e => req.id && onContextMenu(e, 'request', req.id)}>
               <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>
               <span className="name">{req.name}</span>
+              {req.id && <DotMenu onClick={e => onContextMenu(e, 'request', req.id!)} />}
             </div>
           ))}
         </>
@@ -89,17 +99,8 @@ export function CollectionTree({ onOpenRequest, onContextMenu }: Props) {
   const filteredTree = filterTree(tree);
   const filteredOrphans = orphanRequests.filter(r => matchesSearch(r.name) || matchesSearch(r.url));
 
-  const handleAddCollection = () => {
-    const name = prompt(t('apiTester.newCollection'));
-    if (name?.trim()) store.createCollection(name.trim());
-  };
-
   return (
     <>
-      <div className="sidebar-header">
-        <span className="sidebar-title">{t('apiTester.collections')}</span>
-        <button className="icon-btn" onClick={handleAddCollection} title={t('apiTester.newCollection')}>+</button>
-      </div>
       <div style={{ marginBottom: 8 }}>
         <input className="kv-input" placeholder={t('apiTester.searchPlaceholder')} value={search}
           onChange={e => setSearch(e.target.value)} />
@@ -114,6 +115,7 @@ export function CollectionTree({ onOpenRequest, onContextMenu }: Props) {
           onContextMenu={e => req.id && onContextMenu(e, 'request', req.id)}>
           <span className={`method ${getMethodClass(req.method)}`}>{req.method}</span>
           <span className="name">{req.name}</span>
+          {req.id && <DotMenu onClick={e => onContextMenu(e, 'request', req.id!)} />}
         </div>
       ))}
     </>

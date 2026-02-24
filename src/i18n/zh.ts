@@ -449,14 +449,17 @@ export const zh: Record<string, string> = {
 
   // === API Tester - Sidebar ===
   "apiTester.collections": "集合",
+  "apiTester.environments": "环境",
   "apiTester.history": "历史",
   "apiTester.newCollection": "新建集合...",
+  "apiTester.newSubfolder": "新建子目录",
   "apiTester.searchPlaceholder": "搜索请求...",
   "apiTester.new": "+ 新建",
   "apiTester.clear": "清除",
 
   // === API Tester - Toolbar ===
   "apiTester.importCurl": "导入 cURL",
+  "apiTester.import": "导入",
   "apiTester.importOpenApi": "导入 OpenAPI/Postman",
   "apiTester.copyAsCurl": "复制为 cURL",
   "apiTester.generateCode": "生成代码",
@@ -524,6 +527,7 @@ export const zh: Record<string, string> = {
 
   // === API Tester - KeyValue Editor ===
   "kvEditor.bulkEdit": "批量编辑",
+  "kvEditor.keyValueEdit": "键值编辑",
   "kvEditor.key": "键",
   "kvEditor.value": "值",
   "kvEditor.description": "描述",
@@ -571,6 +575,9 @@ export const zh: Record<string, string> = {
   "envManager.selectEnv": "选择一个环境来编辑变量",
   "envManager.orCreateNew": "或创建新环境",
   "envManager.done": "完成",
+  "envManager.filterVariables": "筛选变量",
+  "envManager.initialValue": "初始值",
+  "envManager.currentValue": "当前值",
 
   // === API Tester - WebSocket Panel ===
   "wsPanel.disconnect": "断开",

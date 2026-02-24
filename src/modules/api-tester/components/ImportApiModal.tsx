@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useT } from '@/i18n';
 import { parseOpenAPI, parsePostmanCollection, ParsedCollection } from '../utils/openapi';
+import { parseCurl } from '../utils/codegen';
 import yaml from 'js-yaml';
 import '../styles/ImportApiModal.css';
 
@@ -9,11 +10,12 @@ const isTauri = !!(window as any).__TAURI_INTERNALS__;
 interface Props {
   onClose: () => void;
   onImport: (collection: ParsedCollection) => void | Promise<void>;
+  onImportCurl?: (data: { method: string; url: string; headers: Record<string, string>; body: string }) => void;
 }
 
-type ImportMode = 'paste' | 'file' | 'url';
+type ImportMode = 'paste' | 'file' | 'url' | 'curl';
 
-export function ImportApiModal({ onClose, onImport }: Props) {
+export function ImportApiModal({ onClose, onImport, onImportCurl }: Props) {
   const t = useT();
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
@@ -111,6 +113,9 @@ export function ImportApiModal({ onClose, onImport }: Props) {
             <button className={`import-mode-tab ${importMode === 'file' ? 'active' : ''}`} onClick={() => setImportMode('file')}>
               {t('importApiModal.tabFile')}
             </button>
+            <button className={`import-mode-tab ${importMode === 'curl' ? 'active' : ''}`} onClick={() => setImportMode('curl')}>
+              cURL
+            </button>
           </div>
 
           {importMode === 'url' && (
@@ -151,6 +156,16 @@ export function ImportApiModal({ onClose, onImport }: Props) {
             </div>
           )}
 
+          {importMode === 'curl' && (
+            <textarea
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              placeholder="curl -X GET https://api.example.com..."
+              spellCheck={false}
+              autoFocus
+            />
+          )}
+
           {error && <div className="import-error">{error}</div>}
 
           {preview && (
@@ -186,11 +201,18 @@ export function ImportApiModal({ onClose, onImport }: Props) {
           <button
             className="import-btn"
             onClick={async () => {
+              if (importMode === 'curl') {
+                if (content.trim().toLowerCase().startsWith('curl') && onImportCurl) {
+                  onImportCurl(parseCurl(content));
+                  onClose();
+                }
+                return;
+              }
               if (!preview) return;
               setImporting(true);
               try { await onImport(preview); } catch {} finally { setImporting(false); }
             }}
-            disabled={!preview || importing}
+            disabled={importMode === 'curl' ? !content.trim() : (!preview || importing)}
           >
             {importing ? t('importApiModal.importing') : totalRequests > 0 ? t('importApiModal.importWithCount', { count: totalRequests }) : t('importApiModal.import')}
           </button>

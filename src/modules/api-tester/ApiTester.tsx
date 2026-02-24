@@ -6,12 +6,9 @@ import { ResizableLayout } from '@/components/ResizableLayout';
 import { ResizableSplit } from '@/components/ResizableSplit';
 import { KeyValueEditor } from './components/KeyValueEditor';
 import { BodyEditor } from './components/BodyEditor';
-import { ToolsPanel } from './components/ToolsPanel';
 import { CodeGenModal } from './components/CodeGenModal';
-import { SettingsModal } from './components/SettingsModal';
-import { ImportCurlModal } from './components/ImportCurlModal';
 import { WebSocketPanel } from './components/WebSocketPanel';
-import { EnvironmentManager } from './components/EnvironmentManager';
+import { EnvironmentEditor } from './components/EnvironmentEditor';
 import { JsonTreeView } from './components/JsonTreeView';
 import { ScriptEditor } from './components/ScriptEditor';
 import { DiffViewer } from './components/DiffViewer';
@@ -21,7 +18,6 @@ import { CollectionRunner } from './components/CollectionRunner';
 import { CollectionTree } from './components/CollectionTree';
 import { CookieManager } from './components/CookieManager';
 import { Icons } from './components/Icons';
-import { generateCurl } from './utils/codegen';
 import { executeScript, ScriptContext, TestResult } from './utils/scripting';
 import { ParsedCollection } from './utils/openapi';
 import { resolveTemplate, resolveHeaders } from './utils/template';
@@ -43,14 +39,22 @@ const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 
 interface KVItem { key: string; value: string; description?: string; enabled: boolean; }
 interface FormDataItem { key: string; value: string; type: 'text' | 'file'; enabled: boolean; }
-type BodyType = 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw' | 'binary';
+type BodyType = 'none' | 'form-data' | 'x-www-form-urlencoded' | 'raw' | 'binary' | 'graphql';
+type RawType = 'json' | 'text' | 'javascript' | 'html' | 'xml';
 
 export function ApiTester() {
   const t = useT();
   const store = useStore();
   const tabs = useTabsStore();
   
-  const [sidebarTab, setSidebarTab] = useState<'collections' | 'history'>('collections');
+  const [sidebarTab, setSidebarTab] = useState<'collections' | 'environments' | 'history'>('collections');
+  const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null);
+  const [addingEnv, setAddingEnv] = useState(false);
+  const [newEnvName, setNewEnvName] = useState('');
+  const [contextInput, setContextInput] = useState<{ type: 'subfolder' | 'rename'; parentId: number } | null>(null);
+  const [contextInputValue, setContextInputValue] = useState('');
+  const [addingCol, setAddingCol] = useState(false);
+  const [newColName, setNewColName] = useState('');
   const [requestTab, setRequestTab] = useState<'params' | 'headers' | 'body' | 'auth' | 'scripts'>('params');
   const [responseTab, setResponseTab] = useState<'body' | 'headers' | 'cookies' | 'timing' | 'diff'>('body');
   const [responseView, setResponseView] = useState<'pretty' | 'raw' | 'tree'>('pretty');
@@ -59,13 +63,9 @@ export function ApiTester() {
   const [authType, setAuthType] = useState<'none' | 'basic' | 'bearer'>('none');
   const [authData, setAuthData] = useState({ username: '', password: '', token: '' });
 
-  const [showTools, setShowTools] = useState(false);
   const [showCodeGen, setShowCodeGen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showImportCurl, setShowImportCurl] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showWebSocket, setShowWebSocket] = useState(false);
-  const [showEnvManager, setShowEnvManager] = useState(false);
   const [showImportApi, setShowImportApi] = useState(false);
   const [showRunner, setShowRunner] = useState(false);
   const [showCookieManager, setShowCookieManager] = useState(false);
@@ -76,6 +76,7 @@ export function ApiTester() {
   const [bodyType, setBodyType] = useState<BodyType>('none');
   const [bodyContent, setBodyContent] = useState('');
   const [formData, setFormData] = useState<FormDataItem[]>([]);
+  const [rawType, setRawType] = useState<RawType>('json');
   
   // Script & Test state
   const [preScript, setPreScript] = useState('');
@@ -145,21 +146,16 @@ export function ApiTester() {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
           case 'Enter': e.preventDefault(); handleSend(); break;
-          case 's': e.preventDefault(); handleSaveRequest(); break;
           case 'n': e.preventDefault(); handleNewTab(); break;
           case 't': e.preventDefault(); handleNewTab(); break;
           case 'w': e.preventDefault(); activeTab && tabs.closeTab(activeTab.id); break;
           case 'l': e.preventDefault(); document.querySelector<HTMLInputElement>('.url-input')?.focus(); break;
-          case ',': e.preventDefault(); setShowSettings(true); break;
           case '/': e.preventDefault(); setShowShortcuts(true); break;
           case 'e': e.preventDefault(); break;
         }
       }
       if (e.key === 'Escape') {
-        setShowTools(false);
         setShowCodeGen(false);
-        setShowSettings(false);
-        setShowImportCurl(false);
         setShowShortcuts(false);
       }
     };
@@ -242,9 +238,12 @@ export function ApiTester() {
       finalHeaders = finalHeaders.filter(h => h.key.toLowerCase() !== 'authorization');
       finalHeaders.push({ key: 'Authorization', value: `Bearer ${authData.token}`, enabled: true });
     }
-    if (bodyType === 'json') {
+    if (bodyType === 'raw') {
+      const contentTypeMap: Record<string, string> = {
+        json: 'application/json', text: 'text/plain', javascript: 'application/javascript', html: 'text/html', xml: 'application/xml',
+      };
       finalHeaders = finalHeaders.filter(h => h.key.toLowerCase() !== 'content-type');
-      finalHeaders.push({ key: 'Content-Type', value: 'application/json', enabled: true });
+      finalHeaders.push({ key: 'Content-Type', value: contentTypeMap[rawType] || 'text/plain', enabled: true });
     }
 
     const headersObj: Record<string, string> = {};
@@ -331,23 +330,6 @@ export function ApiTester() {
     }
   };
 
-  const handleSaveRequest = async () => {
-    if (!activeTab) return;
-    const existing = activeTab.requestId ? store.requests.find(r => r.id === activeTab.requestId) : undefined;
-    const req: Request = {
-      id: activeTab.requestId,
-      collection_id: existing?.collection_id,
-      name: activeTab.name,
-      method: activeTab.method,
-      url: activeTab.url,
-      headers: activeTab.headers,
-      body: bodyContent,
-      body_type: bodyType,
-    };
-    const id = await store.saveRequest(req);
-    updateTab({ requestId: id, isDirty: false });
-  };
-
   const handleContextMenu = (e: React.MouseEvent, type: 'collection' | 'request', id: number) => {
     e.preventDefault();
     e.stopPropagation();
@@ -375,14 +357,6 @@ export function ApiTester() {
       body: data.body,
       bodyType: data.body ? 'raw' : 'none',
     });
-  };
-
-  const copyCurl = () => {
-    if (!activeTab) return;
-    const headersObj: Record<string, string> = {};
-    headers.filter(h => h.enabled && h.key).forEach(h => headersObj[h.key] = h.value);
-    const curl = generateCurl(activeTab.method, activeTab.url, headersObj, bodyContent);
-    navigator.clipboard.writeText(curl);
   };
 
   const handleImportApi = async (collection: ParsedCollection) => {
@@ -473,12 +447,65 @@ export function ApiTester() {
     <div className="sidebar-inner">
         <div className="sidebar-tabs">
           <button className={`sidebar-tab ${sidebarTab === 'collections' ? 'active' : ''}`} onClick={() => setSidebarTab('collections')}>{t('apiTester.collections')}</button>
+          <button className={`sidebar-tab ${sidebarTab === 'environments' ? 'active' : ''}`} onClick={() => setSidebarTab('environments')}>{t('apiTester.environments')}</button>
           <button className={`sidebar-tab ${sidebarTab === 'history' ? 'active' : ''}`} onClick={() => setSidebarTab('history')}>{t('apiTester.history')}</button>
         </div>
         <div className="sidebar-content">
-          {sidebarTab === 'collections' ? (
-            <CollectionTree onOpenRequest={openRequestInTab} onContextMenu={handleContextMenu} />
-          ) : (
+          {sidebarTab === 'collections' && (
+            <>
+              <div className="sidebar-header">
+                <span className="sidebar-title">{t('apiTester.collections')}</span>
+                <button className="icon-btn" onClick={() => setAddingCol(true)} title={t('apiTester.newCollection')}>+</button>
+              </div>
+              {addingCol && (
+                <div style={{ padding: '4px 8px', marginBottom: 4 }}>
+                  <input className="kv-input inline-create-input" autoFocus placeholder={t('apiTester.newCollection')} value={newColName}
+                    onChange={e => setNewColName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && newColName.trim()) { store.createCollection(newColName.trim()); setNewColName(''); setAddingCol(false); } if (e.key === 'Escape') { setNewColName(''); setAddingCol(false); } }}
+                    onBlur={() => { if (newColName.trim()) store.createCollection(newColName.trim()); setNewColName(''); setAddingCol(false); }} />
+                </div>
+              )}
+              <CollectionTree onOpenRequest={openRequestInTab} onContextMenu={handleContextMenu} />
+            </>
+          )}
+          {sidebarTab === 'environments' && (
+            <>
+              <div className="sidebar-header">
+                <span className="sidebar-title">{t('apiTester.environments')}</span>
+                <button className="icon-btn" onClick={() => setAddingEnv(true)}>+</button>
+              </div>
+              {addingEnv && (
+                <div style={{ padding: '4px 8px', marginBottom: 4 }}>
+                  <input className="kv-input inline-create-input" autoFocus placeholder={t('envManager.newEnvironment')} value={newEnvName}
+                    onChange={e => setNewEnvName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newEnvName.trim()) { store.createEnvironment(newEnvName.trim()); setNewEnvName(''); setAddingEnv(false); }
+                      if (e.key === 'Escape') { setAddingEnv(false); setNewEnvName(''); }
+                    }}
+                    onBlur={() => { if (newEnvName.trim()) store.createEnvironment(newEnvName.trim()); setNewEnvName(''); setAddingEnv(false); }} />
+                </div>
+              )}
+              <div className="env-sidebar-list">
+                <div
+                  className={`env-sidebar-item ${selectedEnvId === 0 ? 'active' : ''}`}
+                  onClick={() => setSelectedEnvId(0)}
+                >
+                  <span className="env-sidebar-name">Globals</span>
+                </div>
+                {store.environments.map(env => (
+                  <div
+                    key={env.id}
+                    className={`env-sidebar-item ${selectedEnvId === env.id ? 'active' : ''}`}
+                    onClick={() => { if (env.id) { setSelectedEnvId(env.id); store.setActiveEnvironment(env.id); } }}
+                  >
+                    <span className="env-sidebar-name">{env.name}</span>
+                    {env.is_active && <span className="env-active-dot">●</span>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {sidebarTab === 'history' && (
             <>
               <div className="sidebar-header">
                 <span className="sidebar-title">{t('apiTester.history')}</span>
@@ -497,30 +524,26 @@ export function ApiTester() {
     </div>
   );
 
+  // Get breadcrumb path for active request
+  const getBreadcrumb = () => {
+    if (!activeTab?.requestId) return null;
+    const req = store.requests.find(r => r.id === activeTab.requestId);
+    if (!req?.collection_id) return null;
+    const col = store.collections.find(c => c.id === req.collection_id);
+    return col ? col.name : null;
+  };
+
+  // Green dot indicators
+  const hasParams = params.some(p => p.key);
+  const hasHeaders = headers.some(h => h.key);
+  const hasBody = bodyType !== 'none';
+  const hasAuth = authType !== 'none';
+  const hasScripts = !!(preScript || testScript);
+  const headerCount = headers.filter(h => h.enabled && h.key).length;
+
   const mainContent = (
     <div className="main-content">
-        {/* Toolbar */}
-        <div className="toolbar">
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <button className="icon-btn" onClick={() => setShowImportCurl(true)} title={t('apiTester.importCurl')}>{Icons.import}</button>
-            <button className="icon-btn" onClick={() => setShowImportApi(true)} title={t('apiTester.importOpenApi')}>{Icons.folder}</button>
-            <button className="icon-btn" onClick={copyCurl} title={t('apiTester.copyAsCurl')}>{Icons.export}</button>
-            <button className="icon-btn" onClick={() => setShowCodeGen(true)} title={t('apiTester.generateCode')}>{Icons.code}</button>
-            <button className="icon-btn" onClick={() => setShowTools(true)} title={t('apiTester.tools')}>{Icons.tools}</button>
-            <button className="icon-btn" onClick={() => setShowWebSocket(!showWebSocket)} title={t('apiTester.webSocket')}>{Icons.websocket}</button>
-            <button className="icon-btn" onClick={() => setShowRunner(true)} title={t('apiTester.collectionRunner')}>{Icons.play}</button>
-          </div>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <select className="env-select" value={store.activeEnvId ?? ''} onChange={e => e.target.value && store.setActiveEnvironment(Number(e.target.value))}>
-              <option value="">{t('apiTester.noEnvironment')}</option>
-              {store.environments.map(env => <option key={env.id} value={env.id}>{env.name}</option>)}
-            </select>
-            <button className="icon-btn" onClick={() => setShowEnvManager(true)} title={t('apiTester.manageEnvironments')}>{Icons.env}</button>
-            <button className="icon-btn" onClick={() => setShowSettings(true)} title={t('apiTester.settings')}>{Icons.settings}</button>
-          </div>
-        </div>
-
-        {/* Tabs Bar */}
+        {/* Tabs Bar — at very top */}
         <div className="tabs-bar-wrapper">
           <button className="tabs-scroll-btn" onClick={() => { const el = document.querySelector('.tabs-bar'); if (el) el.scrollBy({ left: -150, behavior: 'smooth' }); }}>‹</button>
           <div className="tabs-bar">
@@ -537,10 +560,31 @@ export function ApiTester() {
         </div>
 
         {showWebSocket ? (
-          <WebSocketPanel />
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="breadcrumb-bar">
+              <div className="breadcrumb-left">
+                <button className="icon-btn" onClick={() => setShowWebSocket(false)} title="Back">←</button>
+                <span className="breadcrumb-path">WebSocket</span>
+              </div>
+            </div>
+            <WebSocketPanel />
+          </div>
         ) : activeTab ? (
           <>
-            {/* Request Bar */}
+            {/* Breadcrumb + Toolbar */}
+            <div className="breadcrumb-bar">
+              <div className="breadcrumb-left">
+                {getBreadcrumb() && <span className="breadcrumb-path">{getBreadcrumb()} / {activeTab.name}</span>}
+              </div>
+              <div className="breadcrumb-right">
+                <button className="icon-btn" onClick={() => setShowImportApi(true)} title={t('apiTester.import')}>{Icons.import}</button>
+                <button className="icon-btn" onClick={() => setShowCodeGen(true)} title={t('apiTester.generateCode')}>{Icons.code}</button>
+                <button className="icon-btn" onClick={() => setShowWebSocket(!showWebSocket)} title={t('apiTester.webSocket')}>{Icons.websocket}</button>
+                <button className="icon-btn" onClick={() => setShowRunner(true)} title={t('apiTester.collectionRunner')}>{Icons.play}</button>
+              </div>
+            </div>
+
+            {/* Method + URL + Send */}
             <div className="request-bar">
               <select className="method-select" value={activeTab.method} onChange={e => updateTab({ method: e.target.value })}>
                 {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
@@ -556,32 +600,40 @@ export function ApiTester() {
                 <input className="url-input" placeholder={t('apiTester.enterUrl')} value={activeTab.url}
                   onChange={e => updateTab({ url: e.target.value })} onKeyDown={e => e.key === 'Enter' && handleSend()} />
               </div>
-              <button className="send-btn" onClick={handleSend} disabled={store.loading}>{store.loading ? t('apiTester.sending') : t('apiTester.send')}</button>
-              <button className="icon-btn" onClick={handleSaveRequest} title={t('apiTester.save')}>{Icons.save}</button>
-              <button className="icon-btn" onClick={() => setShowCookieManager(true)} title="Cookies">🍪</button>
+              <button className="send-btn-primary" onClick={handleSend} disabled={store.loading}>{store.loading ? t('apiTester.sending') : t('apiTester.send')}</button>
             </div>
 
+            {/* Request config tabs with green dots */}
             <ResizableSplit
               top={
                 <div className="request-panel">
                 <div className="tabs">
-                  <button className={`tab ${requestTab === 'params' ? 'active' : ''}`} onClick={() => setRequestTab('params')}>{t('apiTester.params')}</button>
-                  <button className={`tab ${requestTab === 'headers' ? 'active' : ''}`} onClick={() => setRequestTab('headers')}>{t('apiTester.headers')}</button>
-                  <button className={`tab ${requestTab === 'body' ? 'active' : ''}`} onClick={() => setRequestTab('body')}>{t('apiTester.body')}</button>
-                  <button className={`tab ${requestTab === 'auth' ? 'active' : ''}`} onClick={() => setRequestTab('auth')}>{t('apiTester.auth')}</button>
-                  <button className={`tab ${requestTab === 'scripts' ? 'active' : ''}`} onClick={() => setRequestTab('scripts')}>{t('apiTester.scripts')}</button>
+                  <button className={`tab ${requestTab === 'params' ? 'active' : ''}`} onClick={() => setRequestTab('params')}>
+                    {t('apiTester.params')}{hasParams && <span className="tab-dot" />}
+                  </button>
+                  <button className={`tab ${requestTab === 'auth' ? 'active' : ''}`} onClick={() => setRequestTab('auth')}>
+                    {t('apiTester.auth')}{hasAuth && <span className="tab-dot" />}
+                  </button>
+                  <button className={`tab ${requestTab === 'headers' ? 'active' : ''}`} onClick={() => setRequestTab('headers')}>
+                    {t('apiTester.headers')}{headerCount > 0 && ` (${headerCount})`}{hasHeaders && <span className="tab-dot" />}
+                  </button>
+                  <button className={`tab ${requestTab === 'body' ? 'active' : ''}`} onClick={() => setRequestTab('body')}>
+                    {t('apiTester.body')}{hasBody && <span className="tab-dot" />}
+                  </button>
+                  <button className={`tab ${requestTab === 'scripts' ? 'active' : ''}`} onClick={() => setRequestTab('scripts')}>
+                    {t('apiTester.scripts')}{hasScripts && <span className="tab-dot" />}
+                  </button>
+                  <button className="icon-btn" onClick={() => setShowCookieManager(true)} style={{ marginLeft: 'auto', fontSize: 11 }}>Cookies</button>
                 </div>
                 <div className="panel-content">
                   {requestTab === 'params' && (
                     <div>
-                      <input className="kv-input" style={{ width: '100%', marginBottom: 12 }} placeholder={t('apiTester.requestName')}
-                        value={activeTab.name} onChange={e => updateTab({ name: e.target.value })} />
                       <div className="section-title">{t('apiTester.queryParams')}</div>
                       <KeyValueEditor items={params} onChange={updateUrlFromParams} placeholder={{ key: 'Key', value: 'Value' }} />
                     </div>
                   )}
                   {requestTab === 'headers' && <KeyValueEditor items={headers} onChange={updateHeadersInRequest} placeholder={{ key: 'Header', value: 'Value' }} />}
-                  {requestTab === 'body' && <BodyEditor bodyType={bodyType} body={bodyContent} formData={formData} onBodyTypeChange={setBodyType} onBodyChange={setBodyContent} onFormDataChange={setFormData} />}
+                  {requestTab === 'body' && <BodyEditor bodyType={bodyType} body={bodyContent} formData={formData} onBodyTypeChange={setBodyType} onBodyChange={setBodyContent} onFormDataChange={setFormData} rawType={rawType} onRawTypeChange={setRawType} />}
                   {requestTab === 'auth' && (
                     <div className="auth-panel">
                       <div className="section-title">{t('apiTester.authorizationType')}</div>
@@ -620,27 +672,29 @@ export function ApiTester() {
               <div className="response-panel">
                 {store.response ? (
                   <>
-                    <div className="response-status">
-                      <span className={`status-code ${store.response.status >= 200 && store.response.status < 400 ? 'success' : 'error'}`}>{store.response.status || 'Error'}</span>
-                      <span className="status-info">{store.response.time}ms</span>
-                      <span className="status-info">{(store.response.size / 1024).toFixed(2)} KB</span>
-                      <button className="icon-btn" onClick={() => navigator.clipboard.writeText(store.response?.body || '')} title={t('apiTester.copy2')}>{Icons.copy}</button>
-                    </div>
-                    <div className="tabs">
+                    <div className="tabs response-tabs-row">
                       <button className={`tab ${responseTab === 'body' ? 'active' : ''}`} onClick={() => setResponseTab('body')}>{t('apiTester.body')}</button>
                       <button className={`tab ${responseTab === 'headers' ? 'active' : ''}`} onClick={() => setResponseTab('headers')}>{t('apiTester.headers')}</button>
                       <button className={`tab ${responseTab === 'cookies' ? 'active' : ''}`} onClick={() => setResponseTab('cookies')}>{t('apiTester.cookies')}</button>
                       <button className={`tab ${responseTab === 'timing' ? 'active' : ''}`} onClick={() => setResponseTab('timing')}>{t('apiTester.timing')}</button>
                       <button className={`tab ${responseTab === 'diff' ? 'active' : ''}`} onClick={() => setResponseTab('diff')}>{t('apiTester.diff')}</button>
-                      {responseTab === 'body' && (
+                      <div className="response-status-inline">
+                        <span className={`status-code ${store.response.status >= 200 && store.response.status < 300 ? 'success' : store.response.status >= 300 && store.response.status < 400 ? 'redirect' : 'error'}`}>{store.response.status || 'Error'}</span>
+                        <span className="status-info">{store.response.time}ms</span>
+                        <span className="status-info">{(store.response.size / 1024).toFixed(2)} KB</span>
+                        <button className="icon-btn" onClick={() => navigator.clipboard.writeText(store.response?.body || '')} title={t('apiTester.copy2')}>{Icons.copy}</button>
+                      </div>
+                    </div>
+                    {responseTab === 'body' && (
+                      <div className="response-view-row">
                         <div className="response-view-toggle">
                           <button className={`view-btn ${responseView === 'pretty' ? 'active' : ''}`} onClick={() => setResponseView('pretty')}>{t('apiTester.pretty')}</button>
                           <button className={`view-btn ${responseView === 'raw' ? 'active' : ''}`} onClick={() => setResponseView('raw')}>{t('apiTester.raw')}</button>
                           <button className={`view-btn ${responseView === 'tree' ? 'active' : ''}`} onClick={() => setResponseView('tree')}>{t('apiTester.tree')}</button>
                         </div>
-                      )}
-                      <input className="search-input" placeholder={t('apiTester.search')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ marginLeft: 'auto' }} />
-                    </div>
+                        <input className="search-input" placeholder={t('apiTester.search')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                      </div>
+                    )}
                     {responseTab === 'body' ? (
                       responseView === 'tree' ? (
                         <div className="panel-content"><JsonTreeView data={store.response.body} /></div>
@@ -693,8 +747,26 @@ export function ApiTester() {
           {contextMenu.type === 'collection' ? (
             <>
               <div className="context-item" onClick={() => { tabs.addTab({ name: t('apiTester.newRequest') }); setContextMenu(null); }}>{t('apiTester.newRequest')}</div>
-              {(() => { const depth = getCollectionDepth(contextMenu.id); return depth < 3 ? <div className="context-item" onClick={() => { const n = prompt(t('apiTester.newSubfolder')); if (n) store.createCollection(n, contextMenu.id); setContextMenu(null); }}>{t('apiTester.newSubfolder')}</div> : null; })()}
-              <div className="context-item" onClick={() => { const n = prompt(t('apiTester.renamePrompt')); if (n) store.renameCollection(contextMenu.id, n); setContextMenu(null); }}>{t('apiTester.rename')}</div>
+              {(() => { const depth = getCollectionDepth(contextMenu.id); return depth < 3 ? <div className="context-item" onClick={() => { setContextInput({ type: 'subfolder', parentId: contextMenu.id }); setContextInputValue(''); }}>{t('apiTester.newSubfolder')}</div> : null; })()}
+              <div className="context-item" onClick={() => { const col = store.collections.find(c => c.id === contextMenu.id); setContextInput({ type: 'rename', parentId: contextMenu.id }); setContextInputValue(col?.name || ''); }}>{t('apiTester.rename')}</div>
+              {contextInput && (
+                <div style={{ padding: '4px 8px' }}>
+                  <input className="kv-input inline-create-input" autoFocus value={contextInputValue}
+                    placeholder={contextInput.type === 'subfolder' ? t('apiTester.newSubfolder') : t('apiTester.rename')}
+                    onChange={e => setContextInputValue(e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    onKeyDown={e => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter' && contextInputValue.trim()) {
+                        if (contextInput.type === 'subfolder') store.createCollection(contextInputValue.trim(), contextInput.parentId);
+                        else store.renameCollection(contextInput.parentId, contextInputValue.trim());
+                        setContextInput(null); setContextMenu(null);
+                      }
+                      if (e.key === 'Escape') { setContextInput(null); setContextMenu(null); }
+                    }}
+                    onBlur={() => { setContextInput(null); }} />
+                </div>
+              )}
               <div className="context-item danger" onClick={() => { store.deleteCollection(contextMenu.id); setContextMenu(null); }}>{t('apiTester.delete')}</div>
             </>
           ) : (
@@ -713,8 +785,6 @@ export function ApiTester() {
           headers={Object.fromEntries(headers.filter(h => h.enabled && h.key).map(h => [h.key, h.value]))}
           body={bodyContent} onClose={() => setShowCodeGen(false)} />
       )}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-      {showImportCurl && <ImportCurlModal onImport={handleImportCurl} onClose={() => setShowImportCurl(false)} />}
       {showShortcuts && (
         <div className="modal-overlay" onClick={() => setShowShortcuts(false)}>
           <div className="modal shortcuts-modal" onClick={e => e.stopPropagation()}>
@@ -722,11 +792,9 @@ export function ApiTester() {
             <div className="modal-body">
               {[
                 ['Ctrl + Enter', t('apiTester.shortcut.sendRequest')],
-                ['Ctrl + S', t('apiTester.shortcut.saveRequest')],
                 ['Ctrl + N / T', t('apiTester.shortcut.newTab')],
                 ['Ctrl + W', t('apiTester.shortcut.closeTab')],
                 ['Ctrl + L', t('apiTester.shortcut.focusUrl')],
-                ['Ctrl + ,', t('apiTester.shortcut.settings')],
                 ['Ctrl + /', t('apiTester.shortcut.shortcuts')],
                 ['Esc', t('apiTester.shortcut.closeModal')],
               ].map(([key, desc]) => (
@@ -739,13 +807,11 @@ export function ApiTester() {
           </div>
         </div>
       )}
-      {showTools && <ToolsPanel onClose={() => setShowTools(false)} />}
-      {showEnvManager && <EnvironmentManager onClose={() => setShowEnvManager(false)} />}
-      {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} />}
+      {showImportApi && <ImportApiModal onClose={() => setShowImportApi(false)} onImport={handleImportApi} onImportCurl={handleImportCurl} />}
       {showRunner && <CollectionRunner collections={store.collections} onClose={() => setShowRunner(false)} environment={store.variables.reduce((acc, v) => ({ ...acc, [v.key]: v.value }), {})} />}
       {showCookieManager && <CookieManager onClose={() => setShowCookieManager(false)} />}
 
-      <ResizableLayout sidebar={sidebarContent} main={mainContent} className="app" />
+      <ResizableLayout sidebar={sidebarContent} main={sidebarTab === 'environments' && selectedEnvId !== null ? <EnvironmentEditor envId={selectedEnvId} /> : mainContent} className="app" />
     </>
   );
 }
