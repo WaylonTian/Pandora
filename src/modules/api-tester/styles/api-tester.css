@@ -88,6 +88,8 @@
   letter-spacing: 0.02em;
   transition: var(--transition-fast);
   position: relative;
+  user-select: none;
+  outline: none;
 }
 
 .sidebar-tab:hover {
@@ -137,6 +139,7 @@
   font-size: 12px;
   color: var(--text-secondary);
   border-radius: 4px;
+  user-select: none;
 }
 .env-sidebar-item:hover { background: var(--bg-hover); }
 .env-sidebar-item.active {
@@ -209,6 +212,7 @@
   margin: 1px 4px;
   transition: var(--transition-fast);
   font-size: 13px;
+  user-select: none;
 }
 
 .tree-item:hover {
@@ -921,6 +925,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  outline: none;
 }
 
 .icon-btn:hover {
