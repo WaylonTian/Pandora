@@ -668,8 +668,6 @@ export function ApiTester() {
                 <div className="panel-content">
                   {requestTab === 'params' && (
                     <div>
-                      <input className="kv-input" style={{ width: '100%', marginBottom: 12 }} placeholder={t('apiTester.requestName')}
-                        value={activeTab.name} onChange={e => updateTab({ name: e.target.value })} />
                       <div className="section-title">{t('apiTester.queryParams')}</div>
                       <KeyValueEditor items={params} onChange={updateUrlFromParams} placeholder={{ key: 'Key', value: 'Value' }} />
                     </div>
