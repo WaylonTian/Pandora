@@ -1,6 +1,37 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+build/
+out/
+
+# Rust / Tauri
 src-tauri/target/
-$extractDir/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+*.tgz
+.cache/
 .worktrees/
-node_modules
+$extractDir/
