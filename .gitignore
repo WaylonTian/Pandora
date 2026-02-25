@@ -35,3 +35,7 @@ npm-debug.log*
 .cache/
 .worktrees/
 $extractDir/
+.kiro/
+.agents/
+_bmad/
+_bmad-output/
