@@ -3,6 +3,7 @@ mod db;
 mod script;
 mod system;
 mod storage;
+mod toolkit;
 mod plugin;
 
 use storage::{AppDatabase, Collection, ApiRequest, Environment, Variable, HistoryItem, Cookie};
@@ -276,6 +277,7 @@ pub fn run() {
             create_script_file, delete_script_file, rename_script_file, create_script_folder,
             read_script_meta, write_script_meta, start_script, kill_script,
             get_local_ips, get_public_ip, read_hosts_file, write_hosts_file,
+            toolkit::toolkit_list_ports, toolkit::toolkit_kill_process, toolkit::toolkit_get_env_vars,
             db::commands::create_connection,
             db::commands::test_connection,
             db::commands::connect,

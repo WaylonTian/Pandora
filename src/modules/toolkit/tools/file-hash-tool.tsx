@@ -1,39 +1,54 @@
 import { useState } from "react";
 import { useT } from "@/i18n";
+import { md5 } from "js-md5";
 import { FileDropZone } from "../components/FileDropZone";
 import { ResultCard } from "../components/ResultCard";
 
+const SHA_ALGOS = ["SHA-1", "SHA-256", "SHA-512"];
+
+async function hashBuf(algo: string, buf: ArrayBuffer) {
+  const h = await crypto.subtle.digest(algo, buf);
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 export function FileHashTool() {
   const t = useT();
-  const [hashes, setHashes] = useState<[string, string][]>([]);
-  const [verify, setVerify] = useState("");
+  const [results, setResults] = useState<{ algo: string; hash: string }[]>([]);
   const [fileName, setFileName] = useState("");
+  const [verify, setVerify] = useState("");
 
   const handleFile = async (file: File) => {
     setFileName(file.name);
     const buf = await file.arrayBuffer();
-    const algos: [string, string][] = [["SHA-1", "SHA-1"], ["SHA-256", "SHA-256"], ["SHA-512", "SHA-512"]];
-    const results: [string, string][] = [];
-    for (const [name, algo] of algos) {
-      const hash = await crypto.subtle.digest(algo, buf);
-      results.push([name, Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("")]);
-    }
-    setHashes(results);
+    const hashes = await Promise.all([
+      { algo: "MD5", hash: md5(buf) },
+      ...await Promise.all(SHA_ALGOS.map(async a => ({ algo: a, hash: await hashBuf(a, buf) }))),
+    ]);
+    setResults(hashes);
   };
 
-  const match = verify.trim() ? hashes.some(([, h]) => h.toLowerCase() === verify.trim().toLowerCase()) : null;
+  const match = verify.trim() && results.some(r => r.hash.toLowerCase() === verify.trim().toLowerCase());
 
   return (
     <div className="space-y-4">
       <FileDropZone onFile={handleFile} />
       {fileName && <div className="text-sm font-medium">{fileName}</div>}
-      <div className="space-y-2">{hashes.map(([name, hash]) => <ResultCard key={name} label={name} value={hash} />)}</div>
-      {hashes.length > 0 && (
-        <div>
-          <input className="w-full p-2.5 border border-border rounded-lg bg-muted/30 text-foreground font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            value={verify} onChange={(e) => setVerify(e.target.value)} placeholder={t("toolkit.fileHashTool.verifyPlaceholder")} />
-          {match !== null && <div className={`mt-2 text-sm font-medium ${match ? "text-green-500" : "text-red-500"}`}>{match ? "✓ Match!" : "✗ No match"}</div>}
-        </div>
+      {results.length > 0 && (
+        <>
+          <div className="space-y-2">
+            {results.map(r => <ResultCard key={r.algo} label={r.algo} value={r.hash} />)}
+          </div>
+          <div className="pt-3 border-t border-border">
+            <div className="text-sm font-medium mb-2">{t("toolkit.fileHashTool.verify")}</div>
+            <input className="w-full p-2.5 border border-border rounded-lg bg-muted/30 text-foreground font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={verify} onChange={e => setVerify(e.target.value)} placeholder={t("toolkit.fileHashTool.verifyPlaceholder")} />
+            {verify.trim() && (
+              <div className={`mt-2 p-2 rounded-lg text-sm font-medium ${match ? "bg-green-500/10 text-green-500" : "bg-destructive/10 text-destructive"}`}>
+                {match ? "✅ " + t("toolkit.fileHashTool.match") : "❌ " + t("toolkit.fileHashTool.noMatch")}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
