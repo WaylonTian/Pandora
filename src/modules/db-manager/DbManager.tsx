@@ -263,7 +263,8 @@ function MainContent() {
             connectionId={actualConnectionId}
             tableName={activeTab.tableName}
             database={activeTab.database}
-            pageSize={300}
+            pageSize={50}
+            
             onEdit={(row, column, value) => {
               console.log("Edit:", row, column, value);
             }}
@@ -375,7 +376,6 @@ function AppContent() {
 
   const loadConnections = useAppStore((state) => state.loadConnections);
   const addQueryTab = useAppStore((state) => state.addQueryTab);
-  const openDataTab = useAppStore((state) => state.openDataTab);
   const closeQueryTab = useAppStore((state) => state.closeQueryTab);
   const activeTabId = useAppStore((state) => state.activeTabId);
   const removeConnection = useAppStore((state) => state.removeConnection);
@@ -443,7 +443,7 @@ function AppContent() {
   }, []);
 
   const handleSelectTable = React.useCallback(
-    (_connectionId: string, tableName: string, database?: string) => {
+    (_connectionId: string, _tableName: string, _database?: string) => {
       // 仅选中，不打开 tab
     },
     []

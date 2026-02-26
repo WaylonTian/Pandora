@@ -35,6 +35,8 @@ export interface DataBrowserProps {
   tableName: string;
   /** Database name for context switching */
   database?: string;
+  /** Max total rows to load (default 300) */
+  limit?: number;
   /** Number of rows per page */
   pageSize: number;
   /** Callback when a cell is edited */
@@ -79,7 +81,7 @@ interface ModifiedCell {
 }
 
 // Available page size options
-const PAGE_SIZE_OPTIONS = [50, 100, 200, 300, 500];
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
 
 // ============================================================================
 // Icon Components
@@ -703,15 +705,21 @@ function Toolbar({
  */
 interface PaginationControlsProps {
   pagination: PaginationState;
+  rowLimit: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  onRowLimitChange: (limit: number) => void;
   isLoading: boolean;
 }
 
+const LIMIT_OPTIONS = [100, 200, 300, 500, 1000, 5000];
+
 function PaginationControls({
   pagination,
+  rowLimit,
   onPageChange,
   onPageSizeChange,
+  onRowLimitChange,
   isLoading,
 }: PaginationControlsProps) {
   const t = useT();
@@ -759,21 +767,34 @@ function PaginationControls({
         </button>
       </div>
 
-      {/* Right side: Page size selector */}
-      <div className="flex items-center gap-1.5 text-xs">
-        <span className="text-muted-foreground">{t('dataBrowser.perPage')}</span>
-        <select
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          disabled={isLoading}
-          className="h-7 rounded-md border border-input bg-background px-2 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          {PAGE_SIZE_OPTIONS.map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
+      {/* Right side: Limit + Page size selectors */}
+      <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">Limit</span>
+          <select
+            value={rowLimit}
+            onChange={(e) => onRowLimitChange(Number(e.target.value))}
+            disabled={isLoading}
+            className="h-7 rounded-md border border-input bg-background px-2 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {LIMIT_OPTIONS.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">{t('dataBrowser.perPage')}</span>
+          <select
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            disabled={isLoading}
+            className="h-7 rounded-md border border-input bg-background px-2 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   );
@@ -1023,7 +1044,8 @@ export function DataBrowser({
   connectionId,
   tableName,
   database,
-  pageSize: initialPageSize,
+  limit: initialLimit = 300,
+  pageSize: initialPageSize = 50,
   onEdit,
   className,
 }: DataBrowserProps) {
@@ -1049,6 +1071,9 @@ export function DataBrowser({
     pageSize: initialPageSize,
     totalRows: 0,
   });
+
+  // State for row limit
+  const [rowLimit, setRowLimit] = React.useState(initialLimit);
 
   // State for editing
   const [editingCell, setEditingCell] = React.useState<EditingCell | null>(null);
@@ -1091,27 +1116,35 @@ export function DataBrowser({
         totalRows = typeof countValue === "number" ? countValue : parseInt(String(countValue), 10);
       }
 
-      // Update pagination with total rows
-      setPagination((prev) => ({ ...prev, totalRows }));
+      // Cap totalRows by rowLimit
+      const cappedTotal = Math.min(totalRows, rowLimit);
+      setPagination((prev) => ({ ...prev, totalRows: cappedTotal }));
 
-      // Calculate offset
+      // Calculate offset within the limit
       const offset = calculateOffset(pagination.currentPage, pagination.pageSize);
 
-      // Fetch the actual data
+      // Fetch the actual data — pageSize but never exceed rowLimit
+      const effectiveLimit = Math.min(pagination.pageSize, rowLimit - offset);
+      if (effectiveLimit <= 0) {
+        setColumns([]);
+        setRows([]);
+        setOriginalRows([]);
+        return;
+      }
+
       const dataQuery = buildDataQuery(
         tableName,
         sortState,
         appliedFilter,
-        pagination.pageSize,
+        effectiveLimit,
         offset
       );
       const dataResult = await tauriCommands.executeQuery(connectionId, dataQuery, database);
 
       setColumns(dataResult.columns);
       setRows(dataResult.rows);
-      setOriginalRows(dataResult.rows.map((row) => [...row])); // Deep copy for tracking changes
+      setOriginalRows(dataResult.rows.map((row) => [...row]));
       
-      // Clear modifications when data is refreshed
       setModifiedCells(new Map());
       setEditingCell(null);
     } catch (err) {
@@ -1120,7 +1153,7 @@ export function DataBrowser({
     } finally {
       setIsLoading(false);
     }
-  }, [connectionId, tableName, sortState, appliedFilter, pagination.currentPage, pagination.pageSize]);
+  }, [connectionId, tableName, database, sortState, appliedFilter, pagination.currentPage, pagination.pageSize, rowLimit]);
 
   // Fetch table info on mount
   React.useEffect(() => {
@@ -1400,8 +1433,10 @@ export function DataBrowser({
         <EmptyState tableName={tableName} />
         <PaginationControls
           pagination={pagination}
+          rowLimit={rowLimit}
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
+          onRowLimitChange={(limit) => { setRowLimit(limit); setPagination(p => ({ ...p, currentPage: 1 })); }}
           isLoading={isLoading}
         />
       </div>
@@ -1439,8 +1474,10 @@ export function DataBrowser({
       />
       <PaginationControls
         pagination={pagination}
+        rowLimit={rowLimit}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onRowLimitChange={(limit) => { setRowLimit(limit); setPagination(p => ({ ...p, currentPage: 1 })); }}
         isLoading={isLoading}
       />
     </div>
