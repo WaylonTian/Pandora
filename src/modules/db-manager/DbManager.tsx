@@ -263,7 +263,7 @@ function MainContent() {
             connectionId={actualConnectionId}
             tableName={activeTab.tableName}
             database={activeTab.database}
-            pageSize={25}
+            pageSize={300}
             onEdit={(row, column, value) => {
               console.log("Edit:", row, column, value);
             }}
@@ -444,9 +444,9 @@ function AppContent() {
 
   const handleSelectTable = React.useCallback(
     (_connectionId: string, tableName: string, database?: string) => {
-      openDataTab(tableName, database);
+      // 仅选中，不打开 tab
     },
-    [openDataTab]
+    []
   );
 
   const handleToggleHistory = React.useCallback(() => {
