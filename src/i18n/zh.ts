@@ -132,6 +132,7 @@ export const zh: Record<string, string> = {
   "queryResult.columns": "列",
   "queryResult.exportCsv": "导出为 CSV",
   "queryResult.exportJson": "导出为 JSON",
+  "queryResult.exportInsert": "导出为 INSERT SQL",
   "queryResult.clickToSort": "点击排序",
   "queryResult.queryExecutedSuccessfully": "查询执行成功",
   "queryResult.queryReturnedEmpty": "查询返回空结果",

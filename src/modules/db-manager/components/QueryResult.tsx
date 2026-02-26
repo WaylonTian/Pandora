@@ -5,6 +5,7 @@ import type { QueryResult, Value, ColumnInfo } from "../store/index";
 import { useActiveTab } from "../store/index";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { CellDetailModal } from "./CellDetailModal";
 
 /**
  * QueryResult Component
@@ -193,6 +194,20 @@ function generateJSON(result: QueryResult): string {
   return JSON.stringify(data, null, 2);
 }
 
+/** 生成 INSERT SQL 内容 */
+function generateInsertSQL(result: QueryResult, tableName: string = 'table_name'): string {
+  const cols = result.columns.map(c => c.name).join(', ');
+  return result.rows.map(row => {
+    const vals = row.map(v => {
+      if (v === null) return 'NULL';
+      if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+      if (typeof v === 'number') return String(v);
+      return `'${String(v).replace(/'/g, "''")}'`;
+    });
+    return `INSERT INTO ${tableName} (${cols}) VALUES (${vals.join(', ')});`;
+  }).join('\n');
+}
+
 /** 将结果导出为 CSV 格式 */
 async function exportToCSV(result: QueryResult, defaultFilename: string = "export.csv", t: (key: string) => string) {
   try {
@@ -278,9 +293,10 @@ interface ResultMetaBarProps {
   columnCount: number;
   onExportCSV: () => void;
   onExportJSON: () => void;
+  onExportInsert: () => void;
 }
 
-function ResultMetaBar({ executionTime, affectedRows, rowCount, columnCount, onExportCSV, onExportJSON }: ResultMetaBarProps) {
+function ResultMetaBar({ executionTime, affectedRows, rowCount, columnCount, onExportCSV, onExportJSON, onExportInsert }: ResultMetaBarProps) {
   const t = useT();
   return (
     <div className="flex items-center gap-4 border-b border-border bg-card/50 px-3 py-1.5 text-xs text-muted-foreground">
@@ -310,6 +326,14 @@ function ResultMetaBar({ executionTime, affectedRows, rowCount, columnCount, onE
         >
           <DownloadIcon className="h-3 w-3" />
           JSON
+        </button>
+        <button
+          onClick={onExportInsert}
+          className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
+          title={t('queryResult.exportInsert')}
+        >
+          <DownloadIcon className="h-3 w-3" />
+          INSERT
         </button>
       </div>
     </div>
@@ -359,20 +383,24 @@ function TableHeaderCell({ column, columnIndex, sortState, onSort }: TableHeader
 interface TableDataCellProps {
   value: Value;
   isLastColumn: boolean;
+  onExpand?: (value: string) => void;
 }
 
-function TableDataCell({ value, isLastColumn }: TableDataCellProps) {
+function TableDataCell({ value, isLastColumn, onExpand }: TableDataCellProps) {
   const isNull = value === null;
   const displayValue = formatValue(value);
+  const isLong = displayValue.length > 50;
 
   return (
     <td
       className={cn(
         "whitespace-nowrap border-b px-3 py-1.5 text-xs font-mono",
         !isLastColumn && "border-r border-border",
-        isNull && "italic text-muted-foreground"
+        isNull && "italic text-muted-foreground",
+        isLong && "cursor-pointer hover:bg-accent/40"
       )}
-      title={displayValue}
+      title={isLong ? "Click to expand" : displayValue}
+      onClick={isLong && onExpand ? () => onExpand(displayValue) : undefined}
     >
       <span className={cn("block max-w-[300px] truncate", isNull && "opacity-60")}>{displayValue}</span>
     </td>
@@ -384,9 +412,10 @@ interface ResultTableContentProps {
   rows: Value[][];
   sortState: SortState;
   onSort: (columnIndex: number) => void;
+  onCellExpand?: (value: string, columnName: string) => void;
 }
 
-function ResultTableContent({ columns, rows, sortState, onSort }: ResultTableContentProps) {
+function ResultTableContent({ columns, rows, sortState, onSort, onCellExpand }: ResultTableContentProps) {
   const sortedRows = React.useMemo(() => {
     if (sortState.columnIndex === null || sortState.direction === null) return rows;
     return [...rows].sort((a, b) =>
@@ -410,7 +439,7 @@ function ResultTableContent({ columns, rows, sortState, onSort }: ResultTableCon
             <tr key={rowIndex} className={cn("transition-colors hover:bg-accent/30", rowIndex % 2 === 0 ? "bg-background" : "bg-muted/10")}>
               <td className="sticky left-0 z-10 w-12 border-b border-r border-border bg-inherit px-2 py-1.5 text-center text-[10px] text-muted-foreground">{rowIndex + 1}</td>
               {row.map((value, colIndex) => (
-                <TableDataCell key={`${rowIndex}-${colIndex}`} value={value} isLastColumn={colIndex === row.length - 1} />
+                <TableDataCell key={`${rowIndex}-${colIndex}`} value={value} isLastColumn={colIndex === row.length - 1} onExpand={onCellExpand ? (v) => onCellExpand(v, columns[colIndex]?.name || '') : undefined} />
               ))}
             </tr>
           ))}
@@ -432,6 +461,7 @@ interface SingleResultProps {
 function SingleResult({ result, resultIndex }: SingleResultProps) {
   const t = useT();
   const [sortState, setSortState] = React.useState<SortState>({ columnIndex: null, direction: null });
+  const [cellDetail, setCellDetail] = React.useState<{ value: string; columnName: string } | null>(null);
 
   React.useEffect(() => {
     setSortState({ columnIndex: null, direction: null });
@@ -448,6 +478,21 @@ function SingleResult({ result, resultIndex }: SingleResultProps) {
 
   const handleExportCSV = () => exportToCSV(result, `result_${resultIndex + 1}.csv`, t);
   const handleExportJSON = () => exportToJSON(result, `result_${resultIndex + 1}.json`, t);
+  const handleExportInsert = async () => {
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+      const filePath = await save({ defaultPath: `result_${resultIndex + 1}.sql`, filters: [{ name: 'SQL', extensions: ['sql'] }] });
+      if (filePath) {
+        const sql = generateInsertSQL(result);
+        await writeTextFile(filePath, sql);
+      }
+    } catch (error) {
+      // Copy to clipboard as fallback
+      const sql = generateInsertSQL(result);
+      await navigator.clipboard.writeText(sql);
+    }
+  };
 
   // 无数据但有影响行数（UPDATE/DELETE 等）
   if (result.rows.length === 0 && result.affected_rows > 0) {
@@ -460,6 +505,7 @@ function SingleResult({ result, resultIndex }: SingleResultProps) {
           columnCount={result.columns.length}
           onExportCSV={handleExportCSV}
           onExportJSON={handleExportJSON}
+          onExportInsert={handleExportInsert}
         />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
           <RowsIcon className="h-12 w-12 opacity-50" />
@@ -481,6 +527,7 @@ function SingleResult({ result, resultIndex }: SingleResultProps) {
           columnCount={result.columns.length}
           onExportCSV={handleExportCSV}
           onExportJSON={handleExportJSON}
+          onExportInsert={handleExportInsert}
         />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
           <EmptyIcon className="h-12 w-12 opacity-50" />
@@ -499,8 +546,17 @@ function SingleResult({ result, resultIndex }: SingleResultProps) {
         columnCount={result.columns.length}
         onExportCSV={handleExportCSV}
         onExportJSON={handleExportJSON}
+          onExportInsert={handleExportInsert}
       />
-      <ResultTableContent columns={result.columns} rows={result.rows} sortState={sortState} onSort={handleSort} />
+      <ResultTableContent columns={result.columns} rows={result.rows} sortState={sortState} onSort={handleSort} onCellExpand={(value, columnName) => setCellDetail({ value, columnName })} />
+      {cellDetail && (
+        <CellDetailModal
+          isOpen={true}
+          onClose={() => setCellDetail(null)}
+          value={cellDetail.value}
+          columnName={cellDetail.columnName}
+        />
+      )}
     </div>
   );
 }

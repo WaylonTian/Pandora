@@ -126,6 +126,7 @@ export const en: Record<string, string> = {
   "queryResult.columns": "Columns",
   "queryResult.exportCsv": "Export as CSV",
   "queryResult.exportJson": "Export as JSON",
+  "queryResult.exportInsert": "Export as INSERT SQL",
   "queryResult.clickToSort": "Click to Sort",
   "queryResult.queryExecutedSuccessfully": "Query executed successfully",
   "queryResult.queryReturnedEmpty": "Query returned empty result",
