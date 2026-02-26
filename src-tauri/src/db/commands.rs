@@ -985,3 +985,52 @@ pub async fn get_table_stats(
     
     Ok(stats)
 }
+
+
+// ============================================================================
+// Schema Object Commands (Views, Functions, Procedures, Triggers)
+// ============================================================================
+
+#[tauri::command]
+pub async fn list_views(
+    connection_id: String,
+    database: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+    super::schema::list_views(conn, &database).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_functions(
+    connection_id: String,
+    database: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+    super::schema::list_functions(conn, &database).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_procedures(
+    connection_id: String,
+    database: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+    super::schema::list_procedures(conn, &database).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_triggers(
+    connection_id: String,
+    database: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+    super::schema::list_triggers(conn, &database).await.map_err(|e| e.to_string())
+}

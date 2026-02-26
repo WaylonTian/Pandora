@@ -217,6 +217,15 @@ export interface SchemaState {
   expandedNodes: Set<string>;
   isLoadingSchema: boolean;
   schemaError: string | null;
+  // Schema objects per database
+  views: Record<string, string[]>;
+  functions: Record<string, string[]>;
+  procedures: Record<string, string[]>;
+  triggers: Record<string, string[]>;
+  // Lazy loading tracking
+  loadedDatabases: Set<string>;
+  // Tree search
+  treeSearchQuery: string;
 }
 
 // ============================================================================
@@ -285,12 +294,16 @@ export interface SchemaActions {
   loadTableInfo: (tableName: string, database?: string) => Promise<void>;
   // Load tables for a database
   loadTables: (database: string) => Promise<void>;
+  // Load all schema objects for a database (tables, views, functions, procedures, triggers)
+  loadDatabaseObjects: (database: string) => Promise<void>;
   // Toggle node expansion in the tree
   toggleNodeExpansion: (nodeId: string) => void;
   // Expand a node in the tree (without toggling)
   expandNode: (nodeId: string) => void;
   // Clear schema state
   clearSchema: () => void;
+  // Set tree search query
+  setTreeSearchQuery: (query: string) => void;
 }
 
 // ============================================================================
@@ -481,6 +494,19 @@ export const tauriCommands = {
    */
   batchImport: (connectionId: string, tableName: string, columns: string[], rows: Value[][]): Promise<number> =>
     tauriInvoke<number>('batch_import', { connectionId, tableName, columns, rows }),
+
+  // Schema object commands
+  listViews: (connectionId: string, database: string): Promise<string[]> =>
+    tauriInvoke<string[]>('list_views', { connectionId, database }),
+
+  listFunctions: (connectionId: string, database: string): Promise<string[]> =>
+    tauriInvoke<string[]>('list_functions', { connectionId, database }),
+
+  listProcedures: (connectionId: string, database: string): Promise<string[]> =>
+    tauriInvoke<string[]>('list_procedures', { connectionId, database }),
+
+  listTriggers: (connectionId: string, database: string): Promise<string[]> =>
+    tauriInvoke<string[]>('list_triggers', { connectionId, database }),
 };
 
 // ============================================================================
@@ -518,6 +544,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   expandedNodes: new Set<string>(),
   isLoadingSchema: false,
   schemaError: null,
+  views: {},
+  functions: {},
+  procedures: {},
+  triggers: {},
+  loadedDatabases: new Set<string>(),
+  treeSearchQuery: '',
 
   // =========================================================================
   // Connection Actions
@@ -975,6 +1007,42 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   /**
+   * Loads all schema objects for a database (tables, views, functions, procedures, triggers)
+   */
+  loadDatabaseObjects: async (database: string) => {
+    const { activeConnectionId, connectionIdMap } = get();
+    if (!activeConnectionId) return;
+    const actualConnectionId = connectionIdMap[activeConnectionId] || activeConnectionId;
+
+    set({ isLoadingSchema: true, schemaError: null });
+    try {
+      const [tables, views, functions, procedures, triggers] = await Promise.all([
+        tauriCommands.listTables(actualConnectionId, database),
+        tauriCommands.listViews(actualConnectionId, database),
+        tauriCommands.listFunctions(actualConnectionId, database),
+        tauriCommands.listProcedures(actualConnectionId, database),
+        tauriCommands.listTriggers(actualConnectionId, database),
+      ]);
+      set((state) => {
+        const newLoaded = new Set(state.loadedDatabases);
+        newLoaded.add(database);
+        return {
+          tables: { ...state.tables, [database]: tables },
+          views: { ...state.views, [database]: views },
+          functions: { ...state.functions, [database]: functions },
+          procedures: { ...state.procedures, [database]: procedures },
+          triggers: { ...state.triggers, [database]: triggers },
+          loadedDatabases: newLoaded,
+          isLoadingSchema: false,
+        };
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      set({ schemaError: errorMessage, isLoadingSchema: false });
+    }
+  },
+
+  /**
    * Loads detailed information about a table
    */
   loadTableInfo: async (tableName: string, database?: string) => {
@@ -1037,7 +1105,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
       tableInfo: {},
       expandedNodes: new Set<string>(),
       schemaError: null,
+      views: {},
+      functions: {},
+      procedures: {},
+      triggers: {},
+      loadedDatabases: new Set<string>(),
+      treeSearchQuery: '',
     });
+  },
+
+  setTreeSearchQuery: (query: string) => {
+    set({ treeSearchQuery: query });
   },
 }));
 

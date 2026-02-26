@@ -1959,3 +1959,146 @@ mod property_tests {
         }
     }
 }
+
+
+// ============================================================================
+// Views, Functions, Procedures, Triggers
+// ============================================================================
+
+pub async fn list_views(
+    conn: Arc<dyn DatabaseConnection>,
+    database: &str,
+) -> Result<Vec<String>, DbError> {
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<MySqlConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let mut c = mysql_conn.get_conn().await?;
+            let use_db = format!("USE `{}`", database.replace('`', "``"));
+            c.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+            let rows: Vec<Option<String>> = c.query("SELECT TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = DATABASE()").await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.into_iter().flatten().collect())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let client = pg_conn.get_client().await;
+            let rows = client.query(
+                "SELECT viewname FROM pg_views WHERE schemaname = $1",
+                &[&database],
+            ).await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.iter().map(|r| r.get::<_, String>(0)).collect())
+        }
+        DatabaseType::SQLite => {
+            let sqlite_conn = conn.as_any().downcast_ref::<SqliteConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let conn_guard = sqlite_conn.get_connection().lock().map_err(|e| DbError::schema(e.to_string()))?;
+            let mut stmt = conn_guard.prepare("SELECT name FROM sqlite_master WHERE type='view' ORDER BY name")
+                .map_err(|e| DbError::schema(e.to_string()))?;
+            let names: Vec<String> = stmt.query_map([], |row| row.get(0))
+                .map_err(|e| DbError::schema(e.to_string()))?
+                .filter_map(|r| r.ok())
+                .collect();
+            Ok(names)
+        }
+    }
+}
+
+pub async fn list_functions(
+    conn: Arc<dyn DatabaseConnection>,
+    database: &str,
+) -> Result<Vec<String>, DbError> {
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<MySqlConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let mut c = mysql_conn.get_conn().await?;
+            let use_db = format!("USE `{}`", database.replace('`', "``"));
+            c.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+            let rows: Vec<Option<String>> = c.query("SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_TYPE = 'FUNCTION'").await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.into_iter().flatten().collect())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let client = pg_conn.get_client().await;
+            let rows = client.query(
+                "SELECT routine_name FROM information_schema.routines WHERE routine_schema = $1 AND routine_type = 'FUNCTION'",
+                &[&database],
+            ).await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.iter().map(|r| r.get::<_, String>(0)).collect())
+        }
+        DatabaseType::SQLite => Ok(vec![]),
+    }
+}
+
+pub async fn list_procedures(
+    conn: Arc<dyn DatabaseConnection>,
+    database: &str,
+) -> Result<Vec<String>, DbError> {
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<MySqlConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let mut c = mysql_conn.get_conn().await?;
+            let use_db = format!("USE `{}`", database.replace('`', "``"));
+            c.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+            let rows: Vec<Option<String>> = c.query("SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_TYPE = 'PROCEDURE'").await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.into_iter().flatten().collect())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let client = pg_conn.get_client().await;
+            let rows = client.query(
+                "SELECT routine_name FROM information_schema.routines WHERE routine_schema = $1 AND routine_type = 'PROCEDURE'",
+                &[&database],
+            ).await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.iter().map(|r| r.get::<_, String>(0)).collect())
+        }
+        DatabaseType::SQLite => Ok(vec![]),
+    }
+}
+
+pub async fn list_triggers(
+    conn: Arc<dyn DatabaseConnection>,
+    database: &str,
+) -> Result<Vec<String>, DbError> {
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<MySqlConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let mut c = mysql_conn.get_conn().await?;
+            let use_db = format!("USE `{}`", database.replace('`', "``"));
+            c.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+            let rows: Vec<Option<String>> = c.query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE()").await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.into_iter().flatten().collect())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let client = pg_conn.get_client().await;
+            let rows = client.query(
+                "SELECT DISTINCT trigger_name FROM information_schema.triggers WHERE trigger_schema = $1",
+                &[&database],
+            ).await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.iter().map(|r| r.get::<_, String>(0)).collect())
+        }
+        DatabaseType::SQLite => {
+            let sqlite_conn = conn.as_any().downcast_ref::<SqliteConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let conn_guard = sqlite_conn.get_connection().lock().map_err(|e| DbError::schema(e.to_string()))?;
+            let mut stmt = conn_guard.prepare("SELECT name FROM sqlite_master WHERE type='trigger' ORDER BY name")
+                .map_err(|e| DbError::schema(e.to_string()))?;
+            let names: Vec<String> = stmt.query_map([], |row| row.get(0))
+                .map_err(|e| DbError::schema(e.to_string()))?
+                .filter_map(|r| r.ok())
+                .collect();
+            Ok(names)
+        }
+    }
+}
