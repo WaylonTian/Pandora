@@ -1064,7 +1064,8 @@ pub async fn cancel_query(
         DatabaseType::PostgreSQL => {
             let pg_conn = conn.as_any().downcast_ref::<super::connection::PostgresConnection>()
                 .ok_or("Invalid connection type")?;
-            let client = pg_conn.get_client().await;
+            let client = pg_conn.client();
+            let client = client.lock().await;
             let _ = client.execute("SELECT pg_cancel_backend(pg_backend_pid())", &[]).await;
             Ok(())
         }
@@ -1072,8 +1073,9 @@ pub async fn cancel_query(
             // SQLite: interrupt via the connection handle
             let sqlite_conn = conn.as_any().downcast_ref::<super::connection::SqliteConnection>()
                 .ok_or("Invalid connection type")?;
-            let conn_guard = sqlite_conn.get_connection().lock().map_err(|e| e.to_string())?;
-            conn_guard.get_interrupt_handle().interrupt();
+            let connection = sqlite_conn.connection();
+            let guard = connection.lock().await;
+            guard.get_interrupt_handle().interrupt();
             Ok(())
         }
     }

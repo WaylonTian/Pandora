@@ -1983,7 +1983,8 @@ pub async fn list_views(
         DatabaseType::PostgreSQL => {
             let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
                 .ok_or_else(|| DbError::schema("Invalid connection type"))?;
-            let client = pg_conn.get_client().await;
+            let client = pg_conn.client();
+            let client = client.lock().await;
             let rows = client.query(
                 "SELECT viewname FROM pg_views WHERE schemaname = $1",
                 &[&database],
@@ -1993,14 +1994,17 @@ pub async fn list_views(
         DatabaseType::SQLite => {
             let sqlite_conn = conn.as_any().downcast_ref::<SqliteConnection>()
                 .ok_or_else(|| DbError::schema("Invalid connection type"))?;
-            let conn_guard = sqlite_conn.get_connection().lock().map_err(|e| DbError::schema(e.to_string()))?;
-            let mut stmt = conn_guard.prepare("SELECT name FROM sqlite_master WHERE type='view' ORDER BY name")
-                .map_err(|e| DbError::schema(e.to_string()))?;
-            let names: Vec<String> = stmt.query_map([], |row| row.get(0))
-                .map_err(|e| DbError::schema(e.to_string()))?
-                .filter_map(|r| r.ok())
-                .collect();
-            Ok(names)
+            let connection = sqlite_conn.connection();
+            let guard = connection.lock().await;
+            tokio::task::block_in_place(|| {
+                let mut stmt = guard.prepare("SELECT name FROM sqlite_master WHERE type='view' ORDER BY name")
+                    .map_err(|e| DbError::schema(e.to_string()))?;
+                let names: Vec<String> = stmt.query_map([], |row| row.get(0))
+                    .map_err(|e| DbError::schema(e.to_string()))?
+                    .filter_map(|r| r.ok())
+                    .collect();
+                Ok(names)
+            })
         }
     }
 }
@@ -2023,7 +2027,8 @@ pub async fn list_functions(
         DatabaseType::PostgreSQL => {
             let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
                 .ok_or_else(|| DbError::schema("Invalid connection type"))?;
-            let client = pg_conn.get_client().await;
+            let client = pg_conn.client();
+            let client = client.lock().await;
             let rows = client.query(
                 "SELECT routine_name FROM information_schema.routines WHERE routine_schema = $1 AND routine_type = 'FUNCTION'",
                 &[&database],
@@ -2052,7 +2057,8 @@ pub async fn list_procedures(
         DatabaseType::PostgreSQL => {
             let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
                 .ok_or_else(|| DbError::schema("Invalid connection type"))?;
-            let client = pg_conn.get_client().await;
+            let client = pg_conn.client();
+            let client = client.lock().await;
             let rows = client.query(
                 "SELECT routine_name FROM information_schema.routines WHERE routine_schema = $1 AND routine_type = 'PROCEDURE'",
                 &[&database],
@@ -2081,7 +2087,8 @@ pub async fn list_triggers(
         DatabaseType::PostgreSQL => {
             let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
                 .ok_or_else(|| DbError::schema("Invalid connection type"))?;
-            let client = pg_conn.get_client().await;
+            let client = pg_conn.client();
+            let client = client.lock().await;
             let rows = client.query(
                 "SELECT DISTINCT trigger_name FROM information_schema.triggers WHERE trigger_schema = $1",
                 &[&database],
@@ -2091,14 +2098,17 @@ pub async fn list_triggers(
         DatabaseType::SQLite => {
             let sqlite_conn = conn.as_any().downcast_ref::<SqliteConnection>()
                 .ok_or_else(|| DbError::schema("Invalid connection type"))?;
-            let conn_guard = sqlite_conn.get_connection().lock().map_err(|e| DbError::schema(e.to_string()))?;
-            let mut stmt = conn_guard.prepare("SELECT name FROM sqlite_master WHERE type='trigger' ORDER BY name")
-                .map_err(|e| DbError::schema(e.to_string()))?;
-            let names: Vec<String> = stmt.query_map([], |row| row.get(0))
-                .map_err(|e| DbError::schema(e.to_string()))?
-                .filter_map(|r| r.ok())
-                .collect();
-            Ok(names)
+            let connection = sqlite_conn.connection();
+            let guard = connection.lock().await;
+            tokio::task::block_in_place(|| {
+                let mut stmt = guard.prepare("SELECT name FROM sqlite_master WHERE type='trigger' ORDER BY name")
+                    .map_err(|e| DbError::schema(e.to_string()))?;
+                let names: Vec<String> = stmt.query_map([], |row| row.get(0))
+                    .map_err(|e| DbError::schema(e.to_string()))?
+                    .filter_map(|r| r.ok())
+                    .collect();
+                Ok(names)
+            })
         }
     }
 }
