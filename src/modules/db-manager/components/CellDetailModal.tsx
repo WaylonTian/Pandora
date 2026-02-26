@@ -1,6 +1,6 @@
 import * as React from "react";
 import Editor from "@monaco-editor/react";
-import { cn } from "@/lib/utils";
+
 import { useT } from '@/i18n';
 import { Button } from "@/components/ui/button";
 

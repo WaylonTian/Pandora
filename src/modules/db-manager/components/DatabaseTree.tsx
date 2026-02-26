@@ -4,9 +4,7 @@ import { useT } from '@/i18n';
 import { Input } from "@/components/ui/input";
 import {
   useAppStore,
-  ConnectionConfig,
   ConnectionStatus,
-  tauriCommands,
 } from "../store/index";
 
 // ============================================================================
