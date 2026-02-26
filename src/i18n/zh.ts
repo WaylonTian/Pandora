@@ -424,8 +424,6 @@ export const zh: Record<string, string> = {
   "toolkit.cryptoTool.generateHash": "生成哈希",
   "toolkit.cryptoTool.inputPlaceholder": "输入要哈希的文本...",
   "toolkit.cryptoTool.outputPlaceholder": "哈希结果...",
-  "toolkit.cryptoTool.pleaseInputText": "请输入要哈希的文本",
-  "toolkit.cryptoTool.md5NotSupported": "MD5 需要额外库支持，请使用 SHA 算法",
   "toolkit.cryptoTool.hashError": "哈希错误",
   "toolkit.cryptoTool.textMode": "文本",
   "toolkit.cryptoTool.fileMode": "文件",
@@ -512,9 +510,6 @@ export const zh: Record<string, string> = {
   "toolkit.bcryptTool.noMatch": "不匹配，密码错误",
   "toolkit.textProcessTool.title": "文本处理",
   "toolkit.textProcessTool.desc": "大小写、去重、排序、统计、行号",
-  "toolkit.textProcessTool.uppercase": "大写",
-  "toolkit.textProcessTool.lowercase": "小写",
-  "toolkit.textProcessTool.capitalize": "首字母大写",
   "toolkit.textProcessTool.dedup": "行去重",
   "toolkit.textProcessTool.sort": "排序",
   "toolkit.textProcessTool.lineNum": "添加行号",
@@ -962,7 +957,6 @@ export const zh: Record<string, string> = {
   "toolkit.colorTool.hexPlaceholder": "#3b82f6",
   "toolkit.baseConverterTool.title": "进制转换",
   "toolkit.baseConverterTool.placeholder": "输入数字...",
-  "toolkit.cryptoTool.md5NotSupportedOption": "MD5 (不支持)",
 
   // === Data Masking Examples ===
   "dataMasking.example.none.input": "原始数据",

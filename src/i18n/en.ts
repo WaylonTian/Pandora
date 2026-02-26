@@ -417,8 +417,6 @@ export const en: Record<string, string> = {
   "toolkit.cryptoTool.generateHash": "Generate Hash",
   "toolkit.cryptoTool.inputPlaceholder": "Enter text to hash...",
   "toolkit.cryptoTool.outputPlaceholder": "Hash result...",
-  "toolkit.cryptoTool.pleaseInputText": "Please enter text to hash",
-  "toolkit.cryptoTool.md5NotSupported": "MD5 requires additional library support, please use SHA algorithms",
   "toolkit.cryptoTool.hashError": "Hash error",
   "toolkit.cryptoTool.textMode": "Text",
   "toolkit.cryptoTool.fileMode": "File",
@@ -505,9 +503,6 @@ export const en: Record<string, string> = {
   "toolkit.bcryptTool.noMatch": "No match. Password is incorrect",
   "toolkit.textProcessTool.title": "Text Processor",
   "toolkit.textProcessTool.desc": "Case, dedup, sort, count, line numbers",
-  "toolkit.textProcessTool.uppercase": "UPPER",
-  "toolkit.textProcessTool.lowercase": "lower",
-  "toolkit.textProcessTool.capitalize": "Capitalize",
   "toolkit.textProcessTool.dedup": "Dedup Lines",
   "toolkit.textProcessTool.sort": "Sort",
   "toolkit.textProcessTool.lineNum": "Line Numbers",
@@ -955,7 +950,6 @@ export const en: Record<string, string> = {
   "toolkit.colorTool.hexPlaceholder": "#3b82f6",
   "toolkit.baseConverterTool.title": "Base Converter",
   "toolkit.baseConverterTool.placeholder": "Enter number...",
-  "toolkit.cryptoTool.md5NotSupportedOption": "MD5 (Not Supported)",
 
   // === Data Masking Examples ===
   "dataMasking.example.none.input": "Original Data",
