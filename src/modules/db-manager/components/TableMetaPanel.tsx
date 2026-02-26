@@ -122,6 +122,7 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
   const activeTab = useActiveTab();
   const actualConnectionId = useActualConnectionId();
   const tableName = activeTab?.tableName;
+  const database = activeTab?.database;
 
   // 加载表信息
   React.useEffect(() => {
@@ -137,11 +138,11 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
       setError(null);
       try {
         // 串行调用避免 SQLite 连接锁竞争
-        const info = await tauriCommands.getTableInfo(actualConnectionId, tableName);
+        const info = await tauriCommands.getTableInfo(actualConnectionId, tableName, database);
         if (cancelled) return;
         setTableInfo(info);
 
-        const ddlResult = await tauriCommands.getTableDdl(actualConnectionId, tableName);
+        const ddlResult = await tauriCommands.getTableDdl(actualConnectionId, tableName, database);
         if (cancelled) return;
         setDdl(ddlResult);
       } catch (err) {
@@ -157,7 +158,7 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
 
     loadTableMeta();
     return () => { cancelled = true; };
-  }, [tableName, actualConnectionId]);
+  }, [tableName, actualConnectionId, database]);
 
   // 复制 DDL
   const handleCopyDdl = React.useCallback(async () => {

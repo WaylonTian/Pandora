@@ -32,6 +32,8 @@ export interface DataBrowserProps {
   connectionId: string;
   /** Name of the table to browse */
   tableName: string;
+  /** Database name for context switching */
+  database?: string;
   /** Number of rows per page */
   pageSize: number;
   /** Callback when a cell is edited */
@@ -1052,6 +1054,7 @@ function DataTableContent({
 export function DataBrowser({
   connectionId,
   tableName,
+  database,
   pageSize: initialPageSize,
   onEdit,
   className,
@@ -1091,7 +1094,7 @@ export function DataBrowser({
    */
   const fetchTableInfo = React.useCallback(async () => {
     try {
-      const tableInfo = await tauriCommands.getTableInfo(connectionId, tableName);
+      const tableInfo = await tauriCommands.getTableInfo(connectionId, tableName, database);
       const pkColumns = tableInfo.columns
         .filter((col) => col.is_primary_key)
         .map((col) => col.name);
@@ -1112,7 +1115,7 @@ export function DataBrowser({
     try {
       // First, get the total count
       const countQuery = buildCountQuery(tableName, appliedFilter);
-      const countResult = await tauriCommands.executeQuery(connectionId, countQuery);
+      const countResult = await tauriCommands.executeQuery(connectionId, countQuery, database);
       
       // Extract total count from result
       let totalRows = 0;
@@ -1135,7 +1138,7 @@ export function DataBrowser({
         pagination.pageSize,
         offset
       );
-      const dataResult = await tauriCommands.executeQuery(connectionId, dataQuery);
+      const dataResult = await tauriCommands.executeQuery(connectionId, dataQuery, database);
 
       setColumns(dataResult.columns);
       setRows(dataResult.rows);
@@ -1340,7 +1343,7 @@ export function DataBrowser({
         );
         
         updatePromises.push(
-          tauriCommands.executeQuery(connectionId, updateSql).then(() => {})
+          tauriCommands.executeQuery(connectionId, updateSql, database).then(() => {})
         );
       });
 

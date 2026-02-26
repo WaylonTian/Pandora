@@ -15,6 +15,33 @@ use tokio::sync::RwLock;
 use crate::AppState;
 
 // ============================================================================
+// Database Context Switching
+// ============================================================================
+
+/// 在执行操作前切换数据库上下文
+async fn switch_database_context(
+    conn: &Arc<dyn super::connection::DatabaseConnection>,
+    database: &Option<String>,
+    query_executor: &dyn QueryExecutor,
+) -> Result<(), String> {
+    if let Some(db) = database {
+        if db.is_empty() {
+            return Ok(());
+        }
+        let switch_sql = match conn.db_type() {
+            DatabaseType::MySQL => format!("USE `{}`", db.replace('`', "``")),
+            DatabaseType::PostgreSQL => format!("SET search_path TO \"{}\"", db.replace('"', "\"\"")),
+            DatabaseType::SQLite => return Ok(()), // 单文件数据库，无需切换
+        };
+        query_executor
+            .execute(conn.clone(), &switch_sql)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+// ============================================================================
 // Application State
 // ============================================================================
 
@@ -202,6 +229,7 @@ pub async fn disconnect(
 pub async fn execute_query(
     connection_id: String,
     sql: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<QueryResult, String> {
     let conn_id = ConnectionId::from_string(connection_id);
@@ -212,6 +240,9 @@ pub async fn execute_query(
         .get_connection(&conn_id)
         .await
         .map_err(|e| e.to_string())?;
+    
+    // Switch database context if specified
+    switch_database_context(&conn, &database, &*state.db_state.query_executor).await?;
     
     // Execute the query
     state
@@ -236,6 +267,7 @@ pub async fn execute_query(
 pub async fn execute_batch(
     connection_id: String,
     sql: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<Vec<QueryResult>, String> {
     use super::query::split_sql_statements;
@@ -248,6 +280,9 @@ pub async fn execute_batch(
         .get_connection(&conn_id)
         .await
         .map_err(|e| e.to_string())?;
+    
+    // Switch database context if specified
+    switch_database_context(&conn, &database, &*state.db_state.query_executor).await?;
     
     // Split SQL into individual statements
     let statements = split_sql_statements(&sql);
@@ -352,6 +387,7 @@ pub async fn list_tables(
 pub async fn get_table_info(
     connection_id: String,
     table: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<TableInfo, String> {
     let conn_id = ConnectionId::from_string(connection_id);
@@ -362,6 +398,9 @@ pub async fn get_table_info(
         .get_connection(&conn_id)
         .await
         .map_err(|e| e.to_string())?;
+    
+    // Switch database context if specified
+    switch_database_context(&conn, &database, &*state.db_state.query_executor).await?;
     
     // Get table info
     state
@@ -384,6 +423,7 @@ pub async fn get_table_info(
 pub async fn get_table_ddl(
     connection_id: String,
     table: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let conn_id = ConnectionId::from_string(connection_id);
@@ -394,6 +434,9 @@ pub async fn get_table_ddl(
         .get_connection(&conn_id)
         .await
         .map_err(|e| e.to_string())?;
+    
+    // Switch database context if specified
+    switch_database_context(&conn, &database, &*state.db_state.query_executor).await?;
     
     // Get table info first
     let table_info = state
@@ -559,6 +602,7 @@ pub async fn explain_query(
     connection_id: String,
     sql: String,
     analyze: bool,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<ExplainResult, String> {
     let conn_id = ConnectionId::from_string(connection_id);
@@ -569,6 +613,9 @@ pub async fn explain_query(
         .get_connection(&conn_id)
         .await
         .map_err(|e| e.to_string())?;
+    
+    // Switch database context if specified
+    switch_database_context(&conn, &database, &*state.db_state.query_executor).await?;
     
     // 根据数据库类型构建 EXPLAIN 语句
     let explain_sql = match conn.db_type() {
@@ -829,6 +876,7 @@ pub struct TableStats {
 #[tauri::command]
 pub async fn get_table_stats(
     connection_id: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<Vec<TableStats>, String> {
     let conn_id = ConnectionId::from_string(connection_id);
@@ -838,6 +886,9 @@ pub async fn get_table_stats(
         .get_connection(&conn_id)
         .await
         .map_err(|e| e.to_string())?;
+    
+    // Switch database context if specified
+    switch_database_context(&conn, &database, &*state.db_state.query_executor).await?;
     
     let sql = match conn.db_type() {
         DatabaseType::MySQL => {

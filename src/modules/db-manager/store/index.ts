@@ -77,6 +77,7 @@ export interface QueryTab {
   // 新增字段
   type: TabType;
   tableName?: string; // 用于 data 和 structure 类型
+  database?: string; // 当前 tab 操作的数据库
 }
 
 /**
@@ -253,7 +254,7 @@ export interface QueryActions {
   // Add a new query tab
   addQueryTab: () => void;
   // Open or reuse a data browser tab for a table
-  openDataTab: (tableName: string) => void;
+  openDataTab: (tableName: string, database?: string) => void;
   // Close a query tab
   closeQueryTab: (id: string) => void;
   // Set the active tab
@@ -281,7 +282,7 @@ export interface SchemaActions {
   // Refresh the schema for the active connection
   refreshSchema: () => Promise<void>;
   // Load table information
-  loadTableInfo: (tableName: string) => Promise<void>;
+  loadTableInfo: (tableName: string, database?: string) => Promise<void>;
   // Load tables for a database
   loadTables: (database: string) => Promise<void>;
   // Toggle node expansion in the tree
@@ -318,7 +319,7 @@ function generateId(): string {
 /**
  * Creates a default query tab
  */
-function createDefaultTab(connectionId: string | null = null, type: TabType = 'query', tableName?: string): QueryTab {
+function createDefaultTab(connectionId: string | null = null, type: TabType = 'query', tableName?: string, database?: string): QueryTab {
   return {
     id: generateId(),
     title: type === 'query' ? 'Query' : tableName ? `📊 ${tableName}` : 'Tab',
@@ -329,6 +330,7 @@ function createDefaultTab(connectionId: string | null = null, type: TabType = 'q
     isExecuting: false,
     type,
     tableName,
+    database,
   };
 }
 
@@ -383,15 +385,15 @@ export const tauriCommands = {
    * Executes a SQL query
    * **Validates: Requirements 3.2**
    */
-  executeQuery: (connectionId: string, sql: string): Promise<QueryResult> =>
-    tauriInvoke<QueryResult>('execute_query', { connectionId, sql }),
+  executeQuery: (connectionId: string, sql: string, database?: string): Promise<QueryResult> =>
+    tauriInvoke<QueryResult>('execute_query', { connectionId, sql, database }),
 
   /**
    * Executes multiple SQL statements in batch
    * **Validates: Requirements 3.2, 3.5**
    */
-  executeBatch: (connectionId: string, sql: string): Promise<QueryResult[]> =>
-    tauriInvoke<QueryResult[]>('execute_batch', { connectionId, sql }),
+  executeBatch: (connectionId: string, sql: string, database?: string): Promise<QueryResult[]> =>
+    tauriInvoke<QueryResult[]>('execute_batch', { connectionId, sql, database }),
 
   /**
    * Lists all databases
@@ -408,14 +410,14 @@ export const tauriCommands = {
   /**
    * Gets detailed table information
    */
-  getTableInfo: (connectionId: string, table: string): Promise<TableInfo> =>
-    tauriInvoke<TableInfo>('get_table_info', { connectionId, table }),
+  getTableInfo: (connectionId: string, table: string, database?: string): Promise<TableInfo> =>
+    tauriInvoke<TableInfo>('get_table_info', { connectionId, table, database }),
 
   /**
    * Gets the CREATE TABLE DDL statement
    */
-  getTableDdl: (connectionId: string, table: string): Promise<string> =>
-    tauriInvoke<string>('get_table_ddl', { connectionId, table }),
+  getTableDdl: (connectionId: string, table: string, database?: string): Promise<string> =>
+    tauriInvoke<string>('get_table_ddl', { connectionId, table, database }),
 
   /**
    * Saves a connection configuration
@@ -467,8 +469,8 @@ export const tauriCommands = {
   /**
    * 获取 SQL 查询的执行计划
    */
-  explainQuery: (connectionId: string, sql: string, analyze: boolean = false): Promise<ExplainResult> =>
-    tauriInvoke<ExplainResult>('explain_query', { connectionId, sql, analyze }),
+  explainQuery: (connectionId: string, sql: string, analyze: boolean = false, database?: string): Promise<ExplainResult> =>
+    tauriInvoke<ExplainResult>('explain_query', { connectionId, sql, analyze, database }),
 
   // =========================================================================
   // 批量导入命令 (Batch Import)
@@ -713,7 +715,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     
     try {
       // 使用批量执行，支持多条 SQL
-      const results = await tauriCommands.executeBatch(actualConnectionId, sql);
+      const activeTab = get().tabs.find(t => t.id === activeTabId);
+      const results = await tauriCommands.executeBatch(actualConnectionId, sql, activeTab?.database);
       
       // Update tab with results
       set((state) => ({
@@ -783,12 +786,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   /**
    * Opens or reuses a data browser tab for a table
    */
-  openDataTab: (tableName: string) => {
+  openDataTab: (tableName: string, database?: string) => {
     const { tabs, activeConnectionId } = get();
     
     // 查找是否已有该表的 data tab
     const existingTab = tabs.find(
-      (tab) => tab.type === 'data' && tab.tableName === tableName
+      (tab) => tab.type === 'data' && tab.tableName === tableName && tab.database === database
     );
     
     if (existingTab) {
@@ -796,7 +799,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({ activeTabId: existingTab.id });
     } else {
       // 创建新的 data tab
-      const newTab = createDefaultTab(activeConnectionId, 'data', tableName);
+      const newTab = createDefaultTab(activeConnectionId, 'data', tableName, database);
       set((state) => ({
         tabs: [...state.tabs, newTab],
         activeTabId: newTab.id,
@@ -974,7 +977,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   /**
    * Loads detailed information about a table
    */
-  loadTableInfo: async (tableName: string) => {
+  loadTableInfo: async (tableName: string, database?: string) => {
     const { activeConnectionId, connectionIdMap } = get();
     
     if (!activeConnectionId) {
@@ -987,7 +990,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ isLoadingSchema: true, schemaError: null });
     
     try {
-      const info = await tauriCommands.getTableInfo(actualConnectionId, tableName);
+      const info = await tauriCommands.getTableInfo(actualConnectionId, tableName, database);
       set((state) => ({
         tableInfo: { ...state.tableInfo, [tableName]: info },
         isLoadingSchema: false,
