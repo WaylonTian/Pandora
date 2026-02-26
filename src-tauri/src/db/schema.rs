@@ -221,7 +221,7 @@ async fn get_columns_mysql(
     let sql = format!(
         "SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_KEY, EXTRA 
          FROM INFORMATION_SCHEMA.COLUMNS 
-         WHERE TABLE_NAME = '{}' 
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{}' 
          ORDER BY ORDINAL_POSITION",
         table.replace('\'', "''")
     );
@@ -264,8 +264,11 @@ async fn get_indexes_mysql(
     use std::collections::HashMap;
 
     let sql = format!(
-        "SHOW INDEX FROM {}",
-        quote_identifier(table, DatabaseType::MySQL)
+        "SELECT INDEX_NAME, NON_UNIQUE, COLUMN_NAME
+         FROM INFORMATION_SCHEMA.STATISTICS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{}'
+         ORDER BY INDEX_NAME, SEQ_IN_INDEX",
+        table.replace('\'', "''")
     );
 
     let rows: Vec<mysql_async::Row> = conn
@@ -273,18 +276,16 @@ async fn get_indexes_mysql(
         .await
         .map_err(|e| DbError::schema(format!("Failed to get indexes: {}", e)))?;
 
-    // Group columns by index name
     let mut index_map: HashMap<String, (bool, bool, Vec<String>)> = HashMap::new();
 
     for row in rows {
-        // 使用 Option<String> 来安全处理可能为 NULL 的值
-        let key_name: Option<String> = row.get("Key_name");
-        let non_unique: Option<i64> = row.get("Non_unique");
-        let column_name: Option<String> = row.get("Column_name");
+        let key_name: Option<String> = row.get(0);
+        let non_unique: Option<String> = row.get(1);
+        let column_name: Option<String> = row.get(2);
 
         let key_name = key_name.unwrap_or_default();
         let column_name = column_name.unwrap_or_default();
-        let is_unique = non_unique.unwrap_or(1) == 0;
+        let is_unique = non_unique.as_deref() == Some("0");
         let is_primary = key_name == "PRIMARY";
 
         index_map
@@ -321,7 +322,7 @@ async fn get_foreign_keys_mysql(
          FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
          JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
            ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
-         WHERE kcu.TABLE_NAME = '{}' AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+         WHERE kcu.TABLE_SCHEMA = DATABASE() AND kcu.TABLE_NAME = '{}' AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
          ORDER BY kcu.ORDINAL_POSITION",
         table.replace('\'', "''")
     );
