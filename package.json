@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "dockview-react": "^4",
     "js-yaml": "^4.1.1",
+    "lucide-react": "^0.575.0",
     "monaco-editor": "^0.52.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

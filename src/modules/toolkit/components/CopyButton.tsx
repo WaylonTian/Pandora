@@ -1,15 +1,15 @@
 import { useState } from "react";
+import { Copy, Check } from "lucide-react";
 
-export function CopyButton({ text, label = "📋" }: { text: string; label?: string }) {
+export function CopyButton({ text, className = "" }: { text: string; className?: string }) {
   const [copied, setCopied] = useState(false);
-
   return (
     <button
       onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-      className="px-2 py-1 rounded text-xs bg-muted hover:bg-muted/80 transition-colors"
+      className={`p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ${className}`}
       title="Copy"
     >
-      {copied ? "✓" : label}
+      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
     </button>
   );
 }

@@ -11,18 +11,65 @@ import { RegexTool } from "./tools/regex-tool";
 import { JwtTool } from "./tools/jwt-tool";
 import { ColorTool } from "./tools/color-tool";
 import { BaseConverterTool } from "./tools/base-converter-tool";
+import { UnicodeTool } from "./tools/unicode-tool";
+import { HtmlCodecTool } from "./tools/html-codec-tool";
+import { HexStringTool } from "./tools/hex-string-tool";
+import { AsciiTool } from "./tools/ascii-tool";
+import { EncryptTool } from "./tools/encrypt-tool";
+import { BcryptTool } from "./tools/bcrypt-tool";
+import { TextProcessTool } from "./tools/text-process-tool";
+import { DiffTool } from "./tools/diff-tool";
+import { NamingTool } from "./tools/naming-tool";
+import { RandomStringTool } from "./tools/random-string-tool";
+import { QrcodeTool } from "./tools/qrcode-tool";
+import { CronTool } from "./tools/cron-tool";
+import { PortTool } from "./tools/port-tool";
+import { ColorPickerTool } from "./tools/color-picker-tool";
+import { ImageTool } from "./tools/image-tool";
+import { FileHashTool } from "./tools/file-hash-tool";
+import { EnvViewerTool } from "./tools/env-viewer-tool";
+import {
+  Braces, Clock, Regex, FileCode2, Link, Binary, Fingerprint, Palette, Hash, KeyRound, Globe, FileEdit,
+  Type, Code, Hexagon, Table2, Lock, ShieldCheck, CaseSensitive, GitCompare, ArrowLeftRight,
+  Shuffle, QrCode, Timer, Network, Pipette, ImageIcon, FileCheck, Terminal,
+} from "lucide-react";
 
 export function registerAllTools() {
-  registerTool({ id: "json", name: "toolkit.jsonTool.title", icon: "{}", category: "text", component: JsonTool });
-  registerTool({ id: "timestamp", name: "toolkit.timestampTool.title", icon: "T", category: "text", component: TimestampTool });
-  registerTool({ id: "regex", name: "toolkit.regexTool.title", icon: ".*", category: "text", component: RegexTool });
-  registerTool({ id: "base64", name: "toolkit.base64Tool.title", icon: "B64", category: "encoding", component: Base64Tool });
-  registerTool({ id: "url-codec", name: "toolkit.urlCodecTool.title", icon: "%", category: "encoding", component: UrlCodecTool });
-  registerTool({ id: "base-converter", name: "toolkit.baseConverterTool.title", icon: "0x", category: "encoding", component: BaseConverterTool });
-  registerTool({ id: "uuid", name: "toolkit.uuidTool.title", icon: "#", category: "other", component: UuidTool });
-  registerTool({ id: "color", name: "toolkit.colorTool.title", icon: "🎨", category: "other", component: ColorTool });
-  registerTool({ id: "crypto", name: "toolkit.cryptoTool.title", icon: "#!", category: "crypto", component: CryptoTool });
-  registerTool({ id: "jwt", name: "toolkit.jwtTool.title", icon: "JWT", category: "crypto", component: JwtTool });
-  registerTool({ id: "ip-info", name: "toolkit.ipInfoTool.title", icon: "IP", category: "network", component: IpInfoTool });
-  registerTool({ id: "hosts", name: "toolkit.hostsEditorTool.title", icon: "H", category: "network", component: HostsEditorTool });
+  // Encoding
+  registerTool({ id: "base64", name: "toolkit.base64Tool.title", description: "toolkit.base64Tool.desc", icon: FileCode2, category: "encoding", component: Base64Tool });
+  registerTool({ id: "url-codec", name: "toolkit.urlCodecTool.title", description: "toolkit.urlCodecTool.desc", icon: Link, category: "encoding", component: UrlCodecTool });
+  registerTool({ id: "unicode", name: "toolkit.unicodeTool.title", description: "toolkit.unicodeTool.desc", icon: Type, category: "encoding", component: UnicodeTool });
+  registerTool({ id: "html-codec", name: "toolkit.htmlCodecTool.title", description: "toolkit.htmlCodecTool.desc", icon: Code, category: "encoding", component: HtmlCodecTool });
+  registerTool({ id: "hex-string", name: "toolkit.hexStringTool.title", description: "toolkit.hexStringTool.desc", icon: Hexagon, category: "encoding", component: HexStringTool });
+  registerTool({ id: "ascii", name: "toolkit.asciiTool.title", description: "toolkit.asciiTool.desc", icon: Table2, category: "encoding", component: AsciiTool });
+  // Crypto
+  registerTool({ id: "crypto", name: "toolkit.cryptoTool.title", description: "toolkit.cryptoTool.desc", icon: Hash, category: "crypto", component: CryptoTool });
+  registerTool({ id: "encrypt", name: "toolkit.encryptTool.title", description: "toolkit.encryptTool.desc", icon: Lock, category: "crypto", component: EncryptTool });
+  registerTool({ id: "bcrypt", name: "toolkit.bcryptTool.title", description: "toolkit.bcryptTool.desc", icon: ShieldCheck, category: "crypto", component: BcryptTool });
+  registerTool({ id: "jwt", name: "toolkit.jwtTool.title", description: "toolkit.jwtTool.desc", icon: KeyRound, category: "crypto", component: JwtTool });
+  // Text
+  registerTool({ id: "json", name: "toolkit.jsonTool.title", description: "toolkit.jsonTool.desc", icon: Braces, category: "text", component: JsonTool });
+  registerTool({ id: "text-process", name: "toolkit.textProcessTool.title", description: "toolkit.textProcessTool.desc", icon: CaseSensitive, category: "text", component: TextProcessTool });
+  registerTool({ id: "diff", name: "toolkit.diffTool.title", description: "toolkit.diffTool.desc", icon: GitCompare, category: "text", component: DiffTool });
+  registerTool({ id: "regex", name: "toolkit.regexTool.title", description: "toolkit.regexTool.desc", icon: Regex, category: "text", component: RegexTool });
+  registerTool({ id: "naming", name: "toolkit.namingTool.title", description: "toolkit.namingTool.desc", icon: ArrowLeftRight, category: "text", component: NamingTool });
+  // Generator
+  registerTool({ id: "uuid", name: "toolkit.uuidTool.title", description: "toolkit.uuidTool.desc", icon: Fingerprint, category: "generator", component: UuidTool });
+  registerTool({ id: "random-string", name: "toolkit.randomStringTool.title", description: "toolkit.randomStringTool.desc", icon: Shuffle, category: "generator", component: RandomStringTool });
+  registerTool({ id: "qrcode", name: "toolkit.qrcodeTool.title", description: "toolkit.qrcodeTool.desc", icon: QrCode, category: "generator", component: QrcodeTool });
+  registerTool({ id: "color", name: "toolkit.colorTool.title", description: "toolkit.colorTool.desc", icon: Palette, category: "generator", component: ColorTool });
+  // Datetime
+  registerTool({ id: "timestamp", name: "toolkit.timestampTool.title", description: "toolkit.timestampTool.desc", icon: Clock, category: "datetime", component: TimestampTool });
+  registerTool({ id: "cron", name: "toolkit.cronTool.title", description: "toolkit.cronTool.desc", icon: Timer, category: "datetime", component: CronTool });
+  // Number
+  registerTool({ id: "base-converter", name: "toolkit.baseConverterTool.title", description: "toolkit.baseConverterTool.desc", icon: Binary, category: "number", component: BaseConverterTool });
+  // Network
+  registerTool({ id: "ip-info", name: "toolkit.ipInfoTool.title", description: "toolkit.ipInfoTool.desc", icon: Globe, category: "network", component: IpInfoTool });
+  registerTool({ id: "hosts", name: "toolkit.hostsEditorTool.title", description: "toolkit.hostsEditorTool.desc", icon: FileEdit, category: "network", component: HostsEditorTool });
+  registerTool({ id: "port", name: "toolkit.portTool.title", description: "toolkit.portTool.desc", icon: Network, category: "network", component: PortTool });
+  // System
+  registerTool({ id: "color-picker", name: "toolkit.colorPickerTool.title", description: "toolkit.colorPickerTool.desc", icon: Pipette, category: "system", component: ColorPickerTool });
+  registerTool({ id: "image", name: "toolkit.imageTool.title", description: "toolkit.imageTool.desc", icon: ImageIcon, category: "system", component: ImageTool });
+  registerTool({ id: "file-hash", name: "toolkit.fileHashTool.title", description: "toolkit.fileHashTool.desc", icon: FileCheck, category: "system", component: FileHashTool });
+  registerTool({ id: "env-viewer", name: "toolkit.envViewerTool.title", description: "toolkit.envViewerTool.desc", icon: Terminal, category: "system", component: EnvViewerTool });
 }

@@ -1,10 +1,13 @@
 import type { ComponentType } from "react";
 
+export type Category = "encoding" | "crypto" | "text" | "generator" | "datetime" | "number" | "network" | "system";
+
 export interface ToolPlugin {
   id: string;
   name: string;
-  icon: string;
-  category: "encoding" | "crypto" | "network" | "text" | "other";
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+  category: Category;
   component: ComponentType;
 }
 
