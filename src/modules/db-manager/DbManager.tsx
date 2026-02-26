@@ -262,6 +262,7 @@ function MainContent() {
           <DataBrowser
             connectionId={actualConnectionId}
             tableName={activeTab.tableName}
+            database={activeTab.database}
             pageSize={25}
             onEdit={(row, column, value) => {
               console.log("Edit:", row, column, value);
@@ -277,7 +278,7 @@ function MainContent() {
             </div>
           );
         }
-        return <TableStructure tableName={activeTab.tableName} />;
+        return <TableStructure tableName={activeTab.tableName} database={activeTab.database} />;
 
       case "query":
       default:

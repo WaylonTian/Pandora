@@ -22,21 +22,31 @@ use crate::AppState;
 async fn switch_database_context(
     conn: &Arc<dyn super::connection::DatabaseConnection>,
     database: &Option<String>,
-    query_executor: &dyn QueryExecutor,
+    _query_executor: &dyn QueryExecutor,
 ) -> Result<(), String> {
     if let Some(db) = database {
         if db.is_empty() {
             return Ok(());
         }
-        let switch_sql = match conn.db_type() {
-            DatabaseType::MySQL => format!("USE `{}`", db.replace('`', "``")),
-            DatabaseType::PostgreSQL => format!("SET search_path TO \"{}\"", db.replace('"', "\"\"")),
-            DatabaseType::SQLite => return Ok(()), // 单文件数据库，无需切换
-        };
-        query_executor
-            .execute(conn.clone(), &switch_sql)
-            .await
-            .map_err(|e| e.to_string())?;
+        match conn.db_type() {
+            DatabaseType::MySQL => {
+                use mysql_async::prelude::*;
+                let mysql_conn = conn.as_any().downcast_ref::<super::connection::MySqlConnection>()
+                    .ok_or("Invalid connection type")?;
+                let mut c = mysql_conn.get_conn().await.map_err(|e| e.to_string())?;
+                let use_db = format!("USE `{}`", db.replace('`', "``"));
+                c.query_drop(&use_db).await.map_err(|e| e.to_string())?;
+            }
+            DatabaseType::PostgreSQL => {
+                let pg_conn = conn.as_any().downcast_ref::<super::connection::PostgresConnection>()
+                    .ok_or("Invalid connection type")?;
+                let client = pg_conn.client();
+                let client = client.lock().await;
+                let sql = format!("SET search_path TO \"{}\"", db.replace('"', "\"\""));
+                client.execute(&*sql, &[]).await.map_err(|e| e.to_string())?;
+            }
+            DatabaseType::SQLite => {} // 单文件数据库，无需切换
+        }
     }
     Ok(())
 }
