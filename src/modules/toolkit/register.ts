@@ -20,6 +20,13 @@ import { BcryptTool } from "./tools/bcrypt-tool";
 import { TextProcessTool } from "./tools/text-process-tool";
 import { DiffTool } from "./tools/diff-tool";
 import { NamingTool } from "./tools/naming-tool";
+import { JsonYamlTool } from "./tools/json-yaml-tool";
+import { MarkdownPreviewTool } from "./tools/markdown-preview-tool";
+import { CsvTableTool } from "./tools/csv-table-tool";
+import { LoremTool } from "./tools/lorem-tool";
+import { SqlFormatTool } from "./tools/sql-format-tool";
+import { LineCountTool } from "./tools/line-count-tool";
+import { ChineseConvertTool } from "./tools/chinese-convert-tool";
 import { RandomStringTool } from "./tools/random-string-tool";
 import { QrcodeTool } from "./tools/qrcode-tool";
 import { CronTool } from "./tools/cron-tool";
@@ -32,6 +39,7 @@ import {
   Braces, Clock, Regex, FileCode2, Link, Binary, Fingerprint, Palette, Hash, KeyRound, Globe, FileEdit,
   Type, Code, Hexagon, Table2, Lock, ShieldCheck, CaseSensitive, GitCompare, ArrowLeftRight,
   Shuffle, QrCode, Timer, Network, Pipette, ImageIcon, FileCheck, Terminal,
+  FileJson, Eye, TableProperties, TextCursorInput, Database, Calculator, Languages,
 } from "lucide-react";
 
 export function registerAllTools() {
@@ -53,11 +61,18 @@ export function registerAllTools() {
   registerTool({ id: "diff", name: "toolkit.diffTool.title", description: "toolkit.diffTool.desc", icon: GitCompare, category: "text", component: DiffTool });
   registerTool({ id: "regex", name: "toolkit.regexTool.title", description: "toolkit.regexTool.desc", icon: Regex, category: "text", component: RegexTool });
   registerTool({ id: "naming", name: "toolkit.namingTool.title", description: "toolkit.namingTool.desc", icon: ArrowLeftRight, category: "text", component: NamingTool });
+  registerTool({ id: "json-yaml", name: "toolkit.jsonYamlTool.title", description: "toolkit.jsonYamlTool.desc", icon: FileJson, category: "text", component: JsonYamlTool });
+  registerTool({ id: "markdown-preview", name: "toolkit.markdownPreviewTool.title", description: "toolkit.markdownPreviewTool.desc", icon: Eye, category: "text", component: MarkdownPreviewTool });
+  registerTool({ id: "csv-table", name: "toolkit.csvTableTool.title", description: "toolkit.csvTableTool.desc", icon: TableProperties, category: "text", component: CsvTableTool });
+  registerTool({ id: "sql-format", name: "toolkit.sqlFormatTool.title", description: "toolkit.sqlFormatTool.desc", icon: Database, category: "text", component: SqlFormatTool });
+  registerTool({ id: "line-count", name: "toolkit.lineCountTool.title", description: "toolkit.lineCountTool.desc", icon: Calculator, category: "text", component: LineCountTool });
+  registerTool({ id: "chinese-convert", name: "toolkit.chineseConvertTool.title", description: "toolkit.chineseConvertTool.desc", icon: Languages, category: "text", component: ChineseConvertTool });
   // Generator
   registerTool({ id: "uuid", name: "toolkit.uuidTool.title", description: "toolkit.uuidTool.desc", icon: Fingerprint, category: "generator", component: UuidTool });
   registerTool({ id: "random-string", name: "toolkit.randomStringTool.title", description: "toolkit.randomStringTool.desc", icon: Shuffle, category: "generator", component: RandomStringTool });
   registerTool({ id: "qrcode", name: "toolkit.qrcodeTool.title", description: "toolkit.qrcodeTool.desc", icon: QrCode, category: "generator", component: QrcodeTool });
   registerTool({ id: "color", name: "toolkit.colorTool.title", description: "toolkit.colorTool.desc", icon: Palette, category: "generator", component: ColorTool });
+  registerTool({ id: "lorem", name: "toolkit.loremTool.title", description: "toolkit.loremTool.desc", icon: TextCursorInput, category: "generator", component: LoremTool });
   // Datetime
   registerTool({ id: "timestamp", name: "toolkit.timestampTool.title", description: "toolkit.timestampTool.desc", icon: Clock, category: "datetime", component: TimestampTool });
   registerTool({ id: "cron", name: "toolkit.cronTool.title", description: "toolkit.cronTool.desc", icon: Timer, category: "datetime", component: CronTool });
