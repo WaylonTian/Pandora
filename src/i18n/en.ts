@@ -637,6 +637,7 @@ export const en: Record<string, string> = {
   "connectionDialog.hostRequired": "Host is required",
   "connectionDialog.portInvalid": "Port must be between 1 and 65535",
   "connectionDialog.databaseRequired": "Database name is required",
+  "connectionDialog.databaseOptionalHint": "Optional, leave empty to select after connecting",
   "connectionDialog.testFailed": "Connection test failed",
   "connectionDialog.saveFailed": "Failed to save connection",
 

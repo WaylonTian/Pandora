@@ -644,6 +644,7 @@ export const zh: Record<string, string> = {
   "connectionDialog.hostRequired": "主机为必填项",
   "connectionDialog.portInvalid": "端口必须在 1 到 65535 之间",
   "connectionDialog.databaseRequired": "数据库名称为必填项",
+  "connectionDialog.databaseOptionalHint": "可选，留空则连接后选择数据库",
   "connectionDialog.testFailed": "连接测试失败",
   "connectionDialog.saveFailed": "保存连接失败",
 

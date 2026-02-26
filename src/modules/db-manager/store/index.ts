@@ -26,7 +26,7 @@ export interface ConnectionConfig {
   port?: number;
   username?: string;
   password?: string;
-  database: string;
+  database?: string;
   file_path?: string;
 }
 
