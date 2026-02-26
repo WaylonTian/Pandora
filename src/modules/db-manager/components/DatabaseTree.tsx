@@ -1,33 +1,111 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { useT } from '@/i18n';
+import { Input } from "@/components/ui/input";
 import {
   useAppStore,
-  ConnectionConfig,
   ConnectionStatus,
 } from "../store/index";
 
-/**
- * Database Tree Component
- *
- * Displays a hierarchical tree view of database connections, databases, and tables.
- * Supports expand/collapse, right-click context menus, and connection status indicators.
- *
- * Requirements: 6.1 - THE Database_Manager SHALL 提供侧边栏显示数据库结构树
- */
-
 // ============================================================================
-// Type Definitions
+// Props
 // ============================================================================
 
 export interface DatabaseTreeProps {
-  /** Callback when a table is selected */
-  onSelectTable?: (connectionId: string, tableName: string) => void;
-  /** Callback when a connection is selected */
+  onSelectTable?: (connectionId: string, tableName: string, database?: string) => void;
   onSelectConnection?: (connectionId: string) => void;
-  /** Optional className for the root container */
   className?: string;
 }
+
+// ============================================================================
+// Icons (inline SVG)
+// ============================================================================
+
+const ServerIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" /><rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+    <line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" />
+  </svg>
+);
+const DatabaseIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+  </svg>
+);
+const TableIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="3" x2="9" y2="21" />
+  </svg>
+);
+const ViewIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+  </svg>
+);
+const FunctionIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 2c-1.7 0-3 1.3-3 3v4c0 1.7-1.3 3-3 3 1.7 0 3 1.3 3 3v4c0 1.7 1.3 3 3 3" /><path d="M14 2c1.7 0 3 1.3 3 3v4c0 1.7 1.3 3 3 3-1.7 0-3 1.3-3 3v4c0 1.7-1.3 3-3 3" />
+  </svg>
+);
+const TriggerIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+const ChevronRight = ({ className }: { className?: string }) => (
+  <svg className={cn("h-3.5 w-3.5", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+);
+const ChevronDown = ({ className }: { className?: string }) => (
+  <svg className={cn("h-3.5 w-3.5", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+);
+const RefreshIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+  </svg>
+);
+const TrashIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+  </svg>
+);
+const PlugIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22v-5" /><path d="M9 8V2" /><path d="M15 8V2" /><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z" />
+  </svg>
+);
+const UnplugIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m19 5 3-3" /><path d="m2 22 3-3" /><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z" />
+    <path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z" />
+  </svg>
+);
+const CopyIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-4 w-4", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+const SearchIcon = ({ className }: { className?: string }) => (
+  <svg className={cn("h-3.5 w-3.5", className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+// ============================================================================
+// Status Indicator
+// ============================================================================
+
+function StatusIndicator({ status }: { status: ConnectionStatus }) {
+  const colors: Record<ConnectionStatus, string> = {
+    connected: "bg-success shadow-[0_0_6px_hsl(var(--success)/0.5)]",
+    disconnected: "bg-muted-foreground/40",
+    connecting: "bg-warning animate-pulse",
+  };
+  return <span className={cn("inline-block h-2 w-2 rounded-full", colors[status])} />;
+}
+
+// ============================================================================
+// Context Menu
+// ============================================================================
 
 interface ContextMenuState {
   isOpen: boolean;
@@ -39,536 +117,142 @@ interface ContextMenuState {
   table: string | null;
 }
 
-// ============================================================================
-// Icon Components
-// ============================================================================
+const INITIAL_CONTEXT: ContextMenuState = { isOpen: false, x: 0, y: 0, type: null, connectionId: null, database: null, table: null };
 
-/** Server/Connection icon */
-function ServerIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-      <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-      <line x1="6" y1="6" x2="6.01" y2="6" />
-      <line x1="6" y1="18" x2="6.01" y2="18" />
-    </svg>
-  );
-}
-
-/** Database icon */
-function DatabaseIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <ellipse cx="12" cy="5" rx="9" ry="3" />
-      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-    </svg>
-  );
-}
-
-/** Table icon */
-function TableIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-      <line x1="3" y1="9" x2="21" y2="9" />
-      <line x1="3" y1="15" x2="21" y2="15" />
-      <line x1="9" y1="3" x2="9" y2="21" />
-    </svg>
-  );
-}
-
-/** Chevron right icon for collapsed state */
-function ChevronRightIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
-
-/** Chevron down icon for expanded state */
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-/** Refresh icon */
-function RefreshIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="23 4 23 10 17 10" />
-      <polyline points="1 20 1 14 7 14" />
-      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-    </svg>
-  );
-}
-
-/** Trash icon */
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  );
-}
-
-/** Plug/Connect icon */
-function PlugIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22v-5" />
-      <path d="M9 8V2" />
-      <path d="M15 8V2" />
-      <path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z" />
-    </svg>
-  );
-}
-
-/** Unplug/Disconnect icon */
-function UnplugIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn("h-4 w-4", className)}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m19 5 3-3" />
-      <path d="m2 22 3-3" />
-      <path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z" />
-      <path d="M7.5 13.5 10 11" />
-      <path d="M10.5 16.5 13 14" />
-      <path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z" />
-    </svg>
-  );
-}
-
-// ============================================================================
-// Status Indicator Component
-// ============================================================================
-
-interface StatusIndicatorProps {
-  status: ConnectionStatus;
-}
-
-function StatusIndicator({ status }: StatusIndicatorProps) {
-  const t = useT();
-  const statusColors: Record<ConnectionStatus, string> = {
-    connected: "bg-success shadow-[0_0_6px_hsl(var(--success)/0.5)]",
-    disconnected: "bg-muted-foreground/40",
-    connecting: "bg-warning animate-pulse-subtle",
-  };
-
-  const statusLabels: Record<ConnectionStatus, string> = {
-    connected: t('dbManager.connected'),
-    disconnected: t('dbManager.disconnected'),
-    connecting: t('dbManager.connecting'),
-  };
-
-  return (
-    <span
-      className={cn(
-        "inline-block h-2 w-2 rounded-full transition-all duration-300",
-        statusColors[status]
-      )}
-      title={statusLabels[status]}
-    />
-  );
-}
-
-// ============================================================================
-// Context Menu Component
-// ============================================================================
-
-interface ContextMenuProps {
+function ContextMenu({ state, onClose, actions }: {
   state: ContextMenuState;
   onClose: () => void;
-  onConnect: () => void;
-  onDisconnect: () => void;
-  onRefresh: () => void;
-  onDelete: () => void;
-  isConnected: boolean;
-  isConnecting: boolean;
-}
-
-function ContextMenu({
-  state,
-  onClose,
-  onConnect,
-  onDisconnect,
-  onRefresh,
-  onDelete,
-  isConnected,
-  isConnecting,
-}: ContextMenuProps) {
+  actions: {
+    onConnect: () => void; onDisconnect: () => void; onRefresh: () => void;
+    onDelete: () => void; onViewData: () => void; onViewStructure: () => void;
+    onCopyName: () => void; onGenerateSelect: () => void;
+    isConnected: boolean; isConnecting: boolean;
+  };
+}) {
   const menuRef = React.useRef<HTMLDivElement>(null);
   const t = useT();
 
-  // Close menu when clicking outside
   React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    if (state.isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
+    if (!state.isOpen) return;
+    const close = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose(); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
   }, [state.isOpen, onClose]);
 
   if (!state.isOpen) return null;
 
+  const MenuItem = ({ icon, label, onClick, danger, disabled }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean; disabled?: boolean }) => (
+    <button
+      className={cn(
+        "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
+        danger ? "text-destructive hover:bg-destructive/10" : "hover:bg-accent hover:text-accent-foreground",
+        disabled && "opacity-50 pointer-events-none"
+      )}
+      onClick={() => { onClick(); onClose(); }}
+      disabled={disabled}
+    >{icon}<span>{label}</span></button>
+  );
+
+  const Divider = () => <div className="my-1 h-px bg-border" />;
+
   return (
-    <div
-      ref={menuRef}
-      className="fixed z-50 min-w-[180px] animate-fade-in rounded-lg border border-border bg-popover p-1 shadow-xl"
-      style={{ left: state.x, top: state.y }}
-    >
-      {state.type === "connection" && (
-        <>
-          {!isConnected ? (
-            <button
-              className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-colors"
-              onClick={() => {
-                onConnect();
-                onClose();
-              }}
-              disabled={isConnecting}
-            >
-              <PlugIcon className="h-4 w-4" />
-              {isConnecting ? t('dbManager.connecting') : t('dbManager.connect')}
-            </button>
-          ) : (
-            <button
-              className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-              onClick={() => {
-                onDisconnect();
-                onClose();
-              }}
-            >
-              <UnplugIcon className="h-4 w-4" />
-              {t('dbManager.disconnect')}
-            </button>
-          )}
-          <button
-            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-colors"
-            onClick={() => {
-              onRefresh();
-              onClose();
-            }}
-            disabled={!isConnected}
-          >
-            <RefreshIcon className="h-4 w-4" />
-            {t('dbManager.refresh')}
-          </button>
-          <div className="my-1 h-px bg-border" />
-          <button
-            className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-destructive hover:bg-destructive/10 cursor-pointer transition-colors"
-            onClick={() => {
-              onDelete();
-              onClose();
-            }}
-          >
-            <TrashIcon className="h-4 w-4" />
-            {t('dbManager.deleteConnection')}
-          </button>
-        </>
-      )}
-      {state.type === "database" && (
-        <button
-          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-          onClick={() => {
-            onRefresh();
-            onClose();
-          }}
-        >
-          <RefreshIcon className="h-4 w-4" />
-          {t('dbManager.refreshTables')}
-        </button>
-      )}
-      {state.type === "table" && (
-        <button
-          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
-          onClick={() => {
-            onRefresh();
-            onClose();
-          }}
-        >
-          <RefreshIcon className="h-4 w-4" />
-          {t('dbManager.refresh')}
-        </button>
-      )}
+    <div ref={menuRef} className="fixed z-50 min-w-[200px] rounded-lg border border-border bg-popover p-1 shadow-xl animate-in fade-in-0 zoom-in-95" style={{ left: state.x, top: state.y }}>
+      {state.type === "connection" && (<>
+        {!actions.isConnected
+          ? <MenuItem icon={<PlugIcon />} label={actions.isConnecting ? t('dbManager.connecting') : t('dbManager.connect')} onClick={actions.onConnect} disabled={actions.isConnecting} />
+          : <MenuItem icon={<UnplugIcon />} label={t('dbManager.disconnect')} onClick={actions.onDisconnect} />
+        }
+        <MenuItem icon={<RefreshIcon />} label={t('dbManager.refresh')} onClick={actions.onRefresh} disabled={!actions.isConnected} />
+        <Divider />
+        <MenuItem icon={<TrashIcon />} label={t('dbManager.deleteConnection')} onClick={actions.onDelete} danger />
+      </>)}
+      {state.type === "database" && (<>
+        <MenuItem icon={<RefreshIcon />} label={t('dbManager.refresh')} onClick={actions.onRefresh} />
+        <MenuItem icon={<CopyIcon />} label={t('dbManager.copyName')} onClick={actions.onCopyName} />
+      </>)}
+      {state.type === "table" && (<>
+        <MenuItem icon={<TableIcon />} label={t('dbManager.viewData')} onClick={actions.onViewData} />
+        <MenuItem icon={<TableIcon />} label={t('dbManager.viewStructure')} onClick={actions.onViewStructure} />
+        <Divider />
+        <MenuItem icon={<CopyIcon />} label={t('dbManager.copyName')} onClick={actions.onCopyName} />
+        <MenuItem icon={<CopyIcon />} label={t('dbManager.generateSelect')} onClick={actions.onGenerateSelect} />
+      </>)}
     </div>
   );
 }
 
 // ============================================================================
-// Tree Node Components
+// Tree Node
 // ============================================================================
 
-interface TreeNodeProps {
-  label: string;
-  icon: React.ReactNode;
-  isExpanded?: boolean;
-  isExpandable?: boolean;
-  isSelected?: boolean;
-  level?: number;
-  statusIndicator?: React.ReactNode;
-  onClick?: () => void;
-  onToggle?: () => void;
-  onDoubleClick?: () => void;
-  onContextMenu?: (e: React.MouseEvent) => void;
+function TreeNode({ label, icon, isExpanded, isExpandable, isSelected, level = 0, statusIndicator, onClick, onDoubleClick, onContextMenu, children }: {
+  label: string; icon: React.ReactNode; isExpanded?: boolean; isExpandable?: boolean;
+  isSelected?: boolean; level?: number; statusIndicator?: React.ReactNode;
+  onClick?: () => void; onDoubleClick?: () => void; onContextMenu?: (e: React.MouseEvent) => void;
   children?: React.ReactNode;
-}
-
-function TreeNode({
-  label,
-  icon,
-  isExpanded = false,
-  isExpandable = false,
-  isSelected = false,
-  level = 0,
-  statusIndicator,
-  onClick,
-  onToggle,
-  onDoubleClick,
-  onContextMenu,
-  children,
-}: TreeNodeProps) {
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isExpandable && onToggle) {
-      onToggle();
-    }
-    onClick?.();
-  };
-
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDoubleClick?.();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      if (isExpandable && onToggle) {
-        onToggle();
-      }
-      onClick?.();
-    }
-  };
-
+}) {
   return (
     <div className="select-none">
       <div
         className={cn(
-          "flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors duration-150",
-          "hover:bg-accent/60 hover:text-accent-foreground",
-          isSelected && "bg-accent text-accent-foreground font-medium"
+          "flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
+          "hover:bg-accent/60", isSelected && "bg-accent font-medium"
         )}
         style={{ paddingLeft: `${level * 14 + 8}px` }}
-        onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
+        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+        onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.(); }}
         onContextMenu={onContextMenu}
-        onKeyDown={handleKeyDown}
         role="treeitem"
-        aria-expanded={isExpandable ? isExpanded : undefined}
-        aria-selected={isSelected}
         tabIndex={0}
       >
         {isExpandable ? (
-          <span className="flex-shrink-0">
-            {isExpanded ? (
-              <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
-            )}
-          </span>
-        ) : (
-          <span className="w-4 flex-shrink-0" />
-        )}
+          <span className="flex-shrink-0">{isExpanded ? <ChevronDown className="text-muted-foreground" /> : <ChevronRight className="text-muted-foreground" />}</span>
+        ) : <span className="w-3.5 flex-shrink-0" />}
         <span className="flex-shrink-0">{icon}</span>
         <span className="flex-1 truncate">{label}</span>
-        {statusIndicator && (
-          <span className="flex-shrink-0">{statusIndicator}</span>
-        )}
+        {statusIndicator}
       </div>
-      {isExpanded && children && (
-        <div role="group">{children}</div>
-      )}
+      {isExpanded && children && <div role="group">{children}</div>}
     </div>
   );
 }
 
 // ============================================================================
-// Connection Node Component
+// Object Group Node (Tables, Views, Functions, etc.)
 // ============================================================================
 
-interface ConnectionNodeProps {
-  connection: ConnectionConfig;
-  status: ConnectionStatus;
-  isExpanded: boolean;
-  databases: string[];
-  tables: Record<string, string[]>;
-  expandedNodes: Set<string>;
-  onToggle: () => void;
-  onSelect: () => void;
-  onDoubleClick: () => void;
-  onSelectTable: (tableName: string) => void;
-  onContextMenu: (e: React.MouseEvent) => void;
-  onDatabaseToggle: (database: string) => void;
-  onDatabaseDoubleClick: (database: string) => void;
-  onDatabaseContextMenu: (e: React.MouseEvent, database: string) => void;
-  onTableContextMenu: (e: React.MouseEvent, database: string, table: string) => void;
-}
-
-function ConnectionNode({
-  connection,
-  status,
-  isExpanded,
-  databases,
-  tables,
-  expandedNodes,
-  onToggle,
-  onSelect,
-  onDoubleClick,
-  onSelectTable,
-  onContextMenu,
-  onDatabaseToggle,
-  onDatabaseDoubleClick,
-  onDatabaseContextMenu,
-  onTableContextMenu,
-}: ConnectionNodeProps) {
-  const isConnected = status === "connected";
+function ObjectGroup({ label, icon, items, level, onItemClick, onItemDoubleClick, onItemContextMenu, searchQuery }: {
+  label: string; icon: React.ReactNode; items: string[]; level: number;
+  onItemClick?: (name: string) => void; onItemDoubleClick?: (name: string) => void;
+  onItemContextMenu?: (e: React.MouseEvent, name: string) => void;
+  searchQuery: string;
+}) {
+  const [expanded, setExpanded] = React.useState(true);
+  const filtered = searchQuery ? items.filter(i => i.toLowerCase().includes(searchQuery.toLowerCase())) : items;
+  if (filtered.length === 0 && searchQuery) return null;
 
   return (
     <TreeNode
-      label={connection.name}
-      icon={<ServerIcon className="text-primary" />}
-      isExpanded={isExpanded}
-      isExpandable={isConnected && databases.length > 0}
-      statusIndicator={<StatusIndicator status={status} />}
-      onClick={onSelect}
-      onToggle={onToggle}
-      onDoubleClick={onDoubleClick}
-      onContextMenu={onContextMenu}
+      label={`${label} (${filtered.length})`}
+      icon={icon}
+      isExpanded={expanded}
+      isExpandable={filtered.length > 0}
+      level={level}
+      onClick={() => setExpanded(!expanded)}
     >
-      {isConnected &&
-        databases.map((database) => {
-          const dbNodeId = `${connection.id}:${database}`;
-          const isDbExpanded = expandedNodes.has(dbNodeId);
-          const dbTables = tables[database] || [];
-
-          return (
-            <TreeNode
-              key={database}
-              label={database}
-              icon={<DatabaseIcon className="text-warning" />}
-              isExpanded={isDbExpanded}
-              isExpandable={true}
-              level={1}
-              onToggle={() => onDatabaseToggle(database)}
-              onDoubleClick={() => onDatabaseDoubleClick(database)}
-              onContextMenu={(e) => onDatabaseContextMenu(e, database)}
-            >
-              {dbTables.map((table) => (
-                <TreeNode
-                  key={table}
-                  label={table}
-                  icon={<TableIcon className="text-success" />}
-                  level={2}
-                  onClick={() => onSelectTable(table)}
-                  onContextMenu={(e) => onTableContextMenu(e, database, table)}
-                />
-              ))}
-            </TreeNode>
-          );
-        })}
+      {filtered.map(name => (
+        <TreeNode
+          key={name}
+          label={name}
+          icon={icon}
+          level={level + 1}
+          onClick={() => onItemClick?.(name)}
+          onDoubleClick={() => onItemDoubleClick?.(name)}
+          onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(e, name) : undefined}
+        />
+      ))}
     </TreeNode>
   );
 }
@@ -577,293 +261,235 @@ function ConnectionNode({
 // Main DatabaseTree Component
 // ============================================================================
 
-export function DatabaseTree({
-  onSelectTable,
-  onSelectConnection,
-  className,
-}: DatabaseTreeProps) {
+export function DatabaseTree({ onSelectTable, onSelectConnection, className }: DatabaseTreeProps) {
   const t = useT();
-  // Store state
-  const connections = useAppStore((state) => state.connections);
-  const connectionStatus = useAppStore((state) => state.connectionStatus);
-  const databases = useAppStore((state) => state.databases);
-  const tables = useAppStore((state) => state.tables);
-  const expandedNodes = useAppStore((state) => state.expandedNodes);
-  // Note: activeConnectionId is available in the store if needed for highlighting
-  // const activeConnectionId = useAppStore((state) => state.activeConnectionId);
+  const connections = useAppStore(s => s.connections);
+  const connectionStatus = useAppStore(s => s.connectionStatus);
+  const databases = useAppStore(s => s.databases);
+  const tables = useAppStore(s => s.tables);
+  const views = useAppStore(s => s.views);
+  const functions = useAppStore(s => s.functions);
+  const procedures = useAppStore(s => s.procedures);
+  const triggers = useAppStore(s => s.triggers);
+  const expandedNodes = useAppStore(s => s.expandedNodes);
+  const loadedDatabases = useAppStore(s => s.loadedDatabases);
+  const treeSearchQuery = useAppStore(s => s.treeSearchQuery);
 
-  // Store actions
-  const connect = useAppStore((state) => state.connect);
-  const disconnect = useAppStore((state) => state.disconnect);
-  const removeConnection = useAppStore((state) => state.removeConnection);
-  const refreshSchema = useAppStore((state) => state.refreshSchema);
-  const loadTables = useAppStore((state) => state.loadTables);
-  const toggleNodeExpansion = useAppStore((state) => state.toggleNodeExpansion);
-  const setActiveConnection = useAppStore((state) => state.setActiveConnection);
+  const connect = useAppStore(s => s.connect);
+  const disconnect = useAppStore(s => s.disconnect);
+  const removeConnection = useAppStore(s => s.removeConnection);
+  const refreshSchema = useAppStore(s => s.refreshSchema);
+  const loadDatabaseObjects = useAppStore(s => s.loadDatabaseObjects);
+  const toggleNodeExpansion = useAppStore(s => s.toggleNodeExpansion);
+  const setTreeSearchQuery = useAppStore(s => s.setTreeSearchQuery);
+  const openDataTab = useAppStore(s => s.openDataTab);
 
-  // Context menu state
-  const [contextMenu, setContextMenu] = React.useState<ContextMenuState>({
-    isOpen: false,
-    x: 0,
-    y: 0,
-    type: null,
-    connectionId: null,
-    database: null,
-    table: null,
-  });
+  const [contextMenu, setContextMenu] = React.useState<ContextMenuState>(INITIAL_CONTEXT);
+  const [loadingNodes, setLoadingNodes] = React.useState<Set<string>>(new Set());
 
-  // Close context menu
-  const closeContextMenu = React.useCallback(() => {
-    setContextMenu((prev) => ({ ...prev, isOpen: false }));
+  // Handle database node double-click — lazy load
+  const handleDatabaseDoubleClick = React.useCallback(async (connId: string, database: string) => {
+    const nodeId = `${connId}:${database}`;
+    if (!loadedDatabases.has(database)) {
+      setLoadingNodes(prev => new Set(prev).add(nodeId));
+      await loadDatabaseObjects(database);
+      setLoadingNodes(prev => { const n = new Set(prev); n.delete(nodeId); return n; });
+    }
+    if (!expandedNodes.has(nodeId)) toggleNodeExpansion(nodeId);
+  }, [loadedDatabases, loadDatabaseObjects, toggleNodeExpansion, expandedNodes]);
+
+  // Handle database node click — toggle expand/collapse if loaded
+  const handleDatabaseClick = React.useCallback((connId: string, database: string) => {
+    const nodeId = `${connId}:${database}`;
+    if (loadedDatabases.has(database)) {
+      toggleNodeExpansion(nodeId);
+    }
+  }, [loadedDatabases, toggleNodeExpansion]);
+
+  // Handle connection double-click — connect and expand
+  const handleConnectionDoubleClick = React.useCallback(async (connId: string) => {
+    const status = connectionStatus[connId] || 'disconnected';
+    if (status !== 'connected') {
+      await connect(connId);
+      // After connect, expand the node
+      if (!expandedNodes.has(connId)) toggleNodeExpansion(connId);
+    }
+  }, [connectionStatus, connect, expandedNodes, toggleNodeExpansion]);
+
+  // Handle database refresh
+  const handleDatabaseRefresh = React.useCallback(async (database: string) => {
+    // Clear cache and reload
+    useAppStore.setState(state => {
+      const newLoaded = new Set(state.loadedDatabases);
+      newLoaded.delete(database);
+      return { loadedDatabases: newLoaded };
+    });
+    await loadDatabaseObjects(database);
+  }, [loadDatabaseObjects]);
+
+  // Context menu actions
+  const contextActions = React.useMemo(() => {
+    const connId = contextMenu.connectionId;
+    const status = connId ? connectionStatus[connId] : 'disconnected';
+    return {
+      isConnected: status === 'connected',
+      isConnecting: status === 'connecting',
+      onConnect: () => connId && connect(connId),
+      onDisconnect: () => connId && disconnect(connId),
+      onRefresh: () => {
+        if (contextMenu.type === 'connection' && connId) refreshSchema();
+        if (contextMenu.type === 'database' && contextMenu.database) handleDatabaseRefresh(contextMenu.database);
+      },
+      onDelete: () => connId && removeConnection(connId),
+      onViewData: () => {
+        if (contextMenu.table && contextMenu.database) {
+          openDataTab(contextMenu.table, contextMenu.database);
+        }
+      },
+      onViewStructure: () => { /* TODO: open structure tab */ },
+      onCopyName: () => {
+        const name = contextMenu.table || contextMenu.database || '';
+        navigator.clipboard.writeText(name);
+      },
+      onGenerateSelect: () => {
+        if (contextMenu.table) {
+          navigator.clipboard.writeText(`SELECT * FROM ${contextMenu.table} LIMIT 100;`);
+        }
+      },
+    };
+  }, [contextMenu, connectionStatus, connect, disconnect, refreshSchema, removeConnection, openDataTab, handleDatabaseRefresh]);
+
+  const handleContextMenu = React.useCallback((e: React.MouseEvent, type: ContextMenuState['type'], connId: string, database?: string, table?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ isOpen: true, x: e.clientX, y: e.clientY, type, connectionId: connId, database: database || null, table: table || null });
   }, []);
 
-  // Handle connection context menu
-  const handleConnectionContextMenu = React.useCallback(
-    (e: React.MouseEvent, connectionId: string) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setContextMenu({
-        isOpen: true,
-        x: e.clientX,
-        y: e.clientY,
-        type: "connection",
-        connectionId,
-        database: null,
-        table: null,
-      });
-    },
-    []
-  );
-
-  // Handle database context menu
-  const handleDatabaseContextMenu = React.useCallback(
-    (e: React.MouseEvent, connectionId: string, database: string) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setContextMenu({
-        isOpen: true,
-        x: e.clientX,
-        y: e.clientY,
-        type: "database",
-        connectionId,
-        database,
-        table: null,
-      });
-    },
-    []
-  );
-
-  // Handle table context menu
-  const handleTableContextMenu = React.useCallback(
-    (e: React.MouseEvent, connectionId: string, database: string, table: string) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setContextMenu({
-        isOpen: true,
-        x: e.clientX,
-        y: e.clientY,
-        type: "table",
-        connectionId,
-        database,
-        table,
-      });
-    },
-    []
-  );
-
-  // Handle connect action
-  const handleConnect = React.useCallback(async () => {
-    if (contextMenu.connectionId) {
-      try {
-        await connect(contextMenu.connectionId);
-      } catch (error) {
-        console.error("Failed to connect:", error);
-      }
-    }
-  }, [contextMenu.connectionId, connect]);
-
-  // Handle disconnect action
-  const handleDisconnect = React.useCallback(async () => {
-    if (contextMenu.connectionId) {
-      try {
-        await disconnect(contextMenu.connectionId);
-      } catch (error) {
-        console.error("Failed to disconnect:", error);
-      }
-    }
-  }, [contextMenu.connectionId, disconnect]);
-
-  // Handle refresh action
-  const handleRefresh = React.useCallback(async () => {
-    if (contextMenu.type === "connection" && contextMenu.connectionId) {
-      // Set active connection and refresh schema
-      setActiveConnection(contextMenu.connectionId);
-      await refreshSchema();
-    } else if (contextMenu.type === "database" && contextMenu.database) {
-      // Refresh tables for the database
-      await loadTables(contextMenu.database);
-    }
-  }, [contextMenu, setActiveConnection, refreshSchema, loadTables]);
-
-  // Handle delete action
-  const handleDelete = React.useCallback(async () => {
-    if (contextMenu.connectionId) {
-      try {
-        await removeConnection(contextMenu.connectionId);
-      } catch (error) {
-        console.error("Failed to delete connection:", error);
-      }
-    }
-  }, [contextMenu.connectionId, removeConnection]);
-
-  // Handle connection toggle
-  const handleConnectionToggle = React.useCallback(
-    (connectionId: string) => {
-      toggleNodeExpansion(connectionId);
-    },
-    [toggleNodeExpansion]
-  );
-
-  // Handle database toggle
-  const handleDatabaseToggle = React.useCallback(
-    async (connectionId: string, database: string) => {
-      const nodeId = `${connectionId}:${database}`;
-      toggleNodeExpansion(nodeId);
-
-      // Load tables if expanding and not already loaded
-      if (!expandedNodes.has(nodeId) && !tables[database]) {
-        setActiveConnection(connectionId);
-        await loadTables(database);
-      }
-    },
-    [toggleNodeExpansion, expandedNodes, tables, setActiveConnection, loadTables]
-  );
-
-  // Handle database double click - expand and load tables
-  const handleDatabaseDoubleClick = React.useCallback(
-    async (connectionId: string, database: string) => {
-      const nodeId = `${connectionId}:${database}`;
-      
-      // 如果未展开，则展开并加载表
-      if (!expandedNodes.has(nodeId)) {
-        toggleNodeExpansion(nodeId);
-        setActiveConnection(connectionId);
-        await loadTables(database);
-      } else {
-        // 如果已展开，则折叠
-        toggleNodeExpansion(nodeId);
-      }
-    },
-    [expandedNodes, toggleNodeExpansion, setActiveConnection, loadTables]
-  );
-
-  // Handle connection select
-  const handleConnectionSelect = React.useCallback(
-    (connectionId: string) => {
-      setActiveConnection(connectionId);
-      onSelectConnection?.(connectionId);
-    },
-    [setActiveConnection, onSelectConnection]
-  );
-
-  // Handle connection double click - connect if disconnected
-  const handleConnectionDoubleClick = React.useCallback(
-    async (connectionId: string) => {
-      const status = connectionStatus[connectionId] || "disconnected";
-      if (status === "disconnected") {
-        try {
-          await connect(connectionId);
-        } catch (error) {
-          console.error("Failed to connect:", error);
-        }
-      }
-    },
-    [connectionStatus, connect]
-  );
-
-  // Handle table select
-  const handleTableSelect = React.useCallback(
-    (connectionId: string, tableName: string) => {
-      setActiveConnection(connectionId);
-      onSelectTable?.(connectionId, tableName);
-    },
-    [setActiveConnection, onSelectTable]
-  );
-
-  // Get current context menu connection status
-  const contextConnectionStatus = contextMenu.connectionId
-    ? connectionStatus[contextMenu.connectionId] || "disconnected"
-    : "disconnected";
+  // Filter connections/databases by search
+  const searchLower = treeSearchQuery.toLowerCase();
 
   return (
     <div className={cn("flex h-full flex-col", className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('dbManager.connections')}</h2>
+      {/* Search */}
+      <div className="px-2 py-1.5 border-b border-border">
+        <div className="relative">
+          <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={treeSearchQuery}
+            onChange={e => setTreeSearchQuery(e.target.value)}
+            placeholder={t('dbManager.searchPlaceholder')}
+            className="h-7 pl-7 text-xs"
+          />
+        </div>
       </div>
 
-      {/* Tree Content */}
-      <div className="flex-1 overflow-auto py-1 scrollbar-thin" role="tree" aria-label={t('dbManager.connections')}>
+      {/* Tree */}
+      <div className="flex-1 overflow-y-auto py-1" role="tree">
         {connections.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs gap-1 px-4">
             <p>{t('dbManager.noConnections')}</p>
-            <p className="mt-1 text-xs">{t('dbManager.noConnectionsHint')}</p>
+            <p className="text-[10px] opacity-60">{t('dbManager.noConnectionsHint')}</p>
           </div>
         ) : (
-          connections.map((connection) => {
-            const status = connectionStatus[connection.id] || "disconnected";
-            const isExpanded = expandedNodes.has(connection.id);
-            const isConnected = status === "connected";
+          connections.map(conn => {
+            const status = connectionStatus[conn.id] || 'disconnected';
+            const isConnected = status === 'connected';
+            const connExpanded = expandedNodes.has(conn.id);
+            const connDatabases = databases || [];
+
+            // Filter by search
+            if (searchLower && !conn.name.toLowerCase().includes(searchLower)) {
+              // Check if any child matches
+              const hasChildMatch = connDatabases.some(db => {
+                if (db.toLowerCase().includes(searchLower)) return true;
+                const dbTables = tables[db] || [];
+                return dbTables.some(t => t.toLowerCase().includes(searchLower));
+              });
+              if (!hasChildMatch) return null;
+            }
 
             return (
-              <ConnectionNode
-                key={connection.id}
-                connection={connection}
-                status={status}
-                isExpanded={isExpanded}
-                databases={isConnected ? databases : []}
-                tables={tables}
-                expandedNodes={expandedNodes}
-                onToggle={() => handleConnectionToggle(connection.id)}
-                onSelect={() => handleConnectionSelect(connection.id)}
-                onDoubleClick={() => handleConnectionDoubleClick(connection.id)}
-                onSelectTable={(tableName) =>
-                  handleTableSelect(connection.id, tableName)
-                }
-                onContextMenu={(e) =>
-                  handleConnectionContextMenu(e, connection.id)
-                }
-                onDatabaseToggle={(database) =>
-                  handleDatabaseToggle(connection.id, database)
-                }
-                onDatabaseDoubleClick={(database) =>
-                  handleDatabaseDoubleClick(connection.id, database)
-                }
-                onDatabaseContextMenu={(e, database) =>
-                  handleDatabaseContextMenu(e, connection.id, database)
-                }
-                onTableContextMenu={(e, database, table) =>
-                  handleTableContextMenu(e, connection.id, database, table)
-                }
-              />
+              <TreeNode
+                key={conn.id}
+                label={conn.name}
+                icon={<ServerIcon className="text-primary" />}
+                isExpanded={connExpanded}
+                isExpandable={isConnected && connDatabases.length > 0}
+                statusIndicator={<StatusIndicator status={status} />}
+                onClick={() => {
+                  onSelectConnection?.(conn.id);
+                  if (isConnected) toggleNodeExpansion(conn.id);
+                }}
+                onDoubleClick={() => handleConnectionDoubleClick(conn.id)}
+                onContextMenu={(e) => handleContextMenu(e, 'connection', conn.id)}
+              >
+                {isConnected && connDatabases
+                  .filter(db => !searchLower || db.toLowerCase().includes(searchLower) ||
+                    (tables[db] || []).some(t => t.toLowerCase().includes(searchLower)))
+                  .map(database => {
+                    const dbNodeId = `${conn.id}:${database}`;
+                    const isDbExpanded = expandedNodes.has(dbNodeId);
+                    const isLoaded = loadedDatabases.has(database);
+                    const dbTables = tables[database] || [];
+                    const dbViews = views[database] || [];
+                    const dbFunctions = functions[database] || [];
+                    const dbProcedures = procedures[database] || [];
+                    const dbTriggers = triggers[database] || [];
+
+                    return (
+                      <TreeNode
+                        key={database}
+                        label={database}
+                        icon={loadingNodes.has(dbNodeId) 
+                          ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent text-warning" />
+                          : <DatabaseIcon className={isLoaded ? "text-warning" : "text-muted-foreground"} />}
+                        isExpanded={isDbExpanded}
+                        isExpandable={isLoaded}
+                        level={1}
+                        onClick={() => handleDatabaseClick(conn.id, database)}
+                        onDoubleClick={() => handleDatabaseDoubleClick(conn.id, database)}
+                        onContextMenu={(e) => handleContextMenu(e, 'database', conn.id, database)}
+                      >
+                        {isLoaded && (<>
+                          <ObjectGroup
+                            label={t('dbManager.tables')}
+                            icon={<TableIcon className="text-success" />}
+                            items={dbTables}
+                            level={2}
+                            searchQuery={treeSearchQuery}
+                            onItemClick={(name) => {
+                              onSelectTable?.(conn.id, name, database);
+                            }}
+                            onItemDoubleClick={(name) => {
+                              onSelectTable?.(conn.id, name, database);
+                              openDataTab(name, database);
+                            }}
+                            onItemContextMenu={(e, name) => handleContextMenu(e, 'table', conn.id, database, name)}
+                          />
+                          {dbViews.length > 0 && (
+                            <ObjectGroup label={t('dbManager.views')} icon={<ViewIcon className="text-blue-400" />} items={dbViews} level={2} searchQuery={treeSearchQuery} onItemClick={() => {}} />
+                          )}
+                          {dbFunctions.length > 0 && (
+                            <ObjectGroup label={t('dbManager.functions')} icon={<FunctionIcon className="text-purple-400" />} items={dbFunctions} level={2} searchQuery={treeSearchQuery} onItemClick={() => {}} />
+                          )}
+                          {dbProcedures.length > 0 && (
+                            <ObjectGroup label={t('dbManager.procedures')} icon={<FunctionIcon className="text-orange-400" />} items={dbProcedures} level={2} searchQuery={treeSearchQuery} onItemClick={() => {}} />
+                          )}
+                          {dbTriggers.length > 0 && (
+                            <ObjectGroup label={t('dbManager.triggers')} icon={<TriggerIcon className="text-red-400" />} items={dbTriggers} level={2} searchQuery={treeSearchQuery} onItemClick={() => {}} />
+                          )}
+                        </>)}
+                      </TreeNode>
+                    );
+                  })}
+              </TreeNode>
             );
           })
         )}
       </div>
 
       {/* Context Menu */}
-      <ContextMenu
-        state={contextMenu}
-        onClose={closeContextMenu}
-        onConnect={handleConnect}
-        onDisconnect={handleDisconnect}
-        onRefresh={handleRefresh}
-        onDelete={handleDelete}
-        isConnected={contextConnectionStatus === "connected"}
-        isConnecting={contextConnectionStatus === "connecting"}
-      />
+      <ContextMenu state={contextMenu} onClose={() => setContextMenu(INITIAL_CONTEXT)} actions={contextActions} />
     </div>
   );
 }
-
-export default DatabaseTree;

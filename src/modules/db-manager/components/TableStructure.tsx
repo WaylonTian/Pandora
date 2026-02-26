@@ -25,6 +25,8 @@ import { useAppStore, type ColumnDefinition, type IndexInfo, type ForeignKeyInfo
 export interface TableStructureProps {
   /** Name of the table to display structure for */
   tableName: string;
+  /** Database name for context switching */
+  database?: string;
   /** Optional className for the container */
   className?: string;
 }
@@ -708,7 +710,7 @@ function ForeignKeysTab({ foreignKeys }: ForeignKeysTabProps) {
  *
  * **Validates: Requirements 5.1, 5.4, 5.5**
  */
-export function TableStructure({ tableName, className }: TableStructureProps) {
+export function TableStructure({ tableName, database, className }: TableStructureProps) {
   const t = useT();
   // State for active tab
   const [activeTab, setActiveTab] = React.useState<TabType>("columns");
@@ -722,9 +724,9 @@ export function TableStructure({ tableName, className }: TableStructureProps) {
   // Load table info on mount or when table name changes
   React.useEffect(() => {
     if (tableName) {
-      loadTableInfo(tableName);
+      loadTableInfo(tableName, database);
     }
-  }, [tableName, loadTableInfo]);
+  }, [tableName, database, loadTableInfo]);
 
   // Render loading state
   if (isLoading && !tableInfo) {

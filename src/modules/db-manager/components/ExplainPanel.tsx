@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { useT } from '@/i18n';
-import { tauriCommands, ExplainResult, useActualConnectionId } from "../store/index";
+import { tauriCommands, ExplainResult, useActualConnectionId, useActiveTab } from "../store/index";
 
 /**
  * ExplainPanel Component
@@ -119,6 +119,7 @@ export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelPr
   const [mode, setMode] = React.useState<'explain' | 'analyze'>('explain');
   
   const actualConnectionId = useActualConnectionId();
+  const activeTab = useActiveTab();
   
   // 执行 EXPLAIN
   const runExplain = React.useCallback(async (analyze: boolean) => {
@@ -128,7 +129,7 @@ export function ExplainPanel({ sql, isOpen, onClose, className }: ExplainPanelPr
     setError(null);
     
     try {
-      const explainResult = await tauriCommands.explainQuery(actualConnectionId, sql, analyze);
+      const explainResult = await tauriCommands.explainQuery(actualConnectionId, sql, analyze, activeTab?.database);
       setResult(explainResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

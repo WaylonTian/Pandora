@@ -32,6 +32,7 @@ pub trait SchemaManager: Send + Sync {
         &self,
         conn: Arc<dyn DatabaseConnection>,
         table: &str,
+        database: Option<&str>,
     ) -> Result<TableInfo, DbError>;
 
     /// Creates a new table based on TableInfo
@@ -96,11 +97,12 @@ impl SchemaManager for DefaultSchemaManager {
         &self,
         conn: Arc<dyn DatabaseConnection>,
         table: &str,
+        database: Option<&str>,
     ) -> Result<TableInfo, DbError> {
         match conn.db_type() {
-            DatabaseType::MySQL => get_table_info_mysql(conn, table).await,
-            DatabaseType::PostgreSQL => get_table_info_postgres(conn, table).await,
-            DatabaseType::SQLite => get_table_info_sqlite(conn, table).await,
+            DatabaseType::MySQL => get_table_info_mysql(conn, table, database).await,
+            DatabaseType::PostgreSQL => get_table_info_postgres(conn, table, database).await,
+            DatabaseType::SQLite => get_table_info_sqlite(conn, table).await, // SQLite no db switch
         }
     }
 
@@ -176,29 +178,29 @@ async fn list_tables_mysql(
 async fn get_table_info_mysql(
     conn: Arc<dyn DatabaseConnection>,
     table: &str,
+    database: Option<&str>,
 ) -> Result<TableInfo, DbError> {
-    log::info!("[get_table_info_mysql] Starting for table: {}", table);
-    
+    use mysql_async::prelude::*;
     let mysql_conn = conn
         .as_any()
         .downcast_ref::<MySqlConnection>()
         .ok_or_else(|| DbError::schema("Invalid connection type for MySQL"))?;
 
-    log::info!("[get_table_info_mysql] Getting connection from pool...");
     let mut conn = mysql_conn.get_conn().await?;
-    log::info!("[get_table_info_mysql] Got connection, fetching columns...");
 
-    // Get column information
+    log::debug!("[get_table_info_mysql] table={}, database={:?}", table, database);
+    // Switch database on this same connection
+    if let Some(db) = database {
+        if !db.is_empty() {
+            let use_db = format!("USE `{}`", db.replace('`', "``"));
+            log::debug!("[get_table_info_mysql] switching: {}", use_db);
+            conn.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+        }
+    }
+
     let columns = get_columns_mysql(&mut conn, table).await?;
-    log::info!("[get_table_info_mysql] Got {} columns", columns.len());
-
-    // Get index information
     let indexes = get_indexes_mysql(&mut conn, table).await?;
-    log::info!("[get_table_info_mysql] Got {} indexes", indexes.len());
-
-    // Get foreign key information
     let foreign_keys = get_foreign_keys_mysql(&mut conn, table).await?;
-    log::info!("[get_table_info_mysql] Got {} foreign keys", foreign_keys.len());
 
     Ok(TableInfo {
         name: table.to_string(),
@@ -219,7 +221,7 @@ async fn get_columns_mysql(
     let sql = format!(
         "SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_KEY, EXTRA 
          FROM INFORMATION_SCHEMA.COLUMNS 
-         WHERE TABLE_NAME = '{}' 
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{}' 
          ORDER BY ORDINAL_POSITION",
         table.replace('\'', "''")
     );
@@ -262,8 +264,11 @@ async fn get_indexes_mysql(
     use std::collections::HashMap;
 
     let sql = format!(
-        "SHOW INDEX FROM {}",
-        quote_identifier(table, DatabaseType::MySQL)
+        "SELECT INDEX_NAME, NON_UNIQUE, COLUMN_NAME
+         FROM INFORMATION_SCHEMA.STATISTICS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{}'
+         ORDER BY INDEX_NAME, SEQ_IN_INDEX",
+        table.replace('\'', "''")
     );
 
     let rows: Vec<mysql_async::Row> = conn
@@ -271,18 +276,16 @@ async fn get_indexes_mysql(
         .await
         .map_err(|e| DbError::schema(format!("Failed to get indexes: {}", e)))?;
 
-    // Group columns by index name
     let mut index_map: HashMap<String, (bool, bool, Vec<String>)> = HashMap::new();
 
     for row in rows {
-        // 使用 Option<String> 来安全处理可能为 NULL 的值
-        let key_name: Option<String> = row.get("Key_name");
-        let non_unique: Option<i64> = row.get("Non_unique");
-        let column_name: Option<String> = row.get("Column_name");
+        let key_name: Option<String> = row.get(0);
+        let non_unique: Option<String> = row.get(1);
+        let column_name: Option<String> = row.get(2);
 
         let key_name = key_name.unwrap_or_default();
         let column_name = column_name.unwrap_or_default();
-        let is_unique = non_unique.unwrap_or(1) == 0;
+        let is_unique = non_unique.as_deref() == Some("0");
         let is_primary = key_name == "PRIMARY";
 
         index_map
@@ -319,7 +322,7 @@ async fn get_foreign_keys_mysql(
          FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
          JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
            ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
-         WHERE kcu.TABLE_NAME = '{}' AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+         WHERE kcu.TABLE_SCHEMA = DATABASE() AND kcu.TABLE_NAME = '{}' AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
          ORDER BY kcu.ORDINAL_POSITION",
         table.replace('\'', "''")
     );
@@ -416,6 +419,7 @@ async fn list_tables_postgres(
 async fn get_table_info_postgres(
     conn: Arc<dyn DatabaseConnection>,
     table: &str,
+    database: Option<&str>,
 ) -> Result<TableInfo, DbError> {
     let pg_conn = conn
         .as_any()
@@ -425,18 +429,21 @@ async fn get_table_info_postgres(
     let client = pg_conn.client();
     let client = client.lock().await;
 
-    // Get column information
+    // Switch schema on this same connection
+    if let Some(db) = database {
+        if !db.is_empty() {
+            let set_schema = format!("SET search_path TO \"{}\"", db.replace('"', "\"\""));
+            client.execute(&*set_schema, &[]).await.map_err(|e| DbError::schema(e.to_string()))?;
+        }
+    }
+
     let columns = get_columns_postgres(&client, table).await?;
-
-    // Get index information
     let indexes = get_indexes_postgres(&client, table).await?;
-
-    // Get foreign key information
     let foreign_keys = get_foreign_keys_postgres(&client, table).await?;
 
     Ok(TableInfo {
         name: table.to_string(),
-        schema: Some("public".to_string()),
+        schema: Some(database.unwrap_or("public").to_string()),
         columns,
         indexes,
         foreign_keys,
@@ -1956,6 +1963,159 @@ mod property_tests {
                     }
                 }
             }
+        }
+    }
+}
+
+
+// ============================================================================
+// Views, Functions, Procedures, Triggers
+// ============================================================================
+
+pub async fn list_views(
+    conn: Arc<dyn DatabaseConnection>,
+    database: &str,
+) -> Result<Vec<String>, DbError> {
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<MySqlConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let mut c = mysql_conn.get_conn().await?;
+            let use_db = format!("USE `{}`", database.replace('`', "``"));
+            c.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+            let rows: Vec<Option<String>> = c.query("SELECT TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = DATABASE()").await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.into_iter().flatten().collect())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let client = pg_conn.client();
+            let client = client.lock().await;
+            let rows = client.query(
+                "SELECT viewname FROM pg_views WHERE schemaname = $1",
+                &[&database],
+            ).await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.iter().map(|r| r.get::<_, String>(0)).collect())
+        }
+        DatabaseType::SQLite => {
+            let sqlite_conn = conn.as_any().downcast_ref::<SqliteConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let connection = sqlite_conn.connection();
+            let guard = connection.lock().await;
+            tokio::task::block_in_place(|| {
+                let mut stmt = guard.prepare("SELECT name FROM sqlite_master WHERE type='view' ORDER BY name")
+                    .map_err(|e| DbError::schema(e.to_string()))?;
+                let names: Vec<String> = stmt.query_map([], |row| row.get(0))
+                    .map_err(|e| DbError::schema(e.to_string()))?
+                    .filter_map(|r| r.ok())
+                    .collect();
+                Ok(names)
+            })
+        }
+    }
+}
+
+pub async fn list_functions(
+    conn: Arc<dyn DatabaseConnection>,
+    database: &str,
+) -> Result<Vec<String>, DbError> {
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<MySqlConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let mut c = mysql_conn.get_conn().await?;
+            let use_db = format!("USE `{}`", database.replace('`', "``"));
+            c.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+            let rows: Vec<Option<String>> = c.query("SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_TYPE = 'FUNCTION'").await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.into_iter().flatten().collect())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let client = pg_conn.client();
+            let client = client.lock().await;
+            let rows = client.query(
+                "SELECT routine_name FROM information_schema.routines WHERE routine_schema = $1 AND routine_type = 'FUNCTION'",
+                &[&database],
+            ).await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.iter().map(|r| r.get::<_, String>(0)).collect())
+        }
+        DatabaseType::SQLite => Ok(vec![]),
+    }
+}
+
+pub async fn list_procedures(
+    conn: Arc<dyn DatabaseConnection>,
+    database: &str,
+) -> Result<Vec<String>, DbError> {
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<MySqlConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let mut c = mysql_conn.get_conn().await?;
+            let use_db = format!("USE `{}`", database.replace('`', "``"));
+            c.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+            let rows: Vec<Option<String>> = c.query("SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_TYPE = 'PROCEDURE'").await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.into_iter().flatten().collect())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let client = pg_conn.client();
+            let client = client.lock().await;
+            let rows = client.query(
+                "SELECT routine_name FROM information_schema.routines WHERE routine_schema = $1 AND routine_type = 'PROCEDURE'",
+                &[&database],
+            ).await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.iter().map(|r| r.get::<_, String>(0)).collect())
+        }
+        DatabaseType::SQLite => Ok(vec![]),
+    }
+}
+
+pub async fn list_triggers(
+    conn: Arc<dyn DatabaseConnection>,
+    database: &str,
+) -> Result<Vec<String>, DbError> {
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<MySqlConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let mut c = mysql_conn.get_conn().await?;
+            let use_db = format!("USE `{}`", database.replace('`', "``"));
+            c.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+            let rows: Vec<Option<String>> = c.query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE()").await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.into_iter().flatten().collect())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<PostgresConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let client = pg_conn.client();
+            let client = client.lock().await;
+            let rows = client.query(
+                "SELECT DISTINCT trigger_name FROM information_schema.triggers WHERE trigger_schema = $1",
+                &[&database],
+            ).await.map_err(|e| DbError::schema(e.to_string()))?;
+            Ok(rows.iter().map(|r| r.get::<_, String>(0)).collect())
+        }
+        DatabaseType::SQLite => {
+            let sqlite_conn = conn.as_any().downcast_ref::<SqliteConnection>()
+                .ok_or_else(|| DbError::schema("Invalid connection type"))?;
+            let connection = sqlite_conn.connection();
+            let guard = connection.lock().await;
+            tokio::task::block_in_place(|| {
+                let mut stmt = guard.prepare("SELECT name FROM sqlite_master WHERE type='trigger' ORDER BY name")
+                    .map_err(|e| DbError::schema(e.to_string()))?;
+                let names: Vec<String> = stmt.query_map([], |row| row.get(0))
+                    .map_err(|e| DbError::schema(e.to_string()))?
+                    .filter_map(|r| r.ok())
+                    .collect();
+                Ok(names)
+            })
         }
     }
 }

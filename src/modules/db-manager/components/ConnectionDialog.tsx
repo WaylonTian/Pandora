@@ -202,9 +202,6 @@ function validateForm(form: FormState): FormErrors {
     }
   }
 
-  if (!form.database.trim()) {
-    errors.database = "Database name is required";
-  }
 
   return errors;
 }
@@ -217,7 +214,7 @@ function formToConfig(form: FormState, existingId?: string): ConnectionConfig {
     id: existingId || generateId(),
     name: form.name.trim(),
     db_type: form.db_type,
-    database: form.database.trim(),
+    database: form.database.trim() || undefined,
   };
 
   if (form.db_type === "SQLite") {
@@ -247,7 +244,7 @@ function configToForm(config: ConnectionConfig): FormState {
     port: config.port?.toString() || DEFAULT_PORTS[config.db_type].toString(),
     username: config.username || "",
     password: config.password || "",
-    database: config.database,
+    database: config.database || "",
     file_path: config.file_path || "",
   };
 }
@@ -430,14 +427,21 @@ export function ConnectionDialog({
   }, [isOpen, onClose]);
 
   // Handle click outside to close dialog
+  // Backdrop click disabled - only close via Cancel/X button
   const handleBackdropClick = React.useCallback(
     (e: React.MouseEvent) => {
-      if (e.target === e.currentTarget) {
-        onClose();
-      }
+      e.stopPropagation();
     },
-    [onClose]
+    []
   );
+
+
+
+
+
+
+
+
 
   // Handle database type change
   const handleTypeChange = React.useCallback((type: DatabaseType) => {
@@ -679,13 +683,13 @@ export function ConnectionDialog({
                 label={t('connectionDialog.database')}
                 htmlFor="database"
                 error={errors.database}
-                required
+                
               >
                 <Input
                   id="database"
                   value={form.database}
                   onChange={handleFieldChange("database")}
-                  placeholder="mydb"
+                  placeholder={t('connectionDialog.databaseOptionalHint')}
                   aria-invalid={!!errors.database}
                 />
               </FormField>

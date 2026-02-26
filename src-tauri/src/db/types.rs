@@ -62,14 +62,14 @@ pub struct ConnectionConfig {
     /// Password for authentication
     pub password: Option<String>,
     /// Database name
-    pub database: String,
+    pub database: Option<String>,
     /// File path (for SQLite)
     pub file_path: Option<String>,
 }
 
 impl ConnectionConfig {
     /// Creates a new connection configuration with a generated UUID
-    pub fn new(name: String, db_type: DatabaseType, database: String) -> Self {
+    pub fn new(name: String, db_type: DatabaseType, database: Option<String>) -> Self {
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             name,

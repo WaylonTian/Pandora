@@ -30,6 +30,8 @@ import { tauriCommands, type TableInfo, type ColumnDefinition } from "../store/i
 export interface TableDesignerProps {
   /** Connection ID for the database */
   connectionId: string;
+  /** Database name for context switching */
+  database?: string;
   /** Table name for editing existing table, undefined for new table */
   tableName?: string;
   /** Callback when table is saved */
@@ -806,6 +808,7 @@ function SqlPreview({ sql, t }: SqlPreviewProps) {
  */
 export function TableDesigner({
   connectionId,
+  database,
   tableName: existingTableName,
   onSave,
   onCancel,
@@ -831,7 +834,7 @@ export function TableDesigner({
       setError(null);
 
       tauriCommands
-        .getTableInfo(connectionId, existingTableName)
+        .getTableInfo(connectionId, existingTableName, database)
         .then((tableInfo) => {
           const editableColumns = tableInfoToEditableColumns(tableInfo);
           setColumns(editableColumns);
@@ -939,7 +942,7 @@ export function TableDesigner({
       const statements = sql.split(";").filter((s) => s.trim());
       for (const statement of statements) {
         if (statement.trim()) {
-          await tauriCommands.executeQuery(connectionId, statement + ";");
+          await tauriCommands.executeQuery(connectionId, statement + ";", database);
         }
       }
 

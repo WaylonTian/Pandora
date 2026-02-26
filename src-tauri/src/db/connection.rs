@@ -81,18 +81,19 @@ impl MySqlConnection {
         })?;
 
         // Build connection URL
+        let db_part = config.database.as_deref().unwrap_or("");
         let url = if let (Some(username), Some(password)) = (&config.username, &config.password) {
             format!(
                 "mysql://{}:{}@{}:{}/{}",
-                username, password, host, port, config.database
+                username, password, host, port, db_part
             )
         } else if let Some(username) = &config.username {
             format!(
                 "mysql://{}@{}:{}/{}",
-                username, host, port, config.database
+                username, host, port, db_part
             )
         } else {
-            format!("mysql://{}:{}/{}", host, port, config.database)
+            format!("mysql://{}:{}/{}", host, port, db_part)
         };
 
         let pool = mysql_async::Pool::new(url.as_str());
@@ -170,7 +171,8 @@ impl PostgresConnection {
         })?;
 
         // Build connection string
-        let mut conn_string = format!("host={} port={} dbname={}", host, port, config.database);
+        let db_name = config.database.as_deref().unwrap_or("postgres");
+        let mut conn_string = format!("host={} port={} dbname={}", host, port, db_name);
 
         if let Some(username) = &config.username {
             conn_string.push_str(&format!(" user={}", username));

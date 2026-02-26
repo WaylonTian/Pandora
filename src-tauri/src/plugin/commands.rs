@@ -459,7 +459,7 @@ pub async fn ubrowser_run(app: tauri::AppHandle, ops: Vec<super::ubrowser::UBrow
 
     // Wait for page load then execute script
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-    let result = window.eval(&script).map_err(|e| e.to_string())?;
+    let _result = window.eval(&script).map_err(|e| e.to_string())?;
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 
     // Close the window

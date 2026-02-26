@@ -20,6 +20,9 @@ pub trait QueryExecutor: Send + Sync {
     /// Executes a single SQL statement
     async fn execute(&self, conn: Arc<dyn DatabaseConnection>, sql: &str) -> Result<QueryResult, DbError>;
 
+    /// Executes a single SQL statement with optional database context
+    async fn execute_with_database(&self, conn: Arc<dyn DatabaseConnection>, sql: &str, database: Option<&str>) -> Result<QueryResult, DbError>;
+
     /// Executes multiple SQL statements in batch
     async fn execute_batch(
         &self,
@@ -220,6 +223,19 @@ impl QueryExecutor for DefaultQueryExecutor {
         })
     }
 
+    async fn execute_with_database(&self, conn: Arc<dyn DatabaseConnection>, sql: &str, database: Option<&str>) -> Result<QueryResult, DbError> {
+        let start = Instant::now();
+        let result = match conn.db_type() {
+            DatabaseType::MySQL => execute_mysql_with_db(conn, sql, database).await,
+            DatabaseType::PostgreSQL => execute_postgres_with_db(conn, sql, database).await,
+            DatabaseType::SQLite => execute_sqlite(conn, sql).await,
+        };
+        result.map(|mut r| {
+            r.execution_time_ms = start.elapsed().as_millis() as u64;
+            r
+        })
+    }
+
     async fn execute_batch(
         &self,
         conn: Arc<dyn DatabaseConnection>,
@@ -307,6 +323,44 @@ async fn execute_mysql(conn: Arc<dyn DatabaseConnection>, sql: &str) -> Result<Q
     }
 }
 
+
+async fn execute_mysql_with_db(conn: Arc<dyn DatabaseConnection>, sql: &str, database: Option<&str>) -> Result<QueryResult, DbError> {
+    use mysql_async::prelude::*;
+    let mysql_conn = conn
+        .as_any()
+        .downcast_ref::<MySqlConnection>()
+        .ok_or_else(|| DbError::query("Invalid connection type for MySQL query"))?;
+    let mut c = mysql_conn.get_conn().await?;
+    log::debug!("[execute_mysql_with_db] database={:?}, sql={}", database, &sql[..sql.len().min(100)]);
+    if let Some(db) = database {
+        if !db.is_empty() {
+            let use_db = format!("USE `{}`", db.replace('`', "``"));
+            log::debug!("[execute_mysql_with_db] switching: {}", use_db);
+            c.query_drop(&use_db).await.map_err(|e| DbError::query(format!("Failed to switch database: {}", e)))?;
+        }
+    }
+    // Reuse same connection for the actual query
+    let sql_upper = sql.trim().to_uppercase();
+    let is_select = sql_upper.starts_with("SELECT")
+        || sql_upper.starts_with("SHOW")
+        || sql_upper.starts_with("DESCRIBE")
+        || sql_upper.starts_with("EXPLAIN");
+    if is_select {
+        let result: Vec<mysql_async::Row> = c.query(sql).await.map_err(|e| DbError::query(format!("MySQL query error: {}", e)))?;
+        if result.is_empty() { return Ok(QueryResult::empty()); }
+        let columns: Vec<ColumnInfo> = result.first().map(|row| {
+            row.columns_ref().iter().map(|col| ColumnInfo {
+                name: col.name_str().to_string(),
+                data_type: format!("{:?}", col.column_type()),
+            }).collect()
+        }).unwrap_or_default();
+        let rows: Vec<Vec<Value>> = result.into_iter().map(|row| mysql_row_to_values(row)).collect();
+        Ok(QueryResult { columns, rows, affected_rows: 0, execution_time_ms: 0 })
+    } else {
+        let _result = c.exec_drop(sql, ()).await.map_err(|e| DbError::query(format!("MySQL execution error: {}", e)))?;
+        Ok(QueryResult::affected(c.affected_rows(), 0))
+    }
+}
 fn mysql_row_to_values(row: mysql_async::Row) -> Vec<Value> {
     use mysql_async::Value as MysqlValue;
 
@@ -469,6 +523,40 @@ fn parse_postgres_error(e: tokio_postgres::Error) -> DbError {
     }
 }
 
+
+async fn execute_postgres_with_db(conn: Arc<dyn DatabaseConnection>, sql: &str, database: Option<&str>) -> Result<QueryResult, DbError> {
+    let pg_conn = conn
+        .as_any()
+        .downcast_ref::<PostgresConnection>()
+        .ok_or_else(|| DbError::query("Invalid connection type for PostgreSQL query"))?;
+    let client = pg_conn.client();
+    let client = client.lock().await;
+    if let Some(db) = database {
+        if !db.is_empty() {
+            let set_schema = format!("SET search_path TO \"{}\"", db.replace('"', "\"\""));
+            client.execute(&*set_schema, &[]).await.map_err(|e| DbError::query(format!("Failed to switch schema: {}", e)))?;
+        }
+    }
+    let sql_upper = sql.trim().to_uppercase();
+    let is_select = sql_upper.starts_with("SELECT")
+        || sql_upper.starts_with("SHOW")
+        || sql_upper.starts_with("EXPLAIN");
+    if is_select {
+        let rows = client.query(sql, &[]).await.map_err(|e| parse_postgres_error(e))?;
+        if rows.is_empty() { return Ok(QueryResult::empty()); }
+        let columns: Vec<ColumnInfo> = rows.first().map(|row| {
+            row.columns().iter().map(|col| ColumnInfo {
+                name: col.name().to_string(),
+                data_type: col.type_().name().to_string(),
+            }).collect()
+        }).unwrap_or_default();
+        let result_rows: Vec<Vec<Value>> = rows.into_iter().map(|row| postgres_row_to_values(&row)).collect();
+        Ok(QueryResult { columns, rows: result_rows, affected_rows: 0, execution_time_ms: 0 })
+    } else {
+        let affected = client.execute(sql, &[]).await.map_err(|e| parse_postgres_error(e))?;
+        Ok(QueryResult::affected(affected, 0))
+    }
+}
 // ============================================================================
 // SQLite Query Execution
 // ============================================================================

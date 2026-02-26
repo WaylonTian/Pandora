@@ -4,7 +4,7 @@ import { format as formatSql } from "sql-formatter";
 import { cn } from "@/lib/utils";
 import { useT } from '@/i18n';
 import { Button } from "@/components/ui/button";
-import { useAppStore, useActiveTab, useActiveConnection } from "../store/index";
+import { useAppStore, useActiveTab, useActiveConnection, tauriCommands } from "../store/index";
 import { createSqlCompletionProvider, type SchemaCache } from "../lib/sqlCompletion";
 
 /**
@@ -207,6 +207,7 @@ function ConnectionStatus({ connectionId, className }: ConnectionStatusProps) {
 
 interface EditorToolbarProps {
   onExecute: () => void;
+  onCancel?: () => void;
   onExplain?: () => void;
   onAddFavorite?: () => void;
   onFormat?: () => void;
@@ -280,6 +281,7 @@ function FormatIcon({ className }: { className?: string }) {
 
 function EditorToolbar({
   onExecute,
+  onCancel,
   onExplain,
   onAddFavorite,
   onFormat,
@@ -315,6 +317,16 @@ function EditorToolbar({
         <span className="text-[10px] text-muted-foreground/60">Ctrl+Enter</span>
         {hasSelection && (
           <span className="text-[10px] text-primary">{t('sqlEditor.selected')}</span>
+        )}
+        {isExecuting && onCancel && (
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={onCancel}
+            className="gap-1.5 h-7 px-3 text-xs cursor-pointer"
+          >
+            {t('sqlEditor.cancel')}
+          </Button>
         )}
         
         <div className="mx-1 h-4 w-px bg-border" />
@@ -448,6 +460,20 @@ export function SqlEditor({
   }, [getSqlToExecute, onExecute]);
 
   /**
+   * 处理取消查询
+   */
+  const handleCancel = React.useCallback(async () => {
+    const actualConnId = useAppStore.getState().connectionIdMap[connectionId] || connectionId;
+    if (actualConnId) {
+      try {
+        await tauriCommands.cancelQuery(actualConnId);
+      } catch (e) {
+        // ignore cancel errors
+      }
+    }
+  }, [connectionId]);
+
+  /**
    * Handle editor mount
    * Sets up the editor reference and configures SQL-specific settings
    */
@@ -543,6 +569,7 @@ export function SqlEditor({
       {/* Toolbar */}
       <EditorToolbar
         onExecute={handleExecute}
+        onCancel={handleCancel}
         onExplain={onExplain}
         onAddFavorite={onAddFavorite}
         onFormat={handleFormat}

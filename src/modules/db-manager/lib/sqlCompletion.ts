@@ -58,6 +58,7 @@ export function createSqlCompletionProvider(
         label: string;
         kind: number;
         insertText: string;
+        insertTextRules?: number;
         detail?: string;
         documentation?: string;
         range: typeof range;
@@ -120,7 +121,8 @@ export function createSqlCompletionProvider(
         suggestions.push({
           label: func,
           kind: monaco.languages.CompletionItemKind.Function,
-          insertText: func + "()",
+          insertText: func + "($0)",
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
           detail: "Function",
           range,
           sortText: "2" + func,

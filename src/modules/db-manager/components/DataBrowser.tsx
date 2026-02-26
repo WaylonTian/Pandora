@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { tauriCommands, type Value, type ColumnInfo } from "../store/index";
 import { useT } from '@/i18n';
+import { FilterBuilder } from './FilterBuilder';
 
 /**
  * DataBrowser Component
@@ -32,6 +33,10 @@ export interface DataBrowserProps {
   connectionId: string;
   /** Name of the table to browse */
   tableName: string;
+  /** Database name for context switching */
+  database?: string;
+  /** Max total rows to load (default 300) */
+  limit?: number;
   /** Number of rows per page */
   pageSize: number;
   /** Callback when a cell is edited */
@@ -76,7 +81,7 @@ interface ModifiedCell {
 }
 
 // Available page size options
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
 
 // ============================================================================
 // Icon Components
@@ -218,28 +223,6 @@ function FilterIcon({ className }: { className?: string }) {
       aria-hidden="true"
     >
       <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  );
-}
-
-/**
- * Clear/X icon
- */
-function ClearIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
 }
@@ -599,9 +582,7 @@ function EmptyState({ tableName }: { tableName: string }) {
  * Toolbar component with filter input and refresh button
  */
 interface ToolbarProps {
-  filterValue: string;
-  onFilterChange: (value: string) => void;
-  onApplyFilter: () => void;
+  onApplyFilter: (where: string) => void;
   onClearFilter: () => void;
   onRefresh: () => void;
   isLoading: boolean;
@@ -610,11 +591,11 @@ interface ToolbarProps {
   onSaveChanges: () => void;
   onDiscardChanges: () => void;
   isSaving: boolean;
+  columns: ColumnInfo[];
+  activeFilter: string;
 }
 
 function Toolbar({
-  filterValue,
-  onFilterChange,
   onApplyFilter,
   onClearFilter,
   onRefresh,
@@ -624,106 +605,97 @@ function Toolbar({
   onSaveChanges,
   onDiscardChanges,
   isSaving,
+  columns,
+  activeFilter,
 }: ToolbarProps) {
   const t = useT();
-  // Handle Enter key to apply filter
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      onApplyFilter();
-    }
-  };
+  const [showFilter, setShowFilter] = React.useState(false);
 
   return (
-    <div className="flex items-center gap-2 border-b border-border bg-card/50 px-3 py-1.5">
-      {/* Table name */}
-      <div className="flex items-center gap-1.5 text-xs">
-        <span className="text-muted-foreground">{t('dataBrowser.table')}</span>
-        <span className="font-medium">{tableName}</span>
-      </div>
+    <div>
+      <div className="flex items-center gap-2 border-b border-border bg-card/50 px-3 py-1.5">
+        {/* Table name */}
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">{t('dataBrowser.table')}</span>
+          <span className="font-medium">{tableName}</span>
+        </div>
 
-      <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border" />
 
-      {/* Filter input */}
-      <div className="flex flex-1 items-center gap-1.5">
-        <FilterIcon className="h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder={t('dataBrowser.whereCondition')}
-          value={filterValue}
-          onChange={(e) => onFilterChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="h-7 flex-1 text-xs"
-          disabled={isLoading || isSaving}
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onApplyFilter}
-          disabled={isLoading || isSaving}
-          title={t('dataBrowser.applyFilter')}
-          className="h-7 text-xs cursor-pointer"
-        >
-          {t('dataBrowser.apply')}
-        </Button>
+        {/* Filter toggle */}
         <button
-          onClick={onClearFilter}
-          disabled={isLoading || isSaving || !filterValue}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-50 cursor-pointer transition-colors"
-          title={t('dataBrowser.clearFilter')}
+          onClick={() => setShowFilter(v => !v)}
+          className={cn(
+            "flex items-center gap-1.5 h-7 px-2 rounded-md text-xs cursor-pointer transition-colors",
+            showFilter || activeFilter ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"
+          )}
+          title={t('dataBrowser.applyFilter')}
         >
-          <ClearIcon className="h-3.5 w-3.5" />
+          <FilterIcon className="h-3.5 w-3.5" />
+          {t('filterBuilder.filter')}
+          {activeFilter && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+        </button>
+
+        <div className="flex-1" />
+
+        {/* Pending changes indicator and actions */}
+        {pendingChangesCount > 0 && (
+          <>
+            <div className="flex items-center gap-1.5">
+              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-medium text-warning">
+                {t('dataBrowser.pendingChanges', { count: pendingChangesCount })}
+              </span>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onSaveChanges}
+                disabled={isSaving}
+                title={t('dataBrowser.saveAllChanges')}
+                className="h-7 text-xs bg-success hover:bg-success/90 cursor-pointer"
+              >
+                {isSaving ? (
+                  <LoadingSpinner className="mr-1.5 h-3.5 w-3.5" />
+                ) : (
+                  <SaveIcon className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                {t('dbManager.save')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDiscardChanges}
+                disabled={isSaving}
+                title={t('dataBrowser.discardAllChanges')}
+                className="h-7 text-xs cursor-pointer"
+              >
+                <DiscardIcon className="mr-1.5 h-3.5 w-3.5" />
+                {t('dataBrowser.discardAllChanges')}
+              </Button>
+            </div>
+            <div className="h-4 w-px bg-border" />
+          </>
+        )}
+
+        {/* Refresh button */}
+        <button
+          onClick={onRefresh}
+          disabled={isLoading || isSaving}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-50 cursor-pointer transition-colors"
+          title={t('dataBrowser.refreshData')}
+        >
+          <RefreshIcon className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
         </button>
       </div>
 
-      <div className="h-4 w-px bg-border" />
-
-      {/* Pending changes indicator and actions */}
-      {pendingChangesCount > 0 && (
-        <>
-          <div className="flex items-center gap-1.5">
-            <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-medium text-warning">
-              {t('dataBrowser.pendingChanges', { count: pendingChangesCount })}
-            </span>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onSaveChanges}
-              disabled={isSaving}
-              title={t('dataBrowser.saveAllChanges')}
-              className="h-7 text-xs bg-success hover:bg-success/90 cursor-pointer"
-            >
-              {isSaving ? (
-                <LoadingSpinner className="mr-1.5 h-3.5 w-3.5" />
-              ) : (
-                <SaveIcon className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              {t('dbManager.save')}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onDiscardChanges}
-              disabled={isSaving}
-              title={t('dataBrowser.discardAllChanges')}
-              className="h-7 text-xs cursor-pointer"
-            >
-              <DiscardIcon className="mr-1.5 h-3.5 w-3.5" />
-              {t('dataBrowser.discardAllChanges')}
-            </Button>
-          </div>
-          <div className="h-4 w-px bg-border" />
-        </>
+      {/* Filter builder panel */}
+      {showFilter && (
+        <FilterBuilder
+          columns={columns}
+          onApply={onApplyFilter}
+          onClear={onClearFilter}
+          isLoading={isLoading || isSaving}
+        />
       )}
-
-      {/* Refresh button */}
-      <button
-        onClick={onRefresh}
-        disabled={isLoading || isSaving}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent disabled:opacity-50 cursor-pointer transition-colors"
-        title={t('dataBrowser.refreshData')}
-      >
-        <RefreshIcon className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
-      </button>
     </div>
   );
 }
@@ -733,15 +705,21 @@ function Toolbar({
  */
 interface PaginationControlsProps {
   pagination: PaginationState;
+  rowLimit: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  onRowLimitChange: (limit: number) => void;
   isLoading: boolean;
 }
 
+const LIMIT_OPTIONS = [100, 200, 300, 500, 1000, 5000];
+
 function PaginationControls({
   pagination,
+  rowLimit,
   onPageChange,
   onPageSizeChange,
+  onRowLimitChange,
   isLoading,
 }: PaginationControlsProps) {
   const t = useT();
@@ -789,21 +767,34 @@ function PaginationControls({
         </button>
       </div>
 
-      {/* Right side: Page size selector */}
-      <div className="flex items-center gap-1.5 text-xs">
-        <span className="text-muted-foreground">{t('dataBrowser.perPage')}</span>
-        <select
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          disabled={isLoading}
-          className="h-7 rounded-md border border-input bg-background px-2 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          {PAGE_SIZE_OPTIONS.map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
+      {/* Right side: Limit + Page size selectors */}
+      <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">Limit</span>
+          <select
+            value={rowLimit}
+            onChange={(e) => onRowLimitChange(Number(e.target.value))}
+            disabled={isLoading}
+            className="h-7 rounded-md border border-input bg-background px-2 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {LIMIT_OPTIONS.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">{t('dataBrowser.perPage')}</span>
+          <select
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            disabled={isLoading}
+            className="h-7 rounded-md border border-input bg-background px-2 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   );
@@ -1052,7 +1043,9 @@ function DataTableContent({
 export function DataBrowser({
   connectionId,
   tableName,
-  pageSize: initialPageSize,
+  database,
+  limit: initialLimit = 300,
+  pageSize: initialPageSize = 50,
   onEdit,
   className,
 }: DataBrowserProps) {
@@ -1070,7 +1063,6 @@ export function DataBrowser({
   });
 
   // State for filtering
-  const [filterInput, setFilterInput] = React.useState("");
   const [appliedFilter, setAppliedFilter] = React.useState("");
 
   // State for pagination
@@ -1079,6 +1071,9 @@ export function DataBrowser({
     pageSize: initialPageSize,
     totalRows: 0,
   });
+
+  // State for row limit
+  const [rowLimit, setRowLimit] = React.useState(initialLimit);
 
   // State for editing
   const [editingCell, setEditingCell] = React.useState<EditingCell | null>(null);
@@ -1091,7 +1086,7 @@ export function DataBrowser({
    */
   const fetchTableInfo = React.useCallback(async () => {
     try {
-      const tableInfo = await tauriCommands.getTableInfo(connectionId, tableName);
+      const tableInfo = await tauriCommands.getTableInfo(connectionId, tableName, database);
       const pkColumns = tableInfo.columns
         .filter((col) => col.is_primary_key)
         .map((col) => col.name);
@@ -1112,7 +1107,7 @@ export function DataBrowser({
     try {
       // First, get the total count
       const countQuery = buildCountQuery(tableName, appliedFilter);
-      const countResult = await tauriCommands.executeQuery(connectionId, countQuery);
+      const countResult = await tauriCommands.executeQuery(connectionId, countQuery, database);
       
       // Extract total count from result
       let totalRows = 0;
@@ -1121,27 +1116,35 @@ export function DataBrowser({
         totalRows = typeof countValue === "number" ? countValue : parseInt(String(countValue), 10);
       }
 
-      // Update pagination with total rows
-      setPagination((prev) => ({ ...prev, totalRows }));
+      // Cap totalRows by rowLimit
+      const cappedTotal = Math.min(totalRows, rowLimit);
+      setPagination((prev) => ({ ...prev, totalRows: cappedTotal }));
 
-      // Calculate offset
+      // Calculate offset within the limit
       const offset = calculateOffset(pagination.currentPage, pagination.pageSize);
 
-      // Fetch the actual data
+      // Fetch the actual data — pageSize but never exceed rowLimit
+      const effectiveLimit = Math.min(pagination.pageSize, rowLimit - offset);
+      if (effectiveLimit <= 0) {
+        setColumns([]);
+        setRows([]);
+        setOriginalRows([]);
+        return;
+      }
+
       const dataQuery = buildDataQuery(
         tableName,
         sortState,
         appliedFilter,
-        pagination.pageSize,
+        effectiveLimit,
         offset
       );
-      const dataResult = await tauriCommands.executeQuery(connectionId, dataQuery);
+      const dataResult = await tauriCommands.executeQuery(connectionId, dataQuery, database);
 
       setColumns(dataResult.columns);
       setRows(dataResult.rows);
-      setOriginalRows(dataResult.rows.map((row) => [...row])); // Deep copy for tracking changes
+      setOriginalRows(dataResult.rows.map((row) => [...row]));
       
-      // Clear modifications when data is refreshed
       setModifiedCells(new Map());
       setEditingCell(null);
     } catch (err) {
@@ -1150,7 +1153,7 @@ export function DataBrowser({
     } finally {
       setIsLoading(false);
     }
-  }, [connectionId, tableName, sortState, appliedFilter, pagination.currentPage, pagination.pageSize]);
+  }, [connectionId, tableName, database, sortState, appliedFilter, pagination.currentPage, pagination.pageSize, rowLimit]);
 
   // Fetch table info on mount
   React.useEffect(() => {
@@ -1191,15 +1194,14 @@ export function DataBrowser({
   /**
    * Handle filter application
    */
-  const handleApplyFilter = React.useCallback(() => {
-    setAppliedFilter(filterInput);
-  }, [filterInput]);
+  const handleApplyFilter = React.useCallback((where: string) => {
+    setAppliedFilter(where);
+  }, []);
 
   /**
    * Handle filter clear
    */
   const handleClearFilter = React.useCallback(() => {
-    setFilterInput("");
     setAppliedFilter("");
   }, []);
 
@@ -1340,7 +1342,7 @@ export function DataBrowser({
         );
         
         updatePromises.push(
-          tauriCommands.executeQuery(connectionId, updateSql).then(() => {})
+          tauriCommands.executeQuery(connectionId, updateSql, database).then(() => {})
         );
       });
 
@@ -1372,8 +1374,6 @@ export function DataBrowser({
     return (
       <div className={cn("flex h-full flex-col bg-background", className)}>
         <Toolbar
-          filterValue={filterInput}
-          onFilterChange={setFilterInput}
           onApplyFilter={handleApplyFilter}
           onClearFilter={handleClearFilter}
           onRefresh={handleRefresh}
@@ -1383,6 +1383,8 @@ export function DataBrowser({
           onSaveChanges={handleSaveChanges}
           onDiscardChanges={handleDiscardChanges}
           isSaving={isSaving}
+          columns={columns}
+          activeFilter={appliedFilter}
         />
         <ErrorState error={error} onRetry={handleRefresh} />
       </div>
@@ -1394,8 +1396,6 @@ export function DataBrowser({
     return (
       <div className={cn("flex h-full flex-col bg-background", className)}>
         <Toolbar
-          filterValue={filterInput}
-          onFilterChange={setFilterInput}
           onApplyFilter={handleApplyFilter}
           onClearFilter={handleClearFilter}
           onRefresh={handleRefresh}
@@ -1405,6 +1405,8 @@ export function DataBrowser({
           onSaveChanges={handleSaveChanges}
           onDiscardChanges={handleDiscardChanges}
           isSaving={isSaving}
+          columns={columns}
+          activeFilter={appliedFilter}
         />
         <LoadingState />
       </div>
@@ -1416,8 +1418,6 @@ export function DataBrowser({
     return (
       <div className={cn("flex h-full flex-col bg-background", className)}>
         <Toolbar
-          filterValue={filterInput}
-          onFilterChange={setFilterInput}
           onApplyFilter={handleApplyFilter}
           onClearFilter={handleClearFilter}
           onRefresh={handleRefresh}
@@ -1427,12 +1427,16 @@ export function DataBrowser({
           onSaveChanges={handleSaveChanges}
           onDiscardChanges={handleDiscardChanges}
           isSaving={isSaving}
+          columns={columns}
+          activeFilter={appliedFilter}
         />
         <EmptyState tableName={tableName} />
         <PaginationControls
           pagination={pagination}
+          rowLimit={rowLimit}
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
+          onRowLimitChange={(limit) => { setRowLimit(limit); setPagination(p => ({ ...p, currentPage: 1 })); }}
           isLoading={isLoading}
         />
       </div>
@@ -1443,8 +1447,6 @@ export function DataBrowser({
   return (
     <div className={cn("flex h-full flex-col bg-background", className)}>
       <Toolbar
-        filterValue={filterInput}
-        onFilterChange={setFilterInput}
         onApplyFilter={handleApplyFilter}
         onClearFilter={handleClearFilter}
         onRefresh={handleRefresh}
@@ -1454,6 +1456,8 @@ export function DataBrowser({
         onSaveChanges={handleSaveChanges}
         onDiscardChanges={handleDiscardChanges}
         isSaving={isSaving}
+          columns={columns}
+          activeFilter={appliedFilter}
       />
       <DataTableContent
         columns={columns}
@@ -1470,8 +1474,10 @@ export function DataBrowser({
       />
       <PaginationControls
         pagination={pagination}
+        rowLimit={rowLimit}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onRowLimitChange={(limit) => { setRowLimit(limit); setPagination(p => ({ ...p, currentPage: 1 })); }}
         isLoading={isLoading}
       />
     </div>

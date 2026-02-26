@@ -15,6 +15,10 @@ use tokio::sync::RwLock;
 use crate::AppState;
 
 // ============================================================================
+// Database Context Switching
+// ============================================================================
+
+// ============================================================================
 // Application State
 // ============================================================================
 
@@ -202,6 +206,7 @@ pub async fn disconnect(
 pub async fn execute_query(
     connection_id: String,
     sql: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<QueryResult, String> {
     let conn_id = ConnectionId::from_string(connection_id);
@@ -213,10 +218,10 @@ pub async fn execute_query(
         .await
         .map_err(|e| e.to_string())?;
     
-    // Execute the query
+    // Execute the query with database context
     state
         .db_state.query_executor
-        .execute(conn, &sql)
+        .execute_with_database(conn, &sql, database.as_deref())
         .await
         .map_err(|e| e.to_string())
 }
@@ -236,6 +241,7 @@ pub async fn execute_query(
 pub async fn execute_batch(
     connection_id: String,
     sql: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<Vec<QueryResult>, String> {
     use super::query::split_sql_statements;
@@ -256,15 +262,17 @@ pub async fn execute_batch(
         return Ok(vec![]);
     }
     
-    // Convert to &str references
-    let stmt_refs: Vec<&str> = statements.iter().map(|s| s.as_str()).collect();
-    
-    // Execute batch
-    state
-        .db_state.query_executor
-        .execute_batch(conn, stmt_refs)
-        .await
-        .map_err(|e| e.to_string())
+    // Execute each statement with database context
+    let mut results = Vec::with_capacity(statements.len());
+    for stmt in &statements {
+        let result = state
+            .db_state.query_executor
+            .execute_with_database(conn.clone(), stmt, database.as_deref())
+            .await
+            .map_err(|e| e.to_string())?;
+        results.push(result);
+    }
+    Ok(results)
 }
 
 // ============================================================================
@@ -352,59 +360,45 @@ pub async fn list_tables(
 pub async fn get_table_info(
     connection_id: String,
     table: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<TableInfo, String> {
     let conn_id = ConnectionId::from_string(connection_id);
-    
-    // Get the connection
     let conn = state
         .db_state.connection_manager
         .get_connection(&conn_id)
         .await
         .map_err(|e| e.to_string())?;
     
-    // Get table info
     state
         .db_state.schema_manager
-        .get_table_info(conn, &table)
+        .get_table_info(conn, &table, database.as_deref())
         .await
         .map_err(|e| e.to_string())
 }
 
 /// Gets the CREATE TABLE DDL statement for a table
-/// 
-/// # Arguments
-/// * `connection_id` - The ID of the active connection
-/// * `table` - The table name
-/// 
-/// # Returns
-/// * `Ok(String)` - The CREATE TABLE SQL statement
-/// * `Err(String)` - Error message on failure
 #[tauri::command]
 pub async fn get_table_ddl(
     connection_id: String,
     table: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
     let conn_id = ConnectionId::from_string(connection_id);
-    
-    // Get the connection
     let conn = state
         .db_state.connection_manager
         .get_connection(&conn_id)
         .await
         .map_err(|e| e.to_string())?;
     
-    // Get table info first
     let table_info = state
         .db_state.schema_manager
-        .get_table_info(conn.clone(), &table)
+        .get_table_info(conn.clone(), &table, database.as_deref())
         .await
         .map_err(|e| e.to_string())?;
     
-    // Generate DDL from table info
     let ddl = super::schema::generate_create_table_sql(&table_info, conn.db_type());
-    
     Ok(ddl)
 }
 
@@ -559,6 +553,7 @@ pub async fn explain_query(
     connection_id: String,
     sql: String,
     analyze: bool,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<ExplainResult, String> {
     let conn_id = ConnectionId::from_string(connection_id);
@@ -591,10 +586,10 @@ pub async fn explain_query(
         }
     };
     
-    // 执行 EXPLAIN 查询
+    // 执行 EXPLAIN 查询（带 database 上下文）
     let result = state
         .db_state.query_executor
-        .execute(conn.clone(), &explain_sql)
+        .execute_with_database(conn.clone(), &explain_sql, database.as_deref())
         .await
         .map_err(|e| e.to_string())?;
     
@@ -829,6 +824,7 @@ pub struct TableStats {
 #[tauri::command]
 pub async fn get_table_stats(
     connection_id: String,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<Vec<TableStats>, String> {
     let conn_id = ConnectionId::from_string(connection_id);
@@ -867,9 +863,10 @@ pub async fn get_table_stats(
         }
     };
     
+    // Switch database context if specified
     let result = state
         .db_state.query_executor
-        .execute(conn.clone(), &sql)
+        .execute_with_database(conn.clone(), &sql, database.as_deref())
         .await
         .map_err(|e| e.to_string())?;
     
@@ -933,4 +930,99 @@ pub async fn get_table_stats(
     }
     
     Ok(stats)
+}
+
+
+// ============================================================================
+// Schema Object Commands (Views, Functions, Procedures, Triggers)
+// ============================================================================
+
+#[tauri::command]
+pub async fn list_views(
+    connection_id: String,
+    database: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+    super::schema::list_views(conn, &database).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_functions(
+    connection_id: String,
+    database: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+    super::schema::list_functions(conn, &database).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_procedures(
+    connection_id: String,
+    database: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+    super::schema::list_procedures(conn, &database).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_triggers(
+    connection_id: String,
+    database: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+    super::schema::list_triggers(conn, &database).await.map_err(|e| e.to_string())
+}
+
+
+// ============================================================================
+// Query Cancel Command
+// ============================================================================
+
+#[tauri::command]
+pub async fn cancel_query(
+    connection_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            // MySQL: get thread id and kill it via a separate connection
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<super::connection::MySqlConnection>()
+                .ok_or("Invalid connection type")?;
+            let mut c = mysql_conn.get_conn().await.map_err(|e| e.to_string())?;
+            let thread_id: Option<u32> = c.query_first("SELECT CONNECTION_ID()").await.map_err(|e| e.to_string())?;
+            if let Some(tid) = thread_id {
+                let _ = c.query_drop(format!("KILL QUERY {}", tid)).await;
+            }
+            Ok(())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<super::connection::PostgresConnection>()
+                .ok_or("Invalid connection type")?;
+            let client = pg_conn.client();
+            let client = client.lock().await;
+            let _ = client.execute("SELECT pg_cancel_backend(pg_backend_pid())", &[]).await;
+            Ok(())
+        }
+        DatabaseType::SQLite => {
+            // SQLite: interrupt via the connection handle
+            let sqlite_conn = conn.as_any().downcast_ref::<super::connection::SqliteConnection>()
+                .ok_or("Invalid connection type")?;
+            let connection = sqlite_conn.connection();
+            let guard = connection.lock().await;
+            guard.get_interrupt_handle().interrupt();
+            Ok(())
+        }
+    }
 }

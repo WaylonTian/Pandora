@@ -89,7 +89,7 @@ function DatabaseLogo({ className }: { className?: string }) {
 
 interface SidebarProps {
   onNewConnection: () => void;
-  onSelectTable: (connectionId: string, tableName: string) => void;
+  onSelectTable: (connectionId: string, tableName: string, database?: string) => void;
   showHistory: boolean;
   onToggleHistory: () => void;
   showFavorites: boolean;
@@ -262,7 +262,9 @@ function MainContent() {
           <DataBrowser
             connectionId={actualConnectionId}
             tableName={activeTab.tableName}
-            pageSize={25}
+            database={activeTab.database}
+            pageSize={50}
+            
             onEdit={(row, column, value) => {
               console.log("Edit:", row, column, value);
             }}
@@ -277,7 +279,7 @@ function MainContent() {
             </div>
           );
         }
-        return <TableStructure tableName={activeTab.tableName} />;
+        return <TableStructure tableName={activeTab.tableName} database={activeTab.database} />;
 
       case "query":
       default:
@@ -374,7 +376,6 @@ function AppContent() {
 
   const loadConnections = useAppStore((state) => state.loadConnections);
   const addQueryTab = useAppStore((state) => state.addQueryTab);
-  const openDataTab = useAppStore((state) => state.openDataTab);
   const closeQueryTab = useAppStore((state) => state.closeQueryTab);
   const activeTabId = useAppStore((state) => state.activeTabId);
   const removeConnection = useAppStore((state) => state.removeConnection);
@@ -442,10 +443,10 @@ function AppContent() {
   }, []);
 
   const handleSelectTable = React.useCallback(
-    (_connectionId: string, tableName: string) => {
-      openDataTab(tableName);
+    (_connectionId: string, _tableName: string, _database?: string) => {
+      // 仅选中，不打开 tab
     },
-    [openDataTab]
+    []
   );
 
   const handleToggleHistory = React.useCallback(() => {
