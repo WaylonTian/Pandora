@@ -1034,3 +1034,47 @@ pub async fn list_triggers(
     let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
     super::schema::list_triggers(conn, &database).await.map_err(|e| e.to_string())
 }
+
+
+// ============================================================================
+// Query Cancel Command
+// ============================================================================
+
+#[tauri::command]
+pub async fn cancel_query(
+    connection_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let conn_id = ConnectionId::from_string(connection_id);
+    let conn = state.db_state.connection_manager.get_connection(&conn_id).await.map_err(|e| e.to_string())?;
+
+    match conn.db_type() {
+        DatabaseType::MySQL => {
+            // MySQL: get thread id and kill it via a separate connection
+            use mysql_async::prelude::*;
+            let mysql_conn = conn.as_any().downcast_ref::<super::connection::MySqlConnection>()
+                .ok_or("Invalid connection type")?;
+            let mut c = mysql_conn.get_conn().await.map_err(|e| e.to_string())?;
+            let thread_id: Option<u32> = c.query_first("SELECT CONNECTION_ID()").await.map_err(|e| e.to_string())?;
+            if let Some(tid) = thread_id {
+                let _ = c.query_drop(format!("KILL QUERY {}", tid)).await;
+            }
+            Ok(())
+        }
+        DatabaseType::PostgreSQL => {
+            let pg_conn = conn.as_any().downcast_ref::<super::connection::PostgresConnection>()
+                .ok_or("Invalid connection type")?;
+            let client = pg_conn.get_client().await;
+            let _ = client.execute("SELECT pg_cancel_backend(pg_backend_pid())", &[]).await;
+            Ok(())
+        }
+        DatabaseType::SQLite => {
+            // SQLite: interrupt via the connection handle
+            let sqlite_conn = conn.as_any().downcast_ref::<super::connection::SqliteConnection>()
+                .ok_or("Invalid connection type")?;
+            let conn_guard = sqlite_conn.get_connection().lock().map_err(|e| e.to_string())?;
+            conn_guard.get_interrupt_handle().interrupt();
+            Ok(())
+        }
+    }
+}

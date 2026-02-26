@@ -112,6 +112,7 @@ export const zh: Record<string, string> = {
   "sqlEditor.connected": "已连接",
   "sqlEditor.notConnected": "未连接",
   "sqlEditor.executing": "执行中...",
+  "sqlEditor.cancel": "取消",
   "sqlEditor.execute": "执行",
   "sqlEditor.executeSelected": "执行选中",
   "sqlEditor.selected": "（已选中）",

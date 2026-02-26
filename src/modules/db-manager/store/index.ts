@@ -507,6 +507,9 @@ export const tauriCommands = {
 
   listTriggers: (connectionId: string, database: string): Promise<string[]> =>
     tauriInvoke<string[]>('list_triggers', { connectionId, database }),
+
+  cancelQuery: (connectionId: string): Promise<void> =>
+    tauriInvoke<void>('cancel_query', { connectionId }),
 };
 
 // ============================================================================

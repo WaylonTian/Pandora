@@ -299,6 +299,7 @@ pub fn run() {
             db::commands::list_functions,
             db::commands::list_procedures,
             db::commands::list_triggers,
+            db::commands::cancel_query,
             plugin::commands::plugin_list,
             plugin::commands::plugin_get,
             plugin::commands::plugin_uninstall,

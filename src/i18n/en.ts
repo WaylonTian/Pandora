@@ -106,6 +106,7 @@ export const en: Record<string, string> = {
   "sqlEditor.connected": "Connected",
   "sqlEditor.notConnected": "Not Connected",
   "sqlEditor.executing": "Executing...",
+  "sqlEditor.cancel": "Cancel",
   "sqlEditor.execute": "Execute",
   "sqlEditor.executeSelected": "Execute Selected",
   "sqlEditor.selected": "(Selected)",
