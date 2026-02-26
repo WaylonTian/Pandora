@@ -1,54 +1,64 @@
 import { useState } from "react";
-import { useT } from '@/i18n';
-import { CopyButton } from '../components/CopyButton';
+import { useT } from "@/i18n";
+import { TextInput } from "../components/TextInput";
+import { TextOutput } from "../components/TextOutput";
+import { ActionButton } from "../components/ActionBar";
+import { FileDropZone } from "../components/FileDropZone";
 
 export function Base64Tool() {
   const t = useT();
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
+  const [mode, setMode] = useState<"text" | "file">("text");
 
-  const handleEncode = () => {
+  const encode = () => {
     try {
-      setOutput(btoa(input));
-    } catch (e) {
-      setOutput(`${t("toolkit.base64Tool.encodeError")}: ${e instanceof Error ? e.message : 'Unknown error'}`);
-    }
+      const bytes = new TextEncoder().encode(input);
+      setOutput(btoa(String.fromCharCode(...bytes)));
+    } catch (e) { setOutput(`${t("toolkit.base64Tool.encodeError")}: ${e}`); }
   };
 
-  const handleDecode = () => {
+  const decode = () => {
     try {
-      setOutput(atob(input));
-    } catch (e) {
-      setOutput(`${t("toolkit.base64Tool.decodeError")}: ${e instanceof Error ? e.message : 'Invalid Base64'}`);
-    }
+      const bin = atob(input);
+      setOutput(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+    } catch (e) { setOutput(`${t("toolkit.base64Tool.decodeError")}: ${e}`); }
   };
+
+  const handleFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1] || "";
+      setOutput(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const Tab = ({ id, label }: { id: "text" | "file"; label: string }) => (
+    <button onClick={() => setMode(id)} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${mode === id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{label}</button>
+  );
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">{t("toolkit.base64Tool.title")}</h2>
       <div className="flex gap-2">
-        <button onClick={handleEncode} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
-          {t("toolkit.base64Tool.encode")}
-        </button>
-        <button onClick={handleDecode} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
-          {t("toolkit.base64Tool.decode")}
-        </button>
+        <Tab id="text" label={t("toolkit.base64Tool.title")} />
+        <Tab id="file" label={t("toolkit.base64Tool.fileMode")} />
       </div>
-      <textarea
-        className="w-full h-32 p-2 border rounded bg-background text-foreground font-mono text-sm resize-y"
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        placeholder={t("toolkit.base64Tool.inputPlaceholder")}
-      />
-      <div className="relative">
-        <textarea
-          className="w-full h-32 p-2 border rounded bg-background text-foreground font-mono text-sm resize-y"
-          value={output}
-          readOnly
-          placeholder={t("toolkit.base64Tool.outputPlaceholder")}
-        />
-        {output && <div className="absolute top-2 right-2"><CopyButton text={output} /></div>}
-      </div>
+      {mode === "text" ? (
+        <>
+          <div className="flex gap-2">
+            <ActionButton onClick={encode}>{t("toolkit.base64Tool.encode")}</ActionButton>
+            <ActionButton onClick={decode} variant="secondary">{t("toolkit.base64Tool.decode")}</ActionButton>
+          </div>
+          <TextInput value={input} onChange={setInput} placeholder={t("toolkit.base64Tool.inputPlaceholder")} />
+          <TextOutput value={output} placeholder={t("toolkit.base64Tool.outputPlaceholder")} />
+        </>
+      ) : (
+        <>
+          <FileDropZone onFile={handleFile} />
+          <TextOutput value={output} placeholder="Base64..." rows={4} />
+        </>
+      )}
     </div>
   );
 }

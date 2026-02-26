@@ -1,64 +1,70 @@
 import { useState, useEffect } from "react";
-import { useT } from '@/i18n';
-import { CopyButton } from '../components/CopyButton';
+import { useT } from "@/i18n";
+import { ActionButton } from "../components/ActionBar";
+import { ResultCard } from "../components/ResultCard";
+
+const TIMEZONES = [
+  { label: "Local", offset: null },
+  { label: "UTC", offset: 0 }, { label: "UTC+8", offset: 8 }, { label: "UTC+9", offset: 9 },
+  { label: "UTC-5 (EST)", offset: -5 }, { label: "UTC-8 (PST)", offset: -8 }, { label: "UTC+1 (CET)", offset: 1 },
+];
 
 export function TimestampTool() {
   const t = useT();
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
-  const [currentTime, setCurrentTime] = useState("");
+  const [now, setNow] = useState(Date.now());
+  const [unit, setUnit] = useState<"s" | "ms">("s");
+  const [tz, setTz] = useState<number | null>(null);
 
-  useEffect(() => {
-    const updateTime = () => {
-      const now = Date.now();
-      setCurrentTime(`${t("toolkit.timestampTool.currentTimestamp")}: ${now} (${new Date(now).toLocaleString()})`);
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, [t]);
+  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
 
-  const handleToDate = () => {
-    const timestamp = parseInt(input);
-    if (isNaN(timestamp)) {
-      setOutput(t("toolkit.timestampTool.invalidTimestamp"));
-      return;
-    }
-    const date = new Date(timestamp.toString().length === 10 ? timestamp * 1000 : timestamp);
-    setOutput(date.toLocaleString());
+  const formatDate = (d: Date) => {
+    if (tz === null) return d.toLocaleString();
+    const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+    return new Date(utc + tz * 3600000).toLocaleString();
   };
 
-  const handleToTimestamp = () => {
-    const date = new Date(input);
-    if (isNaN(date.getTime())) {
-      setOutput(t("toolkit.timestampTool.invalidDate"));
-      return;
-    }
-    setOutput(Math.floor(date.getTime() / 1000).toString());
+  const toDate = () => {
+    const n = parseInt(input);
+    if (isNaN(n)) { setOutput(t("toolkit.timestampTool.invalidTimestamp")); return; }
+    setOutput(formatDate(new Date(input.length <= 10 ? n * 1000 : n)));
   };
+
+  const toTimestamp = () => {
+    const d = new Date(input);
+    if (isNaN(d.getTime())) { setOutput(t("toolkit.timestampTool.invalidDate")); return; }
+    setOutput(unit === "s" ? Math.floor(d.getTime() / 1000).toString() : d.getTime().toString());
+  };
+
+  const nowTs = unit === "s" ? Math.floor(now / 1000) : now;
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">{t("toolkit.timestampTool.title")}</h2>
-      <div className="text-sm text-muted-foreground">{currentTime}</div>
-      <div className="flex gap-2">
-        <button onClick={handleToDate} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
-          {t("toolkit.timestampTool.toDate")}
-        </button>
-        <button onClick={handleToTimestamp} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
-          {t("toolkit.timestampTool.toTimestamp")}
-        </button>
+      <div className="flex gap-3 items-center flex-wrap">
+        <div className="flex gap-1">
+          {(["s", "ms"] as const).map((u) => (
+            <button key={u} onClick={() => setUnit(u)} className={`px-2.5 py-1 rounded-md text-sm font-medium transition-colors ${unit === u ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              {u === "s" ? t("toolkit.timestampTool.seconds") : t("toolkit.timestampTool.milliseconds")}
+            </button>
+          ))}
+        </div>
+        <select value={tz === null ? "local" : String(tz)} onChange={(e) => setTz(e.target.value === "local" ? null : Number(e.target.value))}
+          className="px-2 py-1.5 border border-border rounded-md bg-background text-foreground text-sm">
+          {TIMEZONES.map((z) => <option key={z.label} value={z.offset === null ? "local" : z.offset}>{z.label}</option>)}
+        </select>
       </div>
-      <input
-        className="w-full p-2 border rounded bg-background text-foreground"
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        placeholder={t("toolkit.timestampTool.inputPlaceholder")}
-      />
-      <div className="relative p-2 border rounded bg-muted font-mono text-sm min-h-[2.5rem]">
-        {output || t("toolkit.timestampTool.outputPlaceholder")}
-        {output && <div className="absolute top-2 right-2"><CopyButton text={output} /></div>}
+
+      <ResultCard label={t("toolkit.timestampTool.now")} value={`${nowTs}  →  ${formatDate(new Date(now))}`} />
+
+      <div className="flex gap-2 items-center">
+        <input className="flex-1 p-2.5 border border-border rounded-lg bg-muted/30 text-foreground font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          value={input} onChange={(e) => setInput(e.target.value)} placeholder={t("toolkit.timestampTool.inputPlaceholder")} />
+        <ActionButton onClick={toDate}>{t("toolkit.timestampTool.toDate")}</ActionButton>
+        <ActionButton onClick={toTimestamp} variant="secondary">{t("toolkit.timestampTool.toTimestamp")}</ActionButton>
       </div>
+
+      {output && <div className="p-3 border border-border rounded-lg bg-muted/30 font-mono text-sm">{output}</div>}
     </div>
   );
 }

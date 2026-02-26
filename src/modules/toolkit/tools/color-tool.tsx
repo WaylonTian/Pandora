@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { CopyButton } from "../components/CopyButton";
+import { useT } from "@/i18n";
+import { ResultCard } from "../components/ResultCard";
 
 function hexToRgb(hex: string) {
   const m = hex.replace("#", "").match(/.{2}/g);
@@ -15,36 +16,30 @@ function rgbToHsl(r: number, g: number, b: number) {
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) / 6
-      : max === g ? ((b - r) / d + 2) / 6
-      : ((r - g) / d + 4) / 6;
+    h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) / 6 : max === g ? ((b - r) / d + 2) / 6 : ((r - g) / d + 4) / 6;
   }
   return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
 export function ColorTool() {
+  const t = useT();
   const [input, setInput] = useState("#3b82f6");
   const rgb = hexToRgb(input);
   const hsl = rgb ? rgbToHsl(rgb.r, rgb.g, rgb.b) : null;
-  const rgbStr = rgb ? `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` : "";
-  const hslStr = hsl ? `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` : "";
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Color Converter</h2>
       <div className="flex gap-3 items-center">
         <input type="color" value={input} onChange={(e) => setInput(e.target.value)} className="w-12 h-12 rounded cursor-pointer border-0" />
-        <input className="flex-1 px-3 py-2 border rounded bg-background text-foreground font-mono text-sm"
-          value={input} onChange={(e) => setInput(e.target.value)} placeholder="#hex" />
+        <input className="flex-1 px-3 py-2 border border-border rounded-lg bg-muted/30 text-foreground font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          value={input} onChange={(e) => setInput(e.target.value)} placeholder={t("toolkit.colorTool.hexPlaceholder")} />
       </div>
       {rgb && (
         <div className="space-y-2">
-          <div className="w-full h-16 rounded-lg border" style={{ backgroundColor: input }} />
-          {[["HEX", input], ["RGB", rgbStr], ["HSL", hslStr]].map(([label, val]) => (
-            <div key={label} className="flex items-center gap-2 p-2 border rounded bg-muted font-mono text-sm">
-              <span className="flex-1">{label}: {val}</span><CopyButton text={val} />
-            </div>
-          ))}
+          <div className="w-full h-16 rounded-lg border border-border" style={{ backgroundColor: input }} />
+          <ResultCard label="HEX" value={input} />
+          <ResultCard label="RGB" value={`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`} />
+          {hsl && <ResultCard label="HSL" value={`hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`} />}
         </div>
       )}
     </div>
