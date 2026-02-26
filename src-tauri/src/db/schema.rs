@@ -188,10 +188,12 @@ async fn get_table_info_mysql(
 
     let mut conn = mysql_conn.get_conn().await?;
 
+    log::debug!("[get_table_info_mysql] table={}, database={:?}", table, database);
     // Switch database on this same connection
     if let Some(db) = database {
         if !db.is_empty() {
             let use_db = format!("USE `{}`", db.replace('`', "``"));
+            log::debug!("[get_table_info_mysql] switching: {}", use_db);
             conn.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
         }
     }

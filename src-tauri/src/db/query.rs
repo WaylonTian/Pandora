@@ -331,9 +331,11 @@ async fn execute_mysql_with_db(conn: Arc<dyn DatabaseConnection>, sql: &str, dat
         .downcast_ref::<MySqlConnection>()
         .ok_or_else(|| DbError::query("Invalid connection type for MySQL query"))?;
     let mut c = mysql_conn.get_conn().await?;
+    log::debug!("[execute_mysql_with_db] database={:?}, sql={}", database, &sql[..sql.len().min(100)]);
     if let Some(db) = database {
         if !db.is_empty() {
             let use_db = format!("USE `{}`", db.replace('`', "``"));
+            log::debug!("[execute_mysql_with_db] switching: {}", use_db);
             c.query_drop(&use_db).await.map_err(|e| DbError::query(format!("Failed to switch database: {}", e)))?;
         }
     }

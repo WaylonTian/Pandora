@@ -89,7 +89,7 @@ function DatabaseLogo({ className }: { className?: string }) {
 
 interface SidebarProps {
   onNewConnection: () => void;
-  onSelectTable: (connectionId: string, tableName: string) => void;
+  onSelectTable: (connectionId: string, tableName: string, database?: string) => void;
   showHistory: boolean;
   onToggleHistory: () => void;
   showFavorites: boolean;
@@ -443,8 +443,8 @@ function AppContent() {
   }, []);
 
   const handleSelectTable = React.useCallback(
-    (_connectionId: string, tableName: string) => {
-      openDataTab(tableName);
+    (_connectionId: string, tableName: string, database?: string) => {
+      openDataTab(tableName, database);
     },
     [openDataTab]
   );
