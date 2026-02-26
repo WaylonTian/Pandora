@@ -18,6 +18,7 @@
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "^2.4.5",
     "@tauri-apps/plugin-opener": "^2",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dockview-react": "^4",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4",
     "@tauri-apps/cli": "^2",
+    "@types/bcryptjs": "^2.4.6",
     "@types/js-yaml": "^4.0.9",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
