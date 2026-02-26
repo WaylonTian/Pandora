@@ -223,9 +223,10 @@ function TreeNode({ label, icon, isExpanded, isExpandable, isSelected, level = 0
 // Object Group Node (Tables, Views, Functions, etc.)
 // ============================================================================
 
-function ObjectGroup({ label, icon, items, level, onItemClick, onItemContextMenu, searchQuery }: {
+function ObjectGroup({ label, icon, items, level, onItemClick, onItemDoubleClick, onItemContextMenu, searchQuery }: {
   label: string; icon: React.ReactNode; items: string[]; level: number;
-  onItemClick: (name: string) => void; onItemContextMenu?: (e: React.MouseEvent, name: string) => void;
+  onItemClick?: (name: string) => void; onItemDoubleClick?: (name: string) => void;
+  onItemContextMenu?: (e: React.MouseEvent, name: string) => void;
   searchQuery: string;
 }) {
   const [expanded, setExpanded] = React.useState(true);
@@ -247,7 +248,8 @@ function ObjectGroup({ label, icon, items, level, onItemClick, onItemContextMenu
           label={name}
           icon={icon}
           level={level + 1}
-          onClick={() => onItemClick(name)}
+          onClick={() => onItemClick?.(name)}
+          onDoubleClick={() => onItemDoubleClick?.(name)}
           onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(e, name) : undefined}
         />
       ))}
@@ -283,15 +285,36 @@ export function DatabaseTree({ onSelectTable, onSelectConnection, className }: D
   const openDataTab = useAppStore(s => s.openDataTab);
 
   const [contextMenu, setContextMenu] = React.useState<ContextMenuState>(INITIAL_CONTEXT);
+  const [loadingNodes, setLoadingNodes] = React.useState<Set<string>>(new Set());
 
-  // Handle database node click — lazy load
-  const handleDatabaseClick = React.useCallback(async (connId: string, database: string) => {
+  // Handle database node double-click — lazy load
+  const handleDatabaseDoubleClick = React.useCallback(async (connId: string, database: string) => {
     const nodeId = `${connId}:${database}`;
     if (!loadedDatabases.has(database)) {
+      setLoadingNodes(prev => new Set(prev).add(nodeId));
       await loadDatabaseObjects(database);
+      setLoadingNodes(prev => { const n = new Set(prev); n.delete(nodeId); return n; });
     }
-    toggleNodeExpansion(nodeId);
-  }, [loadedDatabases, loadDatabaseObjects, toggleNodeExpansion]);
+    if (!expandedNodes.has(nodeId)) toggleNodeExpansion(nodeId);
+  }, [loadedDatabases, loadDatabaseObjects, toggleNodeExpansion, expandedNodes]);
+
+  // Handle database node click — toggle expand/collapse if loaded
+  const handleDatabaseClick = React.useCallback((connId: string, database: string) => {
+    const nodeId = `${connId}:${database}`;
+    if (loadedDatabases.has(database)) {
+      toggleNodeExpansion(nodeId);
+    }
+  }, [loadedDatabases, toggleNodeExpansion]);
+
+  // Handle connection double-click — connect and expand
+  const handleConnectionDoubleClick = React.useCallback(async (connId: string) => {
+    const status = connectionStatus[connId] || 'disconnected';
+    if (status !== 'connected') {
+      await connect(connId);
+      // After connect, expand the node
+      if (!expandedNodes.has(connId)) toggleNodeExpansion(connId);
+    }
+  }, [connectionStatus, connect, expandedNodes, toggleNodeExpansion]);
 
   // Handle database refresh
   const handleDatabaseRefresh = React.useCallback(async (database: string) => {
@@ -395,9 +418,9 @@ export function DatabaseTree({ onSelectTable, onSelectConnection, className }: D
                 statusIndicator={<StatusIndicator status={status} />}
                 onClick={() => {
                   onSelectConnection?.(conn.id);
-                  if (isConnected && connDatabases.length > 0) toggleNodeExpansion(conn.id);
+                  if (isConnected) toggleNodeExpansion(conn.id);
                 }}
-                onDoubleClick={() => { if (!isConnected) connect(conn.id); }}
+                onDoubleClick={() => handleConnectionDoubleClick(conn.id)}
                 onContextMenu={(e) => handleContextMenu(e, 'connection', conn.id)}
               >
                 {isConnected && connDatabases
@@ -417,11 +440,14 @@ export function DatabaseTree({ onSelectTable, onSelectConnection, className }: D
                       <TreeNode
                         key={database}
                         label={database}
-                        icon={<DatabaseIcon className={isLoaded ? "text-warning" : "text-muted-foreground"} />}
+                        icon={loadingNodes.has(dbNodeId) 
+                          ? <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent text-warning" />
+                          : <DatabaseIcon className={isLoaded ? "text-warning" : "text-muted-foreground"} />}
                         isExpanded={isDbExpanded}
                         isExpandable={isLoaded}
                         level={1}
                         onClick={() => handleDatabaseClick(conn.id, database)}
+                        onDoubleClick={() => handleDatabaseDoubleClick(conn.id, database)}
                         onContextMenu={(e) => handleContextMenu(e, 'database', conn.id, database)}
                       >
                         {isLoaded && (<>
@@ -432,6 +458,9 @@ export function DatabaseTree({ onSelectTable, onSelectConnection, className }: D
                             level={2}
                             searchQuery={treeSearchQuery}
                             onItemClick={(name) => {
+                              onSelectTable?.(conn.id, name, database);
+                            }}
+                            onItemDoubleClick={(name) => {
                               onSelectTable?.(conn.id, name, database);
                               openDataTab(name, database);
                             }}

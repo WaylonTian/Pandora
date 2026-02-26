@@ -32,6 +32,7 @@ pub trait SchemaManager: Send + Sync {
         &self,
         conn: Arc<dyn DatabaseConnection>,
         table: &str,
+        database: Option<&str>,
     ) -> Result<TableInfo, DbError>;
 
     /// Creates a new table based on TableInfo
@@ -96,11 +97,12 @@ impl SchemaManager for DefaultSchemaManager {
         &self,
         conn: Arc<dyn DatabaseConnection>,
         table: &str,
+        database: Option<&str>,
     ) -> Result<TableInfo, DbError> {
         match conn.db_type() {
-            DatabaseType::MySQL => get_table_info_mysql(conn, table).await,
-            DatabaseType::PostgreSQL => get_table_info_postgres(conn, table).await,
-            DatabaseType::SQLite => get_table_info_sqlite(conn, table).await,
+            DatabaseType::MySQL => get_table_info_mysql(conn, table, database).await,
+            DatabaseType::PostgreSQL => get_table_info_postgres(conn, table, database).await,
+            DatabaseType::SQLite => get_table_info_sqlite(conn, table).await, // SQLite no db switch
         }
     }
 
@@ -176,29 +178,27 @@ async fn list_tables_mysql(
 async fn get_table_info_mysql(
     conn: Arc<dyn DatabaseConnection>,
     table: &str,
+    database: Option<&str>,
 ) -> Result<TableInfo, DbError> {
-    log::info!("[get_table_info_mysql] Starting for table: {}", table);
-    
+    use mysql_async::prelude::*;
     let mysql_conn = conn
         .as_any()
         .downcast_ref::<MySqlConnection>()
         .ok_or_else(|| DbError::schema("Invalid connection type for MySQL"))?;
 
-    log::info!("[get_table_info_mysql] Getting connection from pool...");
     let mut conn = mysql_conn.get_conn().await?;
-    log::info!("[get_table_info_mysql] Got connection, fetching columns...");
 
-    // Get column information
+    // Switch database on this same connection
+    if let Some(db) = database {
+        if !db.is_empty() {
+            let use_db = format!("USE `{}`", db.replace('`', "``"));
+            conn.query_drop(&use_db).await.map_err(|e| DbError::schema(e.to_string()))?;
+        }
+    }
+
     let columns = get_columns_mysql(&mut conn, table).await?;
-    log::info!("[get_table_info_mysql] Got {} columns", columns.len());
-
-    // Get index information
     let indexes = get_indexes_mysql(&mut conn, table).await?;
-    log::info!("[get_table_info_mysql] Got {} indexes", indexes.len());
-
-    // Get foreign key information
     let foreign_keys = get_foreign_keys_mysql(&mut conn, table).await?;
-    log::info!("[get_table_info_mysql] Got {} foreign keys", foreign_keys.len());
 
     Ok(TableInfo {
         name: table.to_string(),
@@ -416,6 +416,7 @@ async fn list_tables_postgres(
 async fn get_table_info_postgres(
     conn: Arc<dyn DatabaseConnection>,
     table: &str,
+    database: Option<&str>,
 ) -> Result<TableInfo, DbError> {
     let pg_conn = conn
         .as_any()
@@ -425,18 +426,21 @@ async fn get_table_info_postgres(
     let client = pg_conn.client();
     let client = client.lock().await;
 
-    // Get column information
+    // Switch schema on this same connection
+    if let Some(db) = database {
+        if !db.is_empty() {
+            let set_schema = format!("SET search_path TO \"{}\"", db.replace('"', "\"\""));
+            client.execute(&*set_schema, &[]).await.map_err(|e| DbError::schema(e.to_string()))?;
+        }
+    }
+
     let columns = get_columns_postgres(&client, table).await?;
-
-    // Get index information
     let indexes = get_indexes_postgres(&client, table).await?;
-
-    // Get foreign key information
     let foreign_keys = get_foreign_keys_postgres(&client, table).await?;
 
     Ok(TableInfo {
         name: table.to_string(),
-        schema: Some("public".to_string()),
+        schema: Some(database.unwrap_or("public").to_string()),
         columns,
         indexes,
         foreign_keys,
