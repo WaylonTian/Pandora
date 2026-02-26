@@ -294,6 +294,15 @@ export const en: Record<string, string> = {
   "tableMetaPanel.noDdlInfo": "No DDL information",
   "tableMetaPanel.collapsePanel": "Collapse Panel",
   "tableMetaPanel.expandPanel": "Expand Panel",
+  "tableMetaPanel.columns": "Columns",
+  "tableMetaPanel.columnName": "Column",
+  "tableMetaPanel.type": "Type",
+  "tableMetaPanel.default": "Default",
+  "tableMetaPanel.indexes": "Indexes",
+  "tableMetaPanel.foreignKeys": "Foreign Keys",
+  "tableMetaPanel.copyDdl": "Copy",
+  "tableMetaPanel.copied": "Copied!",
+  "tableMetaPanel.primaryKeyTooltip": "Primary Key",
 
   // === DB Manager - Explain Panel ===
   "explainPanel.queryExecutionPlan": "Query Execution Plan",

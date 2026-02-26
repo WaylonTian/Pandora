@@ -301,6 +301,15 @@ export const zh: Record<string, string> = {
   "tableMetaPanel.noDdlInfo": "无 DDL 信息",
   "tableMetaPanel.collapsePanel": "折叠面板",
   "tableMetaPanel.expandPanel": "展开面板",
+  "tableMetaPanel.columns": "列",
+  "tableMetaPanel.columnName": "列名",
+  "tableMetaPanel.type": "类型",
+  "tableMetaPanel.default": "默认值",
+  "tableMetaPanel.indexes": "索引",
+  "tableMetaPanel.foreignKeys": "外键",
+  "tableMetaPanel.copyDdl": "复制",
+  "tableMetaPanel.copied": "已复制!",
+  "tableMetaPanel.primaryKeyTooltip": "主键",
 
   // === DB Manager - Explain Panel ===
   "explainPanel.queryExecutionPlan": "查询执行计划",
