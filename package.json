@@ -21,6 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dockview-react": "^4",
+    "js-md5": "^0.8.3",
     "js-yaml": "^4.1.1",
     "lucide-react": "^0.575.0",
     "monaco-editor": "^0.52.0",

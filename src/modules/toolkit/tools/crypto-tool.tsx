@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useT } from "@/i18n";
+import { md5 } from "js-md5";
 import { TextInput } from "../components/TextInput";
 import { TextOutput } from "../components/TextOutput";
 import { ActionButton } from "../components/ActionBar";
 import { FileDropZone } from "../components/FileDropZone";
 
-const ALGOS = ["SHA-1", "SHA-256", "SHA-384", "SHA-512"];
+const ALGOS = ["MD5", "SHA-1", "SHA-256", "SHA-384", "SHA-512"];
 
 async function hashData(algo: string, data: ArrayBuffer): Promise<string> {
+  if (algo === "MD5") return md5(data);
   const buf = await crypto.subtle.digest(algo, data);
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
