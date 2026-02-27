@@ -234,13 +234,12 @@ async fn get_columns_mysql(
     let columns = rows
         .into_iter()
         .map(|row| {
-            // 使用 Option<String> 来安全处理可能为 NULL 的值
-            let name: Option<String> = row.get(0);
-            let data_type: Option<String> = row.get(1);
-            let is_nullable: Option<String> = row.get(2);
-            let default_value: Option<String> = row.get(3);
-            let column_key: Option<String> = row.get(4);
-            let extra: Option<String> = row.get(5);
+            let name = crate::db::query::mysql_row_get_string(&row, 0);
+            let data_type = crate::db::query::mysql_row_get_string(&row, 1);
+            let is_nullable = crate::db::query::mysql_row_get_string(&row, 2);
+            let default_value = crate::db::query::mysql_row_get_string(&row, 3);
+            let column_key = crate::db::query::mysql_row_get_string(&row, 4);
+            let extra = crate::db::query::mysql_row_get_string(&row, 5);
 
             ColumnDefinition {
                 name: name.unwrap_or_default(),
@@ -279,9 +278,9 @@ async fn get_indexes_mysql(
     let mut index_map: HashMap<String, (bool, bool, Vec<String>)> = HashMap::new();
 
     for row in rows {
-        let key_name: Option<String> = row.get(0);
-        let non_unique: Option<i64> = row.get(1);
-        let column_name: Option<String> = row.get(2);
+        let key_name = crate::db::query::mysql_row_get_string(&row, 0);
+        let non_unique = crate::db::query::mysql_row_get_i64(&row, 1);
+        let column_name = crate::db::query::mysql_row_get_string(&row, 2);
 
         let key_name = key_name.unwrap_or_default();
         let column_name = column_name.unwrap_or_default();
@@ -317,11 +316,12 @@ async fn get_foreign_keys_mysql(
     use std::collections::HashMap;
 
     let sql = format!(
-        "SELECT CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME,
-                DELETE_RULE, UPDATE_RULE
+        "SELECT kcu.CONSTRAINT_NAME, kcu.COLUMN_NAME, kcu.REFERENCED_TABLE_NAME, kcu.REFERENCED_COLUMN_NAME,
+                rc.DELETE_RULE, rc.UPDATE_RULE
          FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
          JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
            ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
+              AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA
          WHERE kcu.TABLE_SCHEMA = DATABASE() AND kcu.TABLE_NAME = '{}' AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
          ORDER BY kcu.ORDINAL_POSITION",
         table.replace('\'', "''")
@@ -336,13 +336,12 @@ async fn get_foreign_keys_mysql(
     let mut fk_map: HashMap<String, ForeignKeyInfo> = HashMap::new();
 
     for row in rows {
-        // 使用 Option<String> 来安全处理可能为 NULL 的值
-        let name: Option<String> = row.get(0);
-        let column: Option<String> = row.get(1);
-        let ref_table: Option<String> = row.get(2);
-        let ref_column: Option<String> = row.get(3);
-        let on_delete: Option<String> = row.get(4);
-        let on_update: Option<String> = row.get(5);
+        let name = crate::db::query::mysql_row_get_string(&row, 0);
+        let column = crate::db::query::mysql_row_get_string(&row, 1);
+        let ref_table = crate::db::query::mysql_row_get_string(&row, 2);
+        let ref_column = crate::db::query::mysql_row_get_string(&row, 3);
+        let on_delete = crate::db::query::mysql_row_get_string(&row, 4);
+        let on_update = crate::db::query::mysql_row_get_string(&row, 5);
 
         let name = name.unwrap_or_default();
         let column = column.unwrap_or_default();

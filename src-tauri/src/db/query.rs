@@ -361,6 +361,34 @@ async fn execute_mysql_with_db(conn: Arc<dyn DatabaseConnection>, sql: &str, dat
         Ok(QueryResult::affected(c.affected_rows(), 0))
     }
 }
+/// Safely get a string from a mysql_async::Row, returning None for NULL values.
+/// mysql_async::Row::get::<String>(i) panics on NULL because from_value::<String>(NULL) panics.
+/// This function uses get::<mysql_async::Value>(i) which never panics, then converts.
+pub fn mysql_row_get_string(row: &mysql_async::Row, i: usize) -> Option<String> {
+    use mysql_async::Value as MysqlValue;
+    let val: MysqlValue = row.get(i)?;
+    match val {
+        MysqlValue::NULL => None,
+        MysqlValue::Bytes(v) => String::from_utf8(v).ok(),
+        MysqlValue::Int(v) => Some(v.to_string()),
+        MysqlValue::UInt(v) => Some(v.to_string()),
+        MysqlValue::Float(v) => Some(v.to_string()),
+        MysqlValue::Double(v) => Some(v.to_string()),
+        other => Some(format!("{:?}", other)),
+    }
+}
+
+/// Safely get an i64 from a mysql_async::Row, returning None for NULL values.
+pub fn mysql_row_get_i64(row: &mysql_async::Row, i: usize) -> Option<i64> {
+    use mysql_async::Value as MysqlValue;
+    let val: MysqlValue = row.get(i)?;
+    match val {
+        MysqlValue::NULL => None,
+        MysqlValue::Int(v) => Some(v),
+        MysqlValue::UInt(v) => Some(v as i64),
+        _ => None,
+    }
+}
 fn mysql_row_to_values(row: mysql_async::Row) -> Vec<Value> {
     use mysql_async::Value as MysqlValue;
 
