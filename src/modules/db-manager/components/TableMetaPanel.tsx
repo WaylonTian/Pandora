@@ -72,6 +72,7 @@ export function TableMetaPanel({ className }: TableMetaPanelProps) {
         if (cancelled) return;
         setDdl(ddlResult);
       } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
