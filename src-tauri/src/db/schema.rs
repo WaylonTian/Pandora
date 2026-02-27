@@ -280,12 +280,12 @@ async fn get_indexes_mysql(
 
     for row in rows {
         let key_name: Option<String> = row.get(0);
-        let non_unique: Option<String> = row.get(1);
+        let non_unique: Option<i64> = row.get(1);
         let column_name: Option<String> = row.get(2);
 
         let key_name = key_name.unwrap_or_default();
         let column_name = column_name.unwrap_or_default();
-        let is_unique = non_unique.as_deref() == Some("0");
+        let is_unique = non_unique == Some(0);
         let is_primary = key_name == "PRIMARY";
 
         index_map
