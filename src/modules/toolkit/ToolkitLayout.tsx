@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useT } from "@/i18n";
 import { ResizableLayout } from "@/components/ResizableLayout";
 import { getTools } from "./plugin-interface";
-import { usePluginStore } from "./stores/plugin-store";
+import { usePluginStore, getPluginLogoUrl } from "./stores/plugin-store";
 import { useToolkitStore } from "./stores/toolkit-store";
 import { PluginContainer } from "./plugin-runtime";
 import { Marketplace } from "./components/Marketplace";
@@ -50,7 +50,7 @@ export function ToolkitLayout() {
     if (selection.type === "plugin") {
       const plugin = installed.find(p => p.id === selection.id);
       if (!plugin) return null;
-      const logo = plugin.logo && serverPort ? `http://127.0.0.1:${serverPort}/${encodeURIComponent(plugin.id)}/${plugin.logo}` : null;
+      const logo = getPluginLogoUrl(plugin, serverPort);
       return (
         <div className="h-full flex flex-col">
           <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border shrink-0">

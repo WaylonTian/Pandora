@@ -3,7 +3,7 @@ import { Search, Pin, Star, ClipboardList, Store, Plug } from "lucide-react";
 import { useT } from "@/i18n";
 import { getTools, getToolsByCategory, type Category } from "../plugin-interface";
 import { useToolkitStore } from "../stores/toolkit-store";
-import { usePluginStore } from "../stores/plugin-store";
+import { usePluginStore, getPluginLogoUrl } from "../stores/plugin-store";
 import type { InstalledPlugin } from "../plugin-runtime";
 
 const CATEGORY_ORDER: Category[] = ["encoding", "text", "generator", "network"];
@@ -20,8 +20,7 @@ export function ToolkitSidebar({ selectedId, onSelect }: {
   const allTools = getTools();
   const grouped = getToolsByCategory();
 
-  const pluginLogoUrl = (p: InstalledPlugin) =>
-    p.logo && serverPort ? `http://127.0.0.1:${serverPort}/${encodeURIComponent(p.id)}/${p.logo}` : null;
+  const pluginLogoUrl = (p: InstalledPlugin) => getPluginLogoUrl(p, serverPort);
 
   const catLabels: Record<string, string> = {
     encoding: t("toolkit.cat.encoding"), text: t("toolkit.cat.text"),

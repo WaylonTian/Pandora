@@ -38,9 +38,10 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
   installError: null,
 
   loadInstalled: async () => {
+    const port = get().serverPort;
     const [installed, serverPort] = await Promise.all([
       invoke<InstalledPlugin[]>("plugin_list"),
-      invoke<number>("plugin_server_port"),
+      port ? Promise.resolve(port) : invoke<number>("plugin_server_port"),
     ]);
     set({ installed, serverPort });
   },
@@ -115,3 +116,7 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
 
   getDetail: async (name) => invoke<MarketPluginDetail>("marketplace_detail", { name }),
 }));
+
+export function getPluginLogoUrl(plugin: InstalledPlugin, serverPort: number): string | null {
+  return plugin.logo && serverPort ? `http://127.0.0.1:${serverPort}/${encodeURIComponent(plugin.id)}/${plugin.logo}` : null;
+}
