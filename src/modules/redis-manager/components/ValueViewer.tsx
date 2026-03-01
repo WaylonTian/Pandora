@@ -32,7 +32,6 @@ function StringViewer({ data, keyName }: { data: number[]; keyName: string }) {
 }
 
 function HashViewer({ data, keyName }: { data: [string, string][]; keyName: string }) {
-  const t = useT();
   const id = useRedisStore(s => s.activeConnectionId)!;
   const refreshSelectedKey = useRedisStore(s => s.refreshSelectedKey);
   const [newField, setNewField] = useState('');

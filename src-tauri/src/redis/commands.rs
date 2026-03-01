@@ -184,7 +184,7 @@ pub async fn redis_list_push(id: String, key: String, value: String, head: bool,
 }
 
 #[tauri::command]
-pub async fn redis_list_remove(id: String, key: String, value: String, count: i64, state: State<'_, AppState>) -> Result<(), String> {
+pub async fn redis_list_remove(id: String, key: String, value: String, count: isize, state: State<'_, AppState>) -> Result<(), String> {
     let mut con = state.redis_state.get_connection(&id).await?;
     con.lrem::<_, _, ()>(&key, count, &value).await.map_err(|e| e.to_string())
 }
