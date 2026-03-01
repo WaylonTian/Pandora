@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Search, Pin, ClipboardList, Store } from "lucide-react";
+import { Search, Pin, ClipboardList, Store, Plug } from "lucide-react";
 import { useT } from "@/i18n";
 import { getTools, getToolsByCategory, type Category } from "../plugin-interface";
 import { useToolkitStore } from "../stores/toolkit-store";
+import { usePluginStore } from "../stores/plugin-store";
 
 type OverlayView = { type: "plugin"; id: string } | { type: "marketplace" } | { type: "installed" };
 const CATEGORY_ORDER: Category[] = ["encoding", "text", "generator", "network"];
@@ -15,6 +16,8 @@ export function ToolkitSidebar({ selectedId, onSelectTool, onNavigate }: {
   const t = useT();
   const [search, setSearch] = useState("");
   const { pinnedTools, togglePin } = useToolkitStore();
+  const { installed } = usePluginStore();
+  const enabledPlugins = installed.filter(p => p.enabled);
   const allTools = getTools();
   const grouped = getToolsByCategory();
 
@@ -24,6 +27,7 @@ export function ToolkitSidebar({ selectedId, onSelectTool, onNavigate }: {
   };
 
   const filtered = search ? allTools.filter(tl => t(tl.name).toLowerCase().includes(search.toLowerCase()) || tl.id.includes(search.toLowerCase())) : null;
+  const filteredPlugins = search ? enabledPlugins.filter(p => p.name.toLowerCase().includes(search.toLowerCase())) : null;
   const pinned = allTools.filter(tl => pinnedTools.includes(tl.id));
 
   const ToolRow = ({ tool }: { tool: typeof allTools[0] }) => {
@@ -57,7 +61,14 @@ export function ToolkitSidebar({ selectedId, onSelectTool, onNavigate }: {
         {filtered ? (
           <div className="space-y-0.5">
             {filtered.map(tl => <ToolRow key={tl.id} tool={tl} />)}
-            {filtered.length === 0 && <div className="text-muted-foreground text-xs text-center py-4">{t("toolkit.noResults")}</div>}
+            {filteredPlugins?.map(p => (
+              <div key={p.id} onClick={() => onNavigate({ type: "plugin", id: p.id })}
+                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-muted text-foreground`}>
+                <Plug className="w-4 h-4 shrink-0 text-muted-foreground" />
+                <span className="truncate flex-1">{p.name}</span>
+              </div>
+            ))}
+            {filtered.length === 0 && (!filteredPlugins || filteredPlugins.length === 0) && <div className="text-muted-foreground text-xs text-center py-4">{t("toolkit.noResults")}</div>}
           </div>
         ) : (
           <>
@@ -77,6 +88,23 @@ export function ToolkitSidebar({ selectedId, onSelectTool, onNavigate }: {
                 </div>
               );
             })}
+            {enabledPlugins.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 px-3 mb-1">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{t("toolkit.plugins")}</span>
+                  <span className="text-[9px] px-1 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 font-medium">Beta</span>
+                </div>
+                <div className="space-y-0.5">
+                  {enabledPlugins.map(p => (
+                    <div key={p.id} onClick={() => onNavigate({ type: "plugin", id: p.id })}
+                      className="flex items-center gap-2.5 px-3 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-muted text-foreground">
+                      <Plug className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      <span className="truncate flex-1">{p.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
