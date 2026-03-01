@@ -76,6 +76,7 @@ export default function App() {
           case "2": e.preventDefault(); handlePanelSelect("db-manager"); break;
           case "3": e.preventDefault(); handlePanelSelect("toolkit"); break;
           case "4": e.preventDefault(); handlePanelSelect("script-runner"); break;
+          case "5": e.preventDefault(); handlePanelSelect("redis-manager"); break;
         }
       }
     };
