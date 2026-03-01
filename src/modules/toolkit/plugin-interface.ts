@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 
-export type Category = "encoding" | "crypto" | "text" | "generator" | "datetime" | "number" | "network" | "system";
+export type Category = "encoding" | "text" | "generator" | "network";
 
 export interface ToolPlugin {
   id: string;

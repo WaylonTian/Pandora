@@ -4,6 +4,7 @@ import type { InstalledPlugin, MarketPlugin, MarketPluginDetail } from "../plugi
 
 interface PluginStore {
   installed: InstalledPlugin[];
+  serverPort: number;
   marketPlugins: MarketPlugin[];
   marketLoading: boolean;
   installing: Set<string>;
@@ -30,14 +31,19 @@ function getCached(key: string): MarketPlugin[] | null {
 
 export const usePluginStore = create<PluginStore>((set, get) => ({
   installed: [],
+  serverPort: 0,
   marketPlugins: [],
   marketLoading: false,
   installing: new Set(),
   installError: null,
 
   loadInstalled: async () => {
-    const installed = await invoke<InstalledPlugin[]>("plugin_list");
-    set({ installed });
+    const port = get().serverPort;
+    const [installed, serverPort] = await Promise.all([
+      invoke<InstalledPlugin[]>("plugin_list"),
+      port ? Promise.resolve(port) : invoke<number>("plugin_server_port"),
+    ]);
+    set({ installed, serverPort });
   },
 
   installFromMarket: async (name) => {
@@ -110,3 +116,7 @@ export const usePluginStore = create<PluginStore>((set, get) => ({
 
   getDetail: async (name) => invoke<MarketPluginDetail>("marketplace_detail", { name }),
 }));
+
+export function getPluginLogoUrl(plugin: InstalledPlugin, serverPort: number): string | null {
+  return plugin.logo && serverPort ? `http://127.0.0.1:${serverPort}/${encodeURIComponent(plugin.id)}/${plugin.logo}` : null;
+}
