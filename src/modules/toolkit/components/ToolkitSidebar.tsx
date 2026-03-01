@@ -31,6 +31,7 @@ export function ToolkitSidebar({ selectedId, onSelect }: {
   const filtered = search ? allTools.filter(tl => t(tl.name).toLowerCase().includes(search.toLowerCase()) || tl.id.includes(search.toLowerCase())) : null;
   const filteredPlugins = search ? enabledPlugins.filter(p => p.name.toLowerCase().includes(search.toLowerCase())) : null;
   const favTools = allTools.filter(tl => favorites.includes(tl.id));
+  const favPlugins = enabledPlugins.filter(p => favorites.includes(p.id));
   const pinned = allTools.filter(tl => pinnedTools.includes(tl.id));
 
   const ToolRow = ({ tool }: { tool: typeof allTools[0] }) => {
@@ -55,13 +56,18 @@ export function ToolkitSidebar({ selectedId, onSelect }: {
   const PluginRow = ({ plugin }: { plugin: InstalledPlugin }) => {
     const active = plugin.id === selectedId;
     const logo = pluginLogoUrl(plugin);
+    const isFav = favorites.includes(plugin.id);
     return (
       <div onClick={() => onSelect("plugin", plugin.id)}
-        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md cursor-pointer text-sm transition-colors ${active ? "bg-accent text-accent-foreground" : "hover:bg-muted text-foreground"}`}>
+        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md cursor-pointer text-sm transition-colors group ${active ? "bg-accent text-accent-foreground" : "hover:bg-muted text-foreground"}`}>
         {logo
           ? <img src={logo} alt="" className="w-4 h-4 shrink-0 rounded" />
           : <Plug className="w-4 h-4 shrink-0 text-muted-foreground" />}
         <span className="truncate flex-1">{plugin.name}</span>
+        <button onClick={e => { e.stopPropagation(); toggleFavorite(plugin.id); }}
+          className={`p-0.5 rounded transition-opacity ${isFav ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+          <Star className={`w-3 h-3 ${isFav ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+        </button>
       </div>
     );
   };
@@ -88,10 +94,13 @@ export function ToolkitSidebar({ selectedId, onSelect }: {
           </div>
         ) : (
           <>
-            {favTools.length > 0 && (
+            {(favTools.length > 0 || favPlugins.length > 0) && (
               <div>
                 <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">{t("toolkit.favorites")}</div>
-                <div className="space-y-0.5">{favTools.map(tl => <ToolRow key={tl.id} tool={tl} />)}</div>
+                <div className="space-y-0.5">
+                  {favTools.map(tl => <ToolRow key={tl.id} tool={tl} />)}
+                  {favPlugins.map(p => <PluginRow key={p.id} plugin={p} />)}
+                </div>
               </div>
             )}
             {pinned.length > 0 && (
