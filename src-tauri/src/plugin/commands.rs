@@ -27,13 +27,9 @@ pub async fn plugin_install_from_market(name: String) -> Result<manager::Install
     let detail = marketplace::get_plugin_detail(&name).await?;
     let download_url = detail.download_url.ok_or("No download URL found")?;
 
-    // Reject encrypted .upxs files early and remember for future filtering
-    if download_url.ends_with(".upxs") {
-        marketplace::mark_upxs(&name);
-        return Err("该插件使用加密格式(.upxs)，仅 uTools 客户端可安装。请选择其他插件。".into());
-    }
-
-    let ext = if download_url.ends_with(".upx") { "upx" } else { "zip" };
+    let ext = if download_url.ends_with(".upxs") { "upxs" }
+        else if download_url.ends_with(".upx") { "upx" }
+        else { "zip" };
     let tmp = std::env::temp_dir().join(format!("pandora-{}.{}", uuid::Uuid::new_v4(), ext));
     marketplace::download_plugin(&download_url, &tmp).await?;
 

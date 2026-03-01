@@ -44,7 +44,7 @@ export function ToolkitHome({ onNavigate }: { onNavigate: (target: ViewTarget) =
       </div>
       <div className="flex-1 overflow-y-auto px-6 py-4">
         {filteredTools ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
             {filteredTools.map(renderCard)}
             {filteredTools.length === 0 && <div className="text-muted-foreground text-sm col-span-full py-8 text-center">{t("toolkit.noResults")}</div>}
           </div>
@@ -72,7 +72,7 @@ export function ToolkitHome({ onNavigate }: { onNavigate: (target: ViewTarget) =
               return (
                 <div key={cat} className="mb-6">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{catLabels[cat] || cat}</div>
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">{tools.map(renderCard)}</div>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">{tools.map(renderCard)}</div>
                 </div>
               );
             })}
@@ -81,7 +81,7 @@ export function ToolkitHome({ onNavigate }: { onNavigate: (target: ViewTarget) =
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("toolkit.plugins")}</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 font-medium">Beta</span>
               </div>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
                 {enabledPlugins.map((plugin) => (
                   <div key={plugin.id} onClick={() => onNavigate({ type: "plugin", id: plugin.id })}
                     className="group relative flex items-start gap-3 p-3 border border-border rounded-xl bg-card hover:bg-accent/50 hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer">

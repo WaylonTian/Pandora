@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -33,7 +33,6 @@ static CACHE: std::sync::LazyLock<Mutex<MarketCache>> =
     std::sync::LazyLock::new(|| Mutex::new(MarketCache {
         topics: HashMap::new(),
         searches: HashMap::new(),
-        upxs_names: load_blocklist(),
     }));
 
 const CACHE_TTL: Duration = Duration::from_secs(86400); // 1 day
@@ -42,39 +41,6 @@ const CACHE_TTL: Duration = Duration::from_secs(86400); // 1 day
 struct MarketCache {
     topics: HashMap<u32, CacheEntry<Vec<MarketPlugin>>>,
     searches: HashMap<String, CacheEntry<Vec<MarketPlugin>>>,
-    /// Plugin names known to be .upxs (encrypted, unsupported)
-    upxs_names: HashSet<String>,
-}
-
-fn blocklist_path() -> std::path::PathBuf {
-    super::manager::plugins_dir().join("upxs_blocklist.json")
-}
-
-fn load_blocklist() -> HashSet<String> {
-    std::fs::read_to_string(blocklist_path()).ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default()
-}
-
-fn save_blocklist(names: &HashSet<String>) {
-    let dir = super::manager::plugins_dir();
-    std::fs::create_dir_all(&dir).ok();
-    if let Ok(json) = serde_json::to_string(names) {
-        std::fs::write(blocklist_path(), json).ok();
-    }
-}
-
-fn filter_upxs(plugins: Vec<MarketPlugin>, blocked: &HashSet<String>) -> Vec<MarketPlugin> {
-    if blocked.is_empty() { return plugins; }
-    plugins.into_iter().filter(|p| !blocked.contains(&p.name)).collect()
-}
-
-/// Mark a plugin name as .upxs (will be hidden from future listings, persisted to disk)
-pub fn mark_upxs(name: &str) {
-    if let Ok(mut c) = CACHE.lock() {
-        c.upxs_names.insert(name.to_string());
-        save_blocklist(&c.upxs_names);
-    }
 }
 
 pub async fn search_plugins(query: &str) -> Result<Vec<MarketPlugin>, String> {
@@ -82,26 +48,48 @@ pub async fn search_plugins(query: &str) -> Result<Vec<MarketPlugin>, String> {
     if let Ok(c) = CACHE.lock() {
         if let Some(e) = c.searches.get(&key) {
             if e.at.elapsed() < CACHE_TTL {
-                return Ok(filter_upxs(e.data.clone(), &c.upxs_names));
+                return Ok(e.data.clone());
             }
         }
     }
-    let url = format!("https://www.u-tools.cn/plugins/search/?q={}", urlencoding::encode(query));
-    let html = reqwest::get(&url).await.map_err(|e| e.to_string())?
-        .text().await.map_err(|e| e.to_string())?;
-    let plugins = parse_next_data_list(&html)?;
-    let blocked = if let Ok(mut c) = CACHE.lock() {
+    let url = format!(
+        "https://open.u-tools.cn/v5/plugins?key={}&mid=00000000-0000-0000-0000-000000000000&nid=00000000000000000000000000000000",
+        urlencoding::encode(query)
+    );
+    let resp: serde_json::Value = reqwest::Client::new()
+        .get(&url)
+        .header("Accept", "application/json")
+        .send().await.map_err(|e| e.to_string())?
+        .json().await.map_err(|e| e.to_string())?;
+
+    let plugins: Vec<MarketPlugin> = resp.pointer("/components")
+        .and_then(|v| v.as_array())
+        .map(|comps| {
+            comps.iter()
+                .filter(|c| c.get("component").and_then(|v| v.as_str()) == Some("plugins"))
+                .filter_map(|c| c.pointer("/data/items").and_then(|v| v.as_array()))
+                .flatten()
+                .filter_map(|item| Some(MarketPlugin {
+                    name: item.get("plugin_name")?.as_str()?.to_string(),
+                    description: item.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    logo: item.get("logo").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    plugin_id: item.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                }))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    if let Ok(mut c) = CACHE.lock() {
         c.searches.insert(key, CacheEntry { data: plugins.clone(), at: Instant::now() });
-        c.upxs_names.clone()
-    } else { HashSet::new() };
-    Ok(filter_upxs(plugins, &blocked))
+    }
+    Ok(plugins)
 }
 
 pub async fn list_topic(topic_id: u32) -> Result<Vec<MarketPlugin>, String> {
     if let Ok(c) = CACHE.lock() {
         if let Some(e) = c.topics.get(&topic_id) {
             if e.at.elapsed() < CACHE_TTL {
-                return Ok(filter_upxs(e.data.clone(), &c.upxs_names));
+                return Ok(e.data.clone());
             }
         }
     }
@@ -109,11 +97,10 @@ pub async fn list_topic(topic_id: u32) -> Result<Vec<MarketPlugin>, String> {
     let html = reqwest::get(&url).await.map_err(|e| e.to_string())?
         .text().await.map_err(|e| e.to_string())?;
     let plugins = parse_next_data_list(&html)?;
-    let blocked = if let Ok(mut c) = CACHE.lock() {
+    if let Ok(mut c) = CACHE.lock() {
         c.topics.insert(topic_id, CacheEntry { data: plugins.clone(), at: Instant::now() });
-        c.upxs_names.clone()
-    } else { HashSet::new() };
-    Ok(filter_upxs(plugins, &blocked))
+    }
+    Ok(plugins)
 }
 
 pub async fn get_plugin_detail(name: &str) -> Result<MarketPluginDetail, String> {

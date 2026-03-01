@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowLeft, Star } from "lucide-react";
 import { useToolkitStore } from "../stores/toolkit-store";
 
-export function ToolPage({ toolId, title, onBack, children }: { toolId: string; title: string; onBack: () => void; children: ReactNode }) {
+export function ToolPage({ toolId, title, onBack, children, noPadding }: { toolId: string; title: string; onBack: () => void; children: ReactNode; noPadding?: boolean }) {
   const { favorites, toggleFavorite } = useToolkitStore();
   const isFav = favorites.includes(toolId);
   return (
@@ -14,7 +14,7 @@ export function ToolPage({ toolId, title, onBack, children }: { toolId: string; 
           <Star className={`w-4 h-4 ${isFav ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-6">{children}</div>
+      <div className={`flex-1 min-h-0 ${noPadding ? "flex flex-col" : "overflow-y-auto p-6"}`}>{children}</div>
     </div>
   );
 }

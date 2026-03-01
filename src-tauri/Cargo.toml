@@ -34,6 +34,9 @@ byteorder = "1"
 urlencoding = "2"
 zip = "2"
 flate2 = "1"
+chacha20poly1305 = "0.10"
+aes = "0.8"
+cbc = { version = "0.1", features = ["std"] }
 base64 = "0.22"
 image = "0.25"
 

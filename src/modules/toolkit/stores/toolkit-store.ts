@@ -42,7 +42,7 @@ export const useToolkitStore = create<ToolkitState>((set, get) => {
       return next;
     }),
     addRecent: (id) => set((s) => {
-      const next = { recentUsed: [id, ...s.recentUsed.filter((r) => r !== id)].slice(0, 10) };
+      const next = { recentUsed: [id, ...s.recentUsed.filter((r) => r !== id)].slice(0, 5) };
       const ns = { ...s, ...next };
       saveState(ns as ToolkitState);
       return next;

@@ -32,7 +32,7 @@ export function ToolkitLayout() {
 
   if (view.type === "home") return <ToolkitHome onNavigate={handleNavigate} />;
   if (view.type === "tool" && ActiveComponent) return <ToolPage toolId={view.id} title={t(activeTool!.name)} onBack={goHome}><ActiveComponent /></ToolPage>;
-  if (view.type === "plugin" && activePlugin) return <ToolPage toolId={activePlugin.id} title={activePlugin.name} onBack={goHome}><PluginContainer plugin={activePlugin} /></ToolPage>;
+  if (view.type === "plugin" && activePlugin) return <ToolPage toolId={activePlugin.id} title={activePlugin.name} onBack={goHome} noPadding><PluginContainer plugin={activePlugin} /></ToolPage>;
   if (view.type === "marketplace") return <ToolPage toolId="__marketplace" title={t("toolkit.marketplace.title")} onBack={goHome}><Marketplace /></ToolPage>;
   if (view.type === "installed") return <ToolPage toolId="__installed" title={t("toolkit.managedPlugins")} onBack={goHome}><InstalledPlugins /></ToolPage>;
   return <ToolkitHome onNavigate={handleNavigate} />;

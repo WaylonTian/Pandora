@@ -70,8 +70,8 @@ export function PluginContainer({ plugin, featureCode }: Props) {
       ref={iframeRef}
       src={src}
       sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-      className="w-full border-0 flex-1"
-      style={{ minHeight: "200px" }}
+      className="w-full border-0"
+      style={{ flex: 1, height: 0 }}
       title={plugin.name}
     />
   );

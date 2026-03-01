@@ -77,8 +77,23 @@ pub fn install_plugin(pkg_path: &Path, name: &str, version: &str, description: &
         if bytes.len() < 16 {
             return Err("Package file too small".into());
         }
+        // .upxs: first 4 bytes = header_len (small u32), followed by encrypted data
+        let maybe_header_len = u32::from_le_bytes(bytes[0..4].try_into().unwrap()) as usize;
+        let upxs_ok = maybe_header_len > 0 && maybe_header_len < 10000
+            && bytes[4] != 0x1f && bytes[0..2] != [0x50, 0x4B]
+            && bytes.len() > 4 + maybe_header_len + 16;
+
+        if upxs_ok {
+            let gzipped = decrypt_upxs(&bytes)?;
+            let decompressed = decompress_gzip(&gzipped)?;
+            let tmp_asar = pkg_path.with_extension("asar.tmp");
+            fs::write(&tmp_asar, &decompressed).map_err(|e| e.to_string())?;
+            let result = super::asar::extract_asar(&tmp_asar, &dest);
+            fs::remove_file(&tmp_asar).ok();
+            result?;
+        }
         // Gzip magic (1f 8b) — .upx files are gzip'd asar
-        if bytes[0] == 0x1f && bytes[1] == 0x8b {
+        else if bytes[0] == 0x1f && bytes[1] == 0x8b {
             let decompressed = decompress_gzip(&bytes)?;
             let tmp_asar = pkg_path.with_extension("asar.tmp");
             fs::write(&tmp_asar, &decompressed).map_err(|e| e.to_string())?;
@@ -96,7 +111,7 @@ pub fn install_plugin(pkg_path: &Path, name: &str, version: &str, description: &
                 Err(e) => {
                     fs::remove_dir_all(&dest).ok();
                     return Err(format!(
-                        "Unsupported package format. Only .asar, .upx (gzip'd asar), and .zip are supported (not encrypted .upxs). Error: {e}"
+                        "Unsupported package format. Only .asar, .upx, .upxs, and .zip are supported. Error: {e}"
                     ));
                 }
             }
@@ -130,6 +145,42 @@ pub fn install_plugin(pkg_path: &Path, name: &str, version: &str, description: &
     save_registry(&registry)?;
 
     Ok(plugin)
+}
+
+/// Decrypt .upxs encrypted plugin package → returns gzip'd asar bytes
+fn decrypt_upxs(data: &[u8]) -> Result<Vec<u8>, String> {
+    use chacha20poly1305::{XChaCha20Poly1305, aead::{Aead, KeyInit}};
+    use aes::cipher::{BlockDecryptMut, KeyIvInit, block_padding::Pkcs7};
+
+    if data.len() < 8 { return Err("upxs too small".into()); }
+    let header_len = u32::from_le_bytes(data[0..4].try_into().unwrap()) as usize;
+    if data.len() < 4 + header_len { return Err("upxs header truncated".into()); }
+
+    // XChaCha20-Poly1305 key/nonce (extracted from uTools addon)
+    let xkey: [u8; 32] = *b">7FFq#LK?L|J0.d(pFGy~e7$;w]]uTOX";
+    let xnonce: [u8; 24] = *b"A6FG`e93]/}42KauX[OIQrN:";
+
+    let cipher = XChaCha20Poly1305::new((&xkey).into());
+    let header_json = cipher.decrypt((&xnonce).into(), &data[4..4 + header_len])
+        .map_err(|_| "upxs header decryption failed")?;
+
+    #[derive(serde::Deserialize)]
+    struct UpxsHeader { key: String, iv: String }
+    let h: UpxsHeader = serde_json::from_slice(&header_json)
+        .map_err(|e| format!("upxs header parse: {e}"))?;
+
+    let aes_key = hex::decode(&h.key).map_err(|e| format!("bad aes key: {e}"))?;
+    let aes_iv  = hex::decode(&h.iv).map_err(|e| format!("bad aes iv: {e}"))?;
+
+    type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
+    let body = &data[4 + header_len..];
+    let mut buf = body.to_vec();
+    let decrypted = Aes256CbcDec::new_from_slices(&aes_key, &aes_iv)
+        .map_err(|e| format!("aes init: {e}"))?
+        .decrypt_padded_mut::<Pkcs7>(&mut buf)
+        .map_err(|_| "AES-CBC decryption failed")?;
+
+    Ok(decrypted.to_vec())
 }
 
 fn decompress_gzip(data: &[u8]) -> Result<Vec<u8>, String> {

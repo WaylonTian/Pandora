@@ -13,6 +13,7 @@
 
 ## Build & Run Rules
 
+- **⚠️ ALWAYS use Windows commands**: All compilation, running, and shell commands MUST be executed via `cmd.exe /c "..."` (Windows). Never use bare Linux commands for build/run tasks. This is a hard rule.
 - **Compile and run Tauri/Rust**: Always use Windows (PowerShell/cmd). WSL lacks GTK/WebKit.
 - **Frontend dev**: `npm run dev` (Vite on port 1420)
 - **Full app**: `npm run tauri dev` (from Windows)
