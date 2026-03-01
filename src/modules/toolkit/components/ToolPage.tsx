@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 
-export function ToolPage({ toolId, title, onBack, children, noPadding }: { toolId: string; title: string; onBack: () => void; children: ReactNode; noPadding?: boolean }) {
+export function ToolPage({ title, onBack, children, noPadding }: { title: string; onBack: () => void; children: ReactNode; noPadding?: boolean }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 px-6 py-3 border-b border-border shrink-0">

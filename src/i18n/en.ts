@@ -396,20 +396,16 @@ export const en: Record<string, string> = {
 
   // === Toolkit ===
   "toolkit.cat.encoding": "Encoding",
-
   "toolkit.cat.text": "Text Processing",
   "toolkit.cat.generator": "Generators",
-
-
   "toolkit.cat.network": "Network",
-
   "toolkit.favorites": "Favorites",
   "toolkit.recent": "Recent",
   "toolkit.noResults": "No tools found",
-  "toolkit.pluginLabel": "Plugin",
-  "toolkit.exploreMarketplace": "Explore plugin marketplace ‚Ü?,
-  "toolkit.selectTool": "Select a tool from the sidebar",
   "toolkit.pinned": "Pinned",
+  "toolkit.pluginLabel": "Plugin",
+  "toolkit.exploreMarketplace": "Explore plugin marketplace ‚Üí",
+  "toolkit.dropFile": "Drop file here or click to select",
   "toolkit.hashTool.title": "Hash",
   "toolkit.hashTool.desc": "MD5/SHA hash for text and files",
   "toolkit.hashTool.textMode": "Text",
@@ -418,9 +414,6 @@ export const en: Record<string, string> = {
   "toolkit.hashTool.verifyPlaceholder": "Paste hash to verify...",
   "toolkit.hashTool.match": "Hash matches!",
   "toolkit.hashTool.noMatch": "Hash does not match",
-  "toolkit.colorTool.pick": "Pick from Screen",
-  "toolkit.colorTool.picking": "Picking...",
-  "toolkit.colorTool.history": "History",
   "toolkit.generatorTool.title": "Generator",
   "toolkit.generatorTool.desc": "UUID, random string, NanoID generator",
   "toolkit.generatorTool.randomTab": "Random String",
@@ -429,7 +422,6 @@ export const en: Record<string, string> = {
   "toolkit.generatorTool.length": "Length",
   "toolkit.generatorTool.count": "Count",
   "toolkit.generatorTool.hint": "Click Generate to create values",
-  "toolkit.dropFile": "Drop file here or click to select",
   "toolkit.timestampTool.title": "Timestamp Converter",
   "toolkit.timestampTool.currentTimestamp": "Current Timestamp",
   "toolkit.timestampTool.toDate": "To Date",
@@ -447,8 +439,8 @@ export const en: Record<string, string> = {
   "toolkit.jsonTool.validate": "Validate",
   "toolkit.jsonTool.inputPlaceholder": "Enter JSON...",
   "toolkit.jsonTool.outputPlaceholder": "Output...",
-  "toolkit.jsonTool.validJson": "‚ú?Valid JSON",
-  "toolkit.jsonTool.invalidJson": "‚ù?Invalid JSON",
+  "toolkit.jsonTool.validJson": "‚úÖ Valid JSON",
+  "toolkit.jsonTool.invalidJson": "‚ùå Invalid JSON",
   "toolkit.jsonTool.escape": "Escape",
   "toolkit.jsonTool.unescape": "Unescape",
   "toolkit.jsonTool.formatTab": "Format",
@@ -839,8 +831,8 @@ export const en: Record<string, string> = {
   "scriptRunner.clearOutput": "Clear",
   "scriptRunner.copyOutput": "Copy",
   "scriptRunner.autoScroll": "Auto Scroll",
-  "scriptRunner.stop": "‚ñ?Stop",
-  "scriptRunner.run": "‚ñ?Run",
+  "scriptRunner.stop": "‚ñ† Stop",
+  "scriptRunner.run": "‚ñ∂ Run",
   "scriptRunner.running": "Running...",
   "scriptRunner.selectOrCreate": "Select or create a script",
   "scriptRunner.rename": "Rename",
@@ -870,7 +862,7 @@ export const en: Record<string, string> = {
   "scriptRunner.create": "Create",
 
   // === Toolkit ===
-  "toolkit.selectTool": "Select a tool",
+  "toolkit.selectTool": "Select a tool from the sidebar",
   "toolkit.search": "Search tools...",
   "toolkit.plugins": "Plugins",
   "toolkit.managedPlugins": "Manage Plugins",
@@ -905,6 +897,9 @@ export const en: Record<string, string> = {
   "toolkit.jwtTool.placeholder": "Paste JWT token here...",
   "toolkit.colorTool.title": "Color Converter",
   "toolkit.colorTool.hexPlaceholder": "#3b82f6",
+  "toolkit.colorTool.pick": "Pick from Screen",
+  "toolkit.colorTool.picking": "Picking...",
+  "toolkit.colorTool.history": "History",
 
   // === Data Masking Examples ===
   "dataMasking.example.none.input": "Original Data",

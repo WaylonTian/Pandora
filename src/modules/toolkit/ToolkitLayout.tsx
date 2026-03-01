@@ -30,10 +30,10 @@ export function ToolkitLayout() {
 
   if (overlay?.type === "plugin") {
     const plugin = installed.find(p => p.id === overlay.id);
-    if (plugin) return <ToolPage toolId={plugin.id} title={plugin.name} onBack={goHome} noPadding><PluginContainer plugin={plugin} /></ToolPage>;
+    if (plugin) return <ToolPage title={plugin.name} onBack={goHome} noPadding><PluginContainer plugin={plugin} /></ToolPage>;
   }
-  if (overlay?.type === "marketplace") return <ToolPage toolId="__marketplace" title={t("toolkit.marketplace.title")} onBack={goHome}><Marketplace /></ToolPage>;
-  if (overlay?.type === "installed") return <ToolPage toolId="__installed" title={t("toolkit.managedPlugins")} onBack={goHome}><InstalledPlugins /></ToolPage>;
+  if (overlay?.type === "marketplace") return <ToolPage title={t("toolkit.marketplace.title")} onBack={goHome}><Marketplace /></ToolPage>;
+  if (overlay?.type === "installed") return <ToolPage title={t("toolkit.managedPlugins")} onBack={goHome}><InstalledPlugins /></ToolPage>;
 
   return (
     <ResizableLayout
