@@ -1013,6 +1013,10 @@ export const en: Record<string, string> = {
   "redisManager.executeCommand": "Enter command...",
   "redisManager.format.text": "Text",
   "redisManager.format.json": "JSON",
+  "redisManager.clear": "Clear",
+  "redisManager.selectConnection": "Select a connection to start",
+  "redisManager.selectKey": "Select a key",
+  "redisManager.keyNotFound": "Key not found",
 
   // === App ===
   "app.unknownPanel": "Unknown panel: {panelId}",

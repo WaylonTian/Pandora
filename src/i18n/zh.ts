@@ -1020,6 +1020,10 @@ export const zh: Record<string, string> = {
   "redisManager.executeCommand": "输入命令...",
   "redisManager.format.text": "文本",
   "redisManager.format.json": "JSON",
+  "redisManager.clear": "清空",
+  "redisManager.selectConnection": "选择一个连接开始",
+  "redisManager.selectKey": "选择一个键",
+  "redisManager.keyNotFound": "键不存在",
 
   // === App ===
   "app.unknownPanel": "未知面板: {panelId}",

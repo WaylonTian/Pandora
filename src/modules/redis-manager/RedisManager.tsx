@@ -5,8 +5,10 @@ import { KeyBrowser } from "./components/KeyBrowser";
 import { ValueViewer } from "./components/ValueViewer";
 import { CliConsole } from "./components/CliConsole";
 import { useRedisStore } from "./store";
+import { useT } from "@/i18n";
 
 export function RedisManager() {
+  const t = useT();
   const activeConnectionId = useRedisStore(s => s.activeConnectionId);
 
   const sidebar = (
@@ -20,7 +22,7 @@ export function RedisManager() {
     <ResizableSplit top={<ValueViewer />} bottom={<CliConsole />} defaultTopRatio={0.65} />
   ) : (
     <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-      Select a connection to start
+      {t('redisManager.selectConnection')}
     </div>
   );
 

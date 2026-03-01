@@ -35,7 +35,7 @@ export function CliConsole() {
     <div className="h-full flex flex-col border-t border-border">
       <div className="flex items-center justify-between px-2 py-1 border-b border-border">
         <span className="text-xs font-medium text-muted-foreground">{t('redisManager.cli')}</span>
-        <button className="text-xs text-muted-foreground hover:text-foreground" onClick={clearCliOutput}>Clear</button>
+        <button className="text-xs text-muted-foreground hover:text-foreground" onClick={clearCliOutput}>{t('redisManager.clear')}</button>
       </div>
       <div ref={outputRef} className="flex-1 overflow-auto p-2 font-mono text-xs whitespace-pre-wrap">
         {cliOutput.map((line, i) => (

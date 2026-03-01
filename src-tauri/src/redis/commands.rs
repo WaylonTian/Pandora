@@ -4,6 +4,25 @@ use crate::AppState;
 use redis::AsyncCommands;
 use tauri::State;
 
+/// Parse a Redis CLI command string, respecting quoted arguments.
+fn parse_command(input: &str) -> Result<Vec<String>, String> {
+    let mut parts = Vec::new();
+    let mut current = String::new();
+    let mut in_quote: Option<char> = None;
+    for ch in input.chars() {
+        match (ch, in_quote) {
+            ('"', None) | ('\'', None) => in_quote = Some(ch),
+            (q, Some(iq)) if q == iq => in_quote = None,
+            (' ', None) => {
+                if !current.is_empty() { parts.push(std::mem::take(&mut current)); }
+            }
+            _ => current.push(ch),
+        }
+    }
+    if !current.is_empty() { parts.push(current); }
+    Ok(parts)
+}
+
 fn format_redis_value(val: &redis::Value) -> String {
     match val {
         redis::Value::Nil => "(nil)".into(),
@@ -73,11 +92,24 @@ pub async fn redis_scan_keys(id: String, cursor: u64, pattern: String, count: u6
         .query_async(&mut con).await.map_err(|e| e.to_string())?;
 
     let mut key_infos = Vec::with_capacity(keys.len());
-    for key in keys {
-        let key_type: String = redis::cmd("TYPE").arg(&key).query_async(&mut con).await.unwrap_or_default();
-        let ttl: i64 = redis::cmd("TTL").arg(&key).query_async(&mut con).await.unwrap_or(-2);
-        let size: i64 = redis::cmd("MEMORY").arg("USAGE").arg(&key).query_async(&mut con).await.unwrap_or(-1);
-        key_infos.push(KeyInfo { key, key_type, ttl, size });
+    if !keys.is_empty() {
+        let mut pipe = redis::pipe();
+        for key in &keys {
+            pipe.cmd("TYPE").arg(key);
+            pipe.cmd("TTL").arg(key);
+        }
+        let results: Vec<redis::Value> = pipe.query_async(&mut con).await.map_err(|e| e.to_string())?;
+        for (i, key) in keys.into_iter().enumerate() {
+            let key_type = match &results.get(i * 2) {
+                Some(redis::Value::SimpleString(s)) => s.clone(),
+                _ => "unknown".into(),
+            };
+            let ttl = match &results.get(i * 2 + 1) {
+                Some(redis::Value::Int(n)) => *n,
+                _ => -2,
+            };
+            key_infos.push(KeyInfo { key, key_type, ttl, size: -1 });
+        }
     }
     Ok(ScanResult { cursor: new_cursor, keys: key_infos })
 }
@@ -149,10 +181,10 @@ pub async fn redis_get_server_info(id: String, state: State<'_, AppState>) -> Re
 #[tauri::command]
 pub async fn redis_execute_command(id: String, command: String, state: State<'_, AppState>) -> Result<String, String> {
     let mut con = state.redis_state.get_connection(&id).await?;
-    let parts: Vec<&str> = command.split_whitespace().collect();
+    let parts = parse_command(&command)?;
     if parts.is_empty() { return Err("Empty command".into()); }
-    let mut cmd = redis::cmd(parts[0]);
-    for arg in &parts[1..] { cmd.arg(*arg); }
+    let mut cmd = redis::cmd(&parts[0]);
+    for arg in &parts[1..] { cmd.arg(arg.as_str()); }
     let val: redis::Value = cmd.query_async(&mut con).await.map_err(|e| e.to_string())?;
     Ok(format_redis_value(&val))
 }

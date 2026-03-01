@@ -22,7 +22,7 @@ export const cmd = {
   getKeyValue: (id: string, key: string) => invoke<RedisValue>('redis_get_key_value', { id, key }),
   setString: (id: string, key: string, value: string) => invoke('redis_set_string', { id, key, value }),
   deleteKeys: (id: string, keys: string[]) => invoke('redis_delete_keys', { id, keys }),
-  renameKey: (id: string, key: string, newKey: string) => invoke('redis_rename_key', { id, key, newKey: newKey }),
+  renameKey: (id: string, key: string, newKey: string) => invoke('redis_rename_key', { id, key, new_key: newKey }),
   setTtl: (id: string, key: string, ttl: number) => invoke('redis_set_ttl', { id, key, ttl }),
   executeCommand: (id: string, command: string) => invoke<string>('redis_execute_command', { id, command }),
   getServerInfo: (id: string) => invoke<string>('redis_get_server_info', { id }),
@@ -75,6 +75,7 @@ export const useRedisStore = create<RedisStore>((set, get) => ({
     await get().loadConfigs();
   },
   deleteConfig: async (id) => {
+    await get().disconnect(id).catch(() => {});
     await cmd.deleteConfig(id);
     set(s => ({ configs: s.configs.filter(c => c.id !== id) }));
   },

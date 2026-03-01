@@ -146,7 +146,7 @@ export function ValueViewer() {
   const keyInfo = keys.find(k => k.key === selectedKey);
 
   if (!selectedKey || !selectedKeyValue) {
-    return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Select a key</div>;
+    return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">{t('redisManager.selectKey')}</div>;
   }
 
   return (
@@ -159,12 +159,12 @@ export function ValueViewer() {
         </>}
       </div>
       <div className="flex-1 min-h-0">
-        {selectedKeyValue.type === 'String' && <StringViewer data={selectedKeyValue.data} keyName={selectedKey} />}
-        {selectedKeyValue.type === 'Hash' && <HashViewer data={selectedKeyValue.data} keyName={selectedKey} />}
-        {selectedKeyValue.type === 'List' && <ListViewer data={selectedKeyValue.data} keyName={selectedKey} />}
-        {selectedKeyValue.type === 'Set' && <SetViewer data={selectedKeyValue.data} keyName={selectedKey} />}
-        {selectedKeyValue.type === 'ZSet' && <ZSetViewer data={selectedKeyValue.data} keyName={selectedKey} />}
-        {selectedKeyValue.type === 'None' && <div className="p-4 text-sm text-muted-foreground">Key not found</div>}
+        {selectedKeyValue.type === 'String' && <StringViewer key={selectedKey} data={selectedKeyValue.data} keyName={selectedKey} />}
+        {selectedKeyValue.type === 'Hash' && <HashViewer key={selectedKey} data={selectedKeyValue.data} keyName={selectedKey} />}
+        {selectedKeyValue.type === 'List' && <ListViewer key={selectedKey} data={selectedKeyValue.data} keyName={selectedKey} />}
+        {selectedKeyValue.type === 'Set' && <SetViewer key={selectedKey} data={selectedKeyValue.data} keyName={selectedKey} />}
+        {selectedKeyValue.type === 'ZSet' && <ZSetViewer key={selectedKey} data={selectedKeyValue.data} keyName={selectedKey} />}
+        {selectedKeyValue.type === 'None' && <div className="p-4 text-sm text-muted-foreground">{t('redisManager.keyNotFound')}</div>}
       </div>
     </div>
   );

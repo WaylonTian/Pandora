@@ -39,6 +39,7 @@ function TreeItem({ node, depth, selectedKey, onSelect }: {
   const [expanded, setExpanded] = useState(depth < 1);
   const childEntries = Object.values(node.children);
   const isLeaf = node.fullKey !== undefined && childEntries.length === 0;
+  const isClickableFolder = node.fullKey !== undefined && childEntries.length > 0;
   const hasChildren = childEntries.length > 0;
 
   if (isLeaf && node.keyInfo) {
@@ -61,7 +62,15 @@ function TreeItem({ node, depth, selectedKey, onSelect }: {
         <svg viewBox="0 0 24 24" className={`w-3 h-3 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2">
           <path d="m9 18 6-6-6-6"/>
         </svg>
-        <span className="truncate">{node.name}</span>
+        <span className={`truncate ${isClickableFolder ? 'cursor-pointer hover:underline' : ''}`}
+          onClick={isClickableFolder ? (e) => { e.stopPropagation(); onSelect(node.fullKey!); } : undefined}>
+          {node.name}
+        </span>
+        {isClickableFolder && node.keyInfo && (
+          <span className={`font-mono text-[10px] ${TYPE_COLORS[node.keyInfo.key_type] || ''}`}>
+            {node.keyInfo.key_type[0]?.toUpperCase()}
+          </span>
+        )}
         <span className="text-muted-foreground ml-auto text-[10px]">{childEntries.length}</span>
       </div>
       {expanded && hasChildren && childEntries.map(child => (

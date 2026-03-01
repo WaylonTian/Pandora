@@ -25,15 +25,14 @@ function ConnectionDialog({ isOpen, onClose, editConfig }: {
 
   if (!isOpen) return null;
 
-  const config: RedisConnectionConfig = {
-    id: editConfig?.id || crypto.randomUUID(),
-    name: form.name || `${form.host}:${form.port}`,
-    host: form.host, port: form.port,
-    password: form.password || undefined,
-    database: form.database,
-  };
-
   const handleTest = async () => {
+    const config: RedisConnectionConfig = {
+      id: editConfig?.id || crypto.randomUUID(),
+      name: form.name || `${form.host}:${form.port}`,
+      host: form.host, port: form.port,
+      password: form.password || undefined,
+      database: form.database,
+    };
     setTesting(true); setTestResult(null);
     try { await testConnection(config); setTestResult('OK'); }
     catch (e: any) { setTestResult(String(e)); }
@@ -41,6 +40,13 @@ function ConnectionDialog({ isOpen, onClose, editConfig }: {
   };
 
   const handleSave = async () => {
+    const config: RedisConnectionConfig = {
+      id: editConfig?.id || crypto.randomUUID(),
+      name: form.name || `${form.host}:${form.port}`,
+      host: form.host, port: form.port,
+      password: form.password || undefined,
+      database: form.database,
+    };
     await saveConfig(config);
     onClose();
   };
