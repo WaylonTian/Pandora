@@ -4,6 +4,7 @@ import type { InstalledPlugin, MarketPlugin, MarketPluginDetail } from "../plugi
 
 interface PluginStore {
   installed: InstalledPlugin[];
+  serverPort: number;
   marketPlugins: MarketPlugin[];
   marketLoading: boolean;
   installing: Set<string>;
@@ -30,14 +31,18 @@ function getCached(key: string): MarketPlugin[] | null {
 
 export const usePluginStore = create<PluginStore>((set, get) => ({
   installed: [],
+  serverPort: 0,
   marketPlugins: [],
   marketLoading: false,
   installing: new Set(),
   installError: null,
 
   loadInstalled: async () => {
-    const installed = await invoke<InstalledPlugin[]>("plugin_list");
-    set({ installed });
+    const [installed, serverPort] = await Promise.all([
+      invoke<InstalledPlugin[]>("plugin_list"),
+      invoke<number>("plugin_server_port"),
+    ]);
+    set({ installed, serverPort });
   },
 
   installFromMarket: async (name) => {

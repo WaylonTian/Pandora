@@ -15,10 +15,13 @@ export function ToolkitSidebar({ selectedId, onSelect }: {
   const t = useT();
   const [search, setSearch] = useState("");
   const { favorites, pinnedTools, toggleFavorite, togglePin } = useToolkitStore();
-  const { installed } = usePluginStore();
+  const { installed, serverPort } = usePluginStore();
   const enabledPlugins = installed.filter(p => p.enabled);
   const allTools = getTools();
   const grouped = getToolsByCategory();
+
+  const pluginLogoUrl = (p: InstalledPlugin) =>
+    p.logo && serverPort ? `http://127.0.0.1:${serverPort}/${encodeURIComponent(p.id)}/${p.logo}` : null;
 
   const catLabels: Record<string, string> = {
     encoding: t("toolkit.cat.encoding"), text: t("toolkit.cat.text"),
@@ -51,11 +54,12 @@ export function ToolkitSidebar({ selectedId, onSelect }: {
 
   const PluginRow = ({ plugin }: { plugin: InstalledPlugin }) => {
     const active = plugin.id === selectedId;
+    const logo = pluginLogoUrl(plugin);
     return (
       <div onClick={() => onSelect("plugin", plugin.id)}
         className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md cursor-pointer text-sm transition-colors ${active ? "bg-accent text-accent-foreground" : "hover:bg-muted text-foreground"}`}>
-        {plugin.logo
-          ? <img src={plugin.logo} alt="" className="w-4 h-4 shrink-0 rounded" />
+        {logo
+          ? <img src={logo} alt="" className="w-4 h-4 shrink-0 rounded" />
           : <Plug className="w-4 h-4 shrink-0 text-muted-foreground" />}
         <span className="truncate flex-1">{plugin.name}</span>
       </div>

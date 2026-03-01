@@ -14,7 +14,7 @@ type Selection = { type: "tool"; id: string } | { type: "plugin"; id: string } |
 export function ToolkitLayout() {
   const t = useT();
   const [selection, setSelection] = useState<Selection>(null);
-  const { installed, loadInstalled } = usePluginStore();
+  const { installed, serverPort, loadInstalled } = usePluginStore();
   const { addRecent } = useToolkitStore();
 
   useEffect(() => { loadInstalled(); }, []);
@@ -50,11 +50,12 @@ export function ToolkitLayout() {
     if (selection.type === "plugin") {
       const plugin = installed.find(p => p.id === selection.id);
       if (!plugin) return null;
+      const logo = plugin.logo && serverPort ? `http://127.0.0.1:${serverPort}/${encodeURIComponent(plugin.id)}/${plugin.logo}` : null;
       return (
         <div className="h-full flex flex-col">
           <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border shrink-0">
-            {plugin.logo
-              ? <img src={plugin.logo} alt="" className="w-5 h-5 rounded" />
+            {logo
+              ? <img src={logo} alt="" className="w-5 h-5 rounded" />
               : null}
             <h2 className="text-sm font-semibold flex-1">{plugin.name}</h2>
           </div>
