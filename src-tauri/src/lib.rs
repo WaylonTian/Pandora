@@ -1,5 +1,6 @@
 mod http;
 mod db;
+mod redis;
 mod script;
 mod system;
 mod storage;
@@ -16,6 +17,7 @@ pub struct AppState {
     pub db: Mutex<AppDatabase>,
     pub db_state: DbState,
     pub processes: script::ProcessMap,
+    pub redis_state: redis::connection::RedisState,
 }
 
 // Collection commands
@@ -263,6 +265,7 @@ pub fn run() {
             db: Mutex::new(db),
             db_state: DbState::new(),
             processes: script::new_process_map(),
+            redis_state: redis::connection::RedisState::new(),
         })
         .invoke_handler(tauri::generate_handler![
             get_collections, create_collection, delete_collection, rename_collection,
@@ -367,6 +370,29 @@ pub fn run() {
             plugin::node_bridge::node_os_homedir,
             plugin::node_bridge::node_os_tmpdir,
             plugin::node_bridge::node_exec,
+            // Redis Manager
+            redis::commands::redis_save_config,
+            redis::commands::redis_load_configs,
+            redis::commands::redis_delete_config,
+            redis::commands::redis_test_connection,
+            redis::commands::redis_connect,
+            redis::commands::redis_disconnect,
+            redis::commands::redis_scan_keys,
+            redis::commands::redis_get_key_value,
+            redis::commands::redis_set_string,
+            redis::commands::redis_delete_keys,
+            redis::commands::redis_rename_key,
+            redis::commands::redis_set_ttl,
+            redis::commands::redis_get_server_info,
+            redis::commands::redis_execute_command,
+            redis::commands::redis_hash_set,
+            redis::commands::redis_hash_del,
+            redis::commands::redis_list_push,
+            redis::commands::redis_list_remove,
+            redis::commands::redis_set_add,
+            redis::commands::redis_set_remove,
+            redis::commands::redis_zset_add,
+            redis::commands::redis_zset_remove,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

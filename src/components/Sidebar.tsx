@@ -35,6 +35,14 @@ const TerminalIcon = () => (
   </svg>
 );
 
+const RedisIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m12 2-8 4.5v11L12 22l8-4.5v-11Z"/>
+    <path d="m12 22v-11"/>
+    <path d="m20 6.5-8 4.5-8-4.5"/>
+  </svg>
+);
+
 const SunIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="12" r="4"/>
@@ -60,6 +68,7 @@ const modules = [
   { id: "db-manager", label: "DB Manager", icon: DatabaseIcon },
   { id: "toolkit", label: "Toolkit", icon: WrenchIcon },
   { id: "script-runner", label: "Script Runner", icon: TerminalIcon },
+  { id: "redis-manager", label: "Redis Manager", icon: RedisIcon },
 ];
 
 export function Sidebar({ onPanelSelect, activePanel, onThemeToggle, isDark }: SidebarProps) {
