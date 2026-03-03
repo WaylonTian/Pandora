@@ -31,4 +31,4 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Pandora ${{ github.ref_name }}'
           releaseBody: 'See the assets to download and install.'
-          releaseDraft: true
+          releaseDraft: false
