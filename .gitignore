@@ -35,5 +35,3 @@ npm-debug.log*
 .cache/
 .worktrees/
 $extractDir/
-_bmad/
-_bmad-output/

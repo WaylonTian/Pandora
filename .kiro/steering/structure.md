@@ -32,8 +32,7 @@
 │   ├── Cargo.toml
 │   └── tauri.conf.json
 │
-├── .worktrees/                 # Git worktrees for isolated feature development
-└── _bmad-output/               # Planning artifacts (architecture, epics, UX spec)
+└── .worktrees/                 # Git worktrees for isolated feature development
 ```
 
 ## Module Convention
