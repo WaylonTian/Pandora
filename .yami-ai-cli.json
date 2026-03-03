@@ -1,0 +1,54 @@
+{
+  "tools": [
+    "kiro"
+  ],
+  "preset": "custom",
+  "mode": "copy",
+  "resources": [
+    {
+      "name": "brainstorming",
+      "type": "skills"
+    },
+    {
+      "name": "code-simplifier",
+      "type": "skills"
+    },
+    {
+      "name": "control-browser",
+      "type": "skills"
+    },
+    {
+      "name": "executing-plans",
+      "type": "skills"
+    },
+    {
+      "name": "frontend-design",
+      "type": "skills"
+    },
+    {
+      "name": "playwright-cli",
+      "type": "skills"
+    },
+    {
+      "name": "ui-ux-pro-max",
+      "type": "skills"
+    },
+    {
+      "name": "writing-plans",
+      "type": "skills"
+    },
+    {
+      "name": "playwright_mcp",
+      "type": "mcp"
+    },
+    {
+      "name": "global_guide.md",
+      "type": "steering"
+    },
+    {
+      "name": "skills-path-find-guide.md",
+      "type": "steering"
+    }
+  ],
+  "importedAt": "2026-02-26T06:20:07.723Z"
+}
