@@ -17,7 +17,7 @@ export function ImportCurlModal({ onImport, onClose }: Props) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span>{t('importCurlModal.title')}</span>

@@ -91,7 +91,7 @@ export function ImportApiModal({ onClose, onImport, onImportCurl }: Props) {
   const totalRequests = preview?.folders.reduce((sum, f) => sum + f.requests.length, 0) || 0;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="import-api-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{t('importApiModal.title')}</h3>

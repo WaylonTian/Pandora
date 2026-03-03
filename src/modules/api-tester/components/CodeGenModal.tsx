@@ -31,7 +31,7 @@ export function CodeGenModal({ method, url, headers, body, onClose }: Props) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal codegen-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span>{t('codeGenModal.title')}</span>

@@ -110,7 +110,7 @@ export function EnvironmentManager({ onClose }: { onClose: () => void }) {
   const selectedEnv = store.environments.find(e => e.id === selectedEnvId);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal env-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span>{t('envManager.title')}</span>

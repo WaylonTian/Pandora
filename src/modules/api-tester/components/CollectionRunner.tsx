@@ -78,7 +78,7 @@ export function CollectionRunner({ collections, onClose, environment: _environme
   const passedTests = results.reduce((s, r) => s + r.tests.filter(t => t.passed).length, 0);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="runner-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{t('collectionRunner.title')}</h3>

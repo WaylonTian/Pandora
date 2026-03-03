@@ -786,7 +786,7 @@ export function ApiTester() {
           body={bodyContent} onClose={() => setShowCodeGen(false)} />
       )}
       {showShortcuts && (
-        <div className="modal-overlay" onClick={() => setShowShortcuts(false)}>
+        <div className="modal-overlay">
           <div className="modal shortcuts-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header"><span>{t('apiTester.keyboardShortcuts')}</span><button className="icon-btn" onClick={() => setShowShortcuts(false)}>×</button></div>
             <div className="modal-body">

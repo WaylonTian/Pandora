@@ -6,7 +6,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const settings = useSettingsStore();
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal settings-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span>{t('settingsModal.title')}</span>

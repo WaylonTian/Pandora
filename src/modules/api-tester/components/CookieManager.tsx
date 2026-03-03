@@ -38,7 +38,7 @@ export function CookieManager({ onClose }: { onClose: () => void }) {
     : grouped;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{ width: 560, maxHeight: '70vh' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <span>🍪 Cookies</span>
