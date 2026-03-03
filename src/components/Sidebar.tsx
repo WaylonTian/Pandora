@@ -28,13 +28,6 @@ const WrenchIcon = () => (
   </svg>
 );
 
-const TerminalIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="4,17 10,11 4,5"/>
-    <line x1="12" x2="20" y1="19" y2="19"/>
-  </svg>
-);
-
 const RedisIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="m12 2-8 4.5v11L12 22l8-4.5v-11Z"/>
