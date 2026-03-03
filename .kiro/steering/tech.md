@@ -1,3 +1,8 @@
+---
+inclusion: auto
+name: tech-stack
+description: Pandora 技术栈、构建命令与关键约束。Use when checking dependencies, build commands, or platform constraints.
+---
 # Pandora — Tech Stack & Build
 
 ## Frontend

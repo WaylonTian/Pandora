@@ -66,9 +66,8 @@ const MoonIcon = () => (
 const modules = [
   { id: "api-tester", label: "API Tester", icon: SendIcon },
   { id: "db-manager", label: "DB Manager", icon: DatabaseIcon },
-  { id: "toolkit", label: "Toolkit", icon: WrenchIcon },
-  { id: "script-runner", label: "Script Runner", icon: TerminalIcon },
   { id: "redis-manager", label: "Redis Manager", icon: RedisIcon },
+  { id: "toolkit", label: "Toolkit", icon: WrenchIcon },
 ];
 
 export function Sidebar({ onPanelSelect, activePanel, onThemeToggle, isDark }: SidebarProps) {
@@ -108,9 +107,6 @@ export function Sidebar({ onPanelSelect, activePanel, onThemeToggle, isDark }: S
       >
         {isDark ? <SunIcon /> : <MoonIcon />}
       </button>
-      <div className="w-6 h-6 flex items-center justify-center text-xs font-bold text-muted-foreground">
-        P
-      </div>
     </div>
   );
 }

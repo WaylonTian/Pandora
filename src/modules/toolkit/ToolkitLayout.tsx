@@ -30,6 +30,14 @@ export function ToolkitLayout() {
 
   const selectedId = selection?.type === "tool" ? selection.id : selection?.type === "plugin" ? selection.id : null;
 
+  // Track if marketplace/installed have ever been selected (lazy mount)
+  const [mountedViews, setMountedViews] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (selection?.type === "marketplace" || selection?.type === "installed") {
+      setMountedViews(prev => { const next = new Set(prev); next.add(selection.type); return next; });
+    }
+  }, [selection]);
+
   const renderMain = () => {
     if (!selection) return <div className="h-full flex items-center justify-center text-muted-foreground text-sm">{t("toolkit.selectTool")}</div>;
 
@@ -64,26 +72,38 @@ export function ToolkitLayout() {
       );
     }
 
-    if (selection.type === "marketplace") return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center px-4 py-2.5 border-b border-border shrink-0">
-          <h2 className="text-sm font-semibold">{t("toolkit.marketplace.title")}</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4"><Marketplace /></div>
-      </div>
-    );
-
-    if (selection.type === "installed") return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center px-4 py-2.5 border-b border-border shrink-0">
-          <h2 className="text-sm font-semibold">{t("toolkit.managedPlugins")}</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4"><InstalledPlugins /></div>
-      </div>
-    );
-
     return null;
   };
+
+  const mainContent = renderMain();
+
+  const renderWithCachedViews = () => (
+    <div className="h-full relative">
+      {/* Marketplace - stays mounted once opened */}
+      {mountedViews.has("marketplace") && (
+        <div className={`h-full flex flex-col absolute inset-0 ${selection?.type === "marketplace" ? "" : "hidden"}`}>
+          <div className="flex items-center px-4 py-2.5 border-b border-border shrink-0">
+            <h2 className="text-sm font-semibold">{t("toolkit.marketplace.title")}</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4"><Marketplace /></div>
+        </div>
+      )}
+      {/* Installed - stays mounted once opened */}
+      {mountedViews.has("installed") && (
+        <div className={`h-full flex flex-col absolute inset-0 ${selection?.type === "installed" ? "" : "hidden"}`}>
+          <div className="flex items-center px-4 py-2.5 border-b border-border shrink-0">
+            <h2 className="text-sm font-semibold">{t("toolkit.managedPlugins")}</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4"><InstalledPlugins /></div>
+        </div>
+      )}
+      {/* Other content */}
+      {selection?.type !== "marketplace" && selection?.type !== "installed" && mainContent && (
+        <div className="h-full">{mainContent}</div>
+      )}
+      {!selection && mainContent}
+    </div>
+  );
 
   return (
     <ResizableLayout
@@ -91,7 +111,7 @@ export function ToolkitLayout() {
       minSidebarWidth={200}
       maxSidebarWidth={360}
       sidebar={<ToolkitSidebar selectedId={selectedId} onSelect={handleSelect} />}
-      main={renderMain()}
+      main={renderWithCachedViews()}
     />
   );
 }

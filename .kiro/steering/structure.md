@@ -1,3 +1,8 @@
+---
+inclusion: auto
+name: project-structure
+description: Pandora 项目目录结构与模块约定。Use when navigating the codebase, adding new modules, or understanding file organization.
+---
 # Pandora — Project Structure
 
 ```

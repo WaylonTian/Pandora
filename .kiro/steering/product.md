@@ -1,3 +1,8 @@
+---
+inclusion: auto
+name: product-overview
+description: Pandora 产品概述与模块说明。Use when needing to understand what Pandora is, its modules, or product scope.
+---
 # Pandora — Product Overview
 
 Pandora is a desktop developer toolbox built with Tauri 2, combining four core modules into a single IntelliJ-style draggable panel interface (powered by dockview):
